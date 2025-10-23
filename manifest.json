@@ -1,0 +1,1 @@
+{ "name": "IA 4 IA™", "short_name": "THOR PD", "description": "Self-Growing Company - Interface de Comando Cognitivo.", "start_url": "./", "display": "standalone", "background_color": "#05090d", "theme_color": "#00e5ff", "icons": [ { "src": "thorzinho_holo.png", "sizes": "512x512", "type": "image/png" } ] }

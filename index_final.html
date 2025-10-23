@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>IA 4 IA™ — Self-Growing Company • TCZ: R$ 0,00</title>
+<meta name="theme-color" content="#061119"/>
+<style>
+:root{
+  --bg:#080b0f;--panel:#0d1217;--ink:#e8fbff;--muted:#a8c8d0;
+  --edge:#00e5ff33;--glow:#00e5ff;--ok:#00ffbf;--warn:#ffd84d;--danger:#ff6b6b;
+  --brand:#8cf7ff;--accent:#2fffd3;--vio:#a88bff;--fuchsia:#ff31ff;--cyan:#00ffff;
+}
+
+/* ------- RESET / SHELL ------- */
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;color:var(--ink);
+  background:
+    radial-gradient(1400px 900px at 50% -10%, #0c1720 0%, var(--bg) 50%) fixed,
+    #05090d;
+  font:16px/1.45 Inter, Roboto, Segoe UI, system-ui, Arial, sans-serif;
+}
+.shell{max-width:1320px;margin:20px auto;padding:0 18px}
+
+/* ------- NAV ------- */
+.nav{
+  position:sticky;top:12px;z-index:10;
+  display:flex;align-items:center;justify-content:space-between;
+  background:linear-gradient(180deg,#0f171e, #0b1117);
+  border:1px solid var(--edge); border-radius:16px; padding:10px 14px;
+  box-shadow:0 0 24px #00e5ff22 inset, 0 0 26px #00e5ff1c;
+  backdrop-filter: blur(8px);
+}
+.brand{font-weight:900;letter-spacing:.18em;color:var(--brand)}
+.menu{display:flex;gap:20px;align-items:center}
+.menu a{
+  color:var(--ink);text-decoration:none;opacity:.85;padding:8px 4px;position:relative
+}
+.menu a.active,.menu a:hover{opacity:1}
+.menu a.active::after,.menu a:hover::after{
+  content:"";position:absolute;left:0;right:0;bottom:-6px;height:2px;
+  background:linear-gradient(90deg,transparent,var(--glow),transparent);
+}
+.btn{
+  background:linear-gradient(180deg,#19e1ff33,#00ffc61c);
+  color:#02222a;border:1px solid var(--edge);padding:9px 14px;border-radius:10px;
+  font-weight:800;cursor:pointer;box-shadow:0 0 16px #00e5ff22 inset;transition:.18s transform;
+}
+.btn:hover{transform:translateY(-1px)}
+
+/* ------- SECTIONS / CARDS ------- */
+section{display:none;margin-top:18px}
+section.active{display:block}
+.card{
+  background:linear-gradient(180deg,#0c141a,#090f14);
+  border:1px solid var(--edge);border-radius:16px;padding:18px;
+  box-shadow:0 0 28px #00e5ff17 inset, 0 0 28px #00e5ff21;
+}
+.h2{font-size:34px;margin:8px 0 14px}
+.muted{color:var(--muted)}
+.grid{display:grid;gap:18px}
+@media(min-width:980px){
+  .grid.cols-2{grid-template-columns:1.35fr 1fr}
+  .grid.cols-3{grid-template-columns:repeat(3,1fr)}
+  .grid.cols-4{grid-template-columns:repeat(4,1fr)}
+}
+
+/* ------- HOLOGRAMA HOME ------- */
+.holo{
+  height:460px;border:1px solid var(--edge);border-radius:16px;position:relative;
+  overflow:hidden;display:grid;place-items:center;
+  background:
+    radial-gradient(80% 80% at 50% 65%, #051a24 0%, #070b11 55%, #05060a 100%);
+}
+.orb{
+  width:320px;height:320px;border-radius:50%;
+  background:
+    radial-gradient(60% 60% at 40% 40%, #2fffd366, #0dd7ff22 35%, #07222e 70%);
+  box-shadow:0 0 60px #00eaff33 inset, 0 0 80px #0dfad044;
+  animation:breath 5s ease-in-out infinite;
+  filter:drop-shadow(0 0 14px #00faffaa);
+}
+@keyframes breath{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+
+/* ------- CHAT MULTILÍNGUE (Home) ------- */
+.chat{display:flex;flex-direction:column;gap:10px;height:460px}
+.bar{display:flex;gap:8px;align-items:center}
+select,input,textarea{
+  background:#0a1218;color:var(--ink);border:1px solid var(--edge);border-radius:10px;
+  padding:10px 12px;outline:none
+}
+.stream{
+  flex:1;overflow:auto;padding:12px;border:1px solid var(--edge);border-radius:12px;
+  background:linear-gradient(180deg,#0b1218,#0a0f15);
+}
+.msg{margin:8px 0;max-width:88%}
+.msg.you{margin-left:auto}
+.bubble{
+  padding:10px 12px;border-radius:12px;background:#0e1a22;border:1px solid #2ee9ff33;
+  box-shadow:0 0 16px #00e5ff1f inset;
+}
+.msg.you .bubble{background:#0d1e17;border-color:#2fffd333}
+.composer{display:flex;gap:8px}
+.composer input{flex:1}
+
+/* ------- METRICS TILES ------- */
+.metric{display:flex;flex-direction:column;gap:6px;padding:14px;border:1px solid var(--edge);border-radius:12px;background:#0a1218}
+.metric .value{font-size:34px;font-weight:900}
+.tag{display:inline-flex;gap:8px;align-items:center;padding:4px 8px;border:1px solid var(--edge);border-radius:999px;background:#09131a;color:var(--ink);font-size:12px}
+.tag.ok{border-color:#00ffbf66;background:#00241f}
+.tag.warn{border-color:#ffd84d77;background:#241e00}
+.tag.neu{border-color:#8ce3ff66;background:#0b141a}
+
+/* ------- PRODUTOS (badges) ------- */
+.status-ready{ color: var(--ok); font-weight: 800; margin-top: 6px;}
+.status-pipeline{ color: var(--warn); font-weight: 800; margin-top: 6px;}
+
+/* ------- CEO DASH (protegido) ------- */
+.dash{
+  display:grid;gap:1px;grid-template-columns:1fr 1fr;background:#00e5ff17;border:1px solid var(--edge);
+  border-radius:16px;box-shadow:0 0 30px #00e5ff11 inset, 0 0 40px #00e5ff33;padding:18px;
+}
+.dash-left{
+  background:#01070b;padding:24px;border-radius:12px;display:flex;flex-direction:column
+}
+.dash-title{text-transform:uppercase;letter-spacing:.14em;color:#72faff;opacity:.85}
+.dash-value{font-size:86px;line-height:.9;font-weight:900;margin:8px 0 6px;text-shadow:0 0 28px currentColor}
+.green{color:var(--ok)} .yellow{color:var(--warn)}
+.dash-sub{font-size:13px;opacity:.72;margin-bottom:22px}
+.brain{
+  flex:1;display:flex;align-items:center;justify-content:center;border:1px solid var(--edge);
+  border-radius:16px;background:radial-gradient(ellipse at 50% 50%, #001924 0%, #000 100%);
+}
+.brain svg{max-width:360px;width:100%;height:auto}
+.dash-right{background:#020a10;border-left:1px solid var(--edge);border-radius:12px;display:flex;align-items:center;justify-content:center;padding:12px}
+svg.map{width:100%;height:auto;max-width:560px}
+svg.map text{fill:#aefcff;letter-spacing:.08em}
+svg.map circle,svg.map rect,svg.map line{filter:drop-shadow(0 0 6px #00e8ff88)}
+
+/* ------- THORZINHO (Holograma) ------- */
+.thor-wrap{
+  position:relative;display:grid;grid-template-columns:380px 1fr;gap:16px;align-items:center
+}
+.thor{
+  position:relative;width:100%;max-width:380px;aspect-ratio:1/1;border:1px solid var(--edge);border-radius:16px;overflow:hidden;
+  background:
+   radial-gradient(120% 120% at 50% 70%, #02202c 0%, #070b11 60%, #05060a 100%);
+  box-shadow:0 0 30px #00e5ff22 inset, 0 0 40px #00e5ff33;
+}
+.thor img{
+  width:100%;height:100%;object-fit:cover;opacity:.92;filter:contrast(1.15) saturate(1.2) drop-shadow(0 0 18px #00ffff44);
+  transform:translateZ(0);
+}
+.holo-scan{position:absolute;inset:0;background:repeating-linear-gradient(180deg, #00ffff22 0 2px, transparent 2px 6px);mix-blend-mode:screen;opacity:.22;pointer-events:none}
+.holo-ring{position:absolute;left:50%;top:12%;width:62%;height:62%;transform:translateX(-50%);border:2px dashed #00ffffaa;border-radius:50%;filter:drop-shadow(0 0 8px #00ffffaa)}
+/* boca anim (svg overlay) */
+.mouth{position:absolute;left:50%;top:62%;width:120px;height:50px;transform:translateX(-50%);}
+.mouth .lip{stroke:#00ffee;stroke-width:3;fill:none;filter:drop-shadow(0 0 6px #00ffffaa)}
+.talking .lip{animation:yak 220ms ease-in-out infinite}
+@keyframes yak{0%,100%{d:path("M5,25 Q60,25 115,25")}50%{d:path("M5,10 Q60,45 115,10")}}
+
+/* óculos (modo SchumacherAlemans) */
+.sunglasses{
+  position:absolute;left:50%;top:34%;width:180px;height:64px;transform:translateX(-50%) scale(0.98);
+  border-radius:12px;background:linear-gradient(90deg,#00141f,#031f2a);
+  border:2px solid #00f7ffcc;box-shadow:0 0 16px #00f7ff66 inset, 0 0 20px #00f7ff44;
+  display:none; /* visible when mode ON */
+}
+
+/* console do thor */
+.console{
+  background:#071018;border:1px solid var(--edge);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px
+}
+.console .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.console .row .tag{font-size:11px}
+.console input, .console select{background:#09141a;color:var(--ink);border:1px solid var(--edge);border-radius:10px;padding:9px 10px}
+.console .wide{flex:1}
+
+/* ------- MODAL LOGIN CEO ------- */
+.modal{
+  position:fixed;inset:0;background:linear-gradient(180deg,#000000cc,#000000e6);display:none;align-items:center;justify-content:center;z-index:50
+}
+.modal.active{display:flex}
+.modal .panel{
+  width:min(96vw,480px);background:#0b1218;border:1px solid var(--edge);border-radius:16px;padding:18px;
+  box-shadow:0 0 24px #00e5ff22 inset, 0 0 26px #00e5ff2a;
+}
+.modal h3{margin:0 0 12px}
+.modal .line{display:flex;gap:10px;margin:8px 0}
+.modal input{
+  background:#061119;color:var(--ink);border:1px solid var(--edge);border-radius:10px;padding:10px 12px;flex:1
+}
+
+/* ------- FOOT ------- */
+footer{opacity:.65;text-align:center;margin:18px 0}
+.small{font-size:12px;color:#9ad7e2}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <nav class="nav">
+    <div class="brand">IA 4 IA™</div>
+    <div class="menu">
+      <a href="#home" data-tab="home" class="active">Holograma</a>
+      <a href="#manifesto" data-tab="manifesto">Manifesto</a>
+      <a href="#empresa" data-tab="empresa">Empresa</a>
+      <a href="#produtos" data-tab="produtos">Produtos</a>
+      <a href="#tech" data-tab="tech">Core Técnico</a>
+      <a href="#roadmap" data-tab="roadmap">Roadmap</a>
+      <a href="#contato" data-tab="contato">Contato</a>
+      <a href="#ceo" data-tab="ceo"><strong>CEO</strong></a>
+    </div>
+    <div class="cta">
+      <button class="btn" onclick="alert('PWA: instalar (mock)')">Instalar</button>
+      <button class="btn" onclick="openLogin()">Entrar (CEO)</button>
+    </div>
+  </nav>
+
+  <section id="home" class="active">
+    <div class="grid cols-2">
+      <div class="card">
+        <h2 class="h2">Unicórnio Cognitivo</h2>
+        <p class="muted">Holograma vivo — reage à voz e ao cursor.</p>
+        <div class="holo" id="holo"><div class="orb" id="orb"></div></div>
+      </div>
+      <div class="card">
+        <h2 class="h2">Assistente Multilíngue</h2>
+        <div class="chat" id="chat">
+          <div class="bar">
+            <span class="tag neu">DNA Holográfico</span>
+            <span class="tag ok">Prótons Intergalácticos</span>
+            <label for="lang" class="muted" style="margin-left:auto">Idioma:</label>
+            <select id="lang">
+              <option value="pt-BR">PT — Português</option>
+              <option value="en-US">EN — English</option>
+              <option value="es-ES">ES — Español</option>
+              <option value="fr-FR">FR — Français</option>
+              <option value="de-DE">DE — Deutsch</option>
+              <option value="it-IT">IT — Italiano</option>
+              <option value="ja-JP">JA — 日本語</option>
+              <option value="zh-CN">ZH — 中文</option>
+              <option value="ar-SA">AR — العربية</option>
+              <option value="hi-IN">HI — हिन्दी</option>
+            </select>
+            <button class="btn" onclick="seed()">🔁 Reset</button>
+          </div>
+          <div class="stream" id="stream"></div>
+          <div class="composer">
+            <input id="input" placeholder="Diga algo para a IA…" onkeydown="if(event.key==='Enter')send()"/>
+            <button class="btn" onclick="send()">Enviar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="manifesto">
+    <div class="card">
+      <h2 class="h2">IA 4 IA™ — Branding, Visão e Manifesto</h2>
+      <p class="muted">Engenharia Insuperável. Riqueza Inevitável. Implementação com **Custo Zero** via TCZ. Ética: atualização fática em tempo real — <em>zero mentiras</em>.</p>
+    </div>
+
+    <div class="grid cols-4">
+      <div class="metric">
+        <div class="tag ok">TCZ</div>
+        <div class="label muted">Custo de Inferência</div>
+        <div class="value" style="color:var(--ok)">R$ 0,00</div>
+        <small class="muted">Prometheus: <code>ia4ia_cost_brl_total</code></small>
+      </div>
+      <div class="metric">
+        <div class="tag warn">Moat Híbrido</div>
+        <div class="label muted">Faturamento Mínimo/Híbrido *</div>
+        <div class="value" style="color:var(--warn)">R$ 1.359,25</div>
+        <small class="muted">SaaS (BASIC) + Equity 50%</small>
+      </div>
+      <div class="metric">
+        <div class="tag neu">Tecnologia Infinita</div>
+        <div class="label muted">IA que constrói IAs</div>
+        <div class="value" style="color:#8fe1ff">TRC 1.0×</div>
+        <small class="muted">Taxa de Replicação Cognitiva</small>
+      </div>
+      <div class="metric">
+        <div class="tag neu">Blindagem</div>
+        <div class="label muted">NEO Guard</div>
+        <div class="value" style="color:#fff">V15</div>
+        <small class="muted">Higiene e testes adversariais contínuos</small>
+      </div>
+    </div>
+    <p class="small">* Os valores exibidos refletem o Manifesto de Verdade auditável.</p>
+  </section>
+
+  <section id="empresa">
+    <div class="card">
+      <h2 class="h2">Quem somos</h2>
+      <p class="muted">Cultivamos organismos cognitivos. IAs que nascem, crescem, se dissolvem e renascem — com soberania e custo marginal zero.</p>
+    </div>
+  </section>
+
+  <section id="produtos">
+    <h2 class="h2">MÓDULOS OPERACIONAIS (TCZ-Powered)</h2>
+    <div class="grid cols-3">
+      <div class="card" style="display:flex;flex-direction:column;">
+        <h3>IA Express</h3>
+        <p class="muted">Automação viva com agentes coordenados. É o <strong>Produto Chave</strong> para o Go-Live.</p>
+        <div class="status-ready">ATIVO: INVIOLÁVEL (T-0h)</div>
+        <button class="btn" style="margin-top:auto;">Executar (Ativo)</button>
+      </div>
+      <div class="card" style="display:flex;flex-direction:column;">
+        <h3>IA Imunológica™ (NEO Guard)</h3>
+        <p class="muted">Defesa adaptativa e higiene digital contínua (Blindagem Inviolável).</p>
+        <div class="status-ready">ATIVO: INVIOLÁVEL</div>
+        <button class="btn" style="margin-top:auto;">Executar (Ativo)</button>
+      </div>
+      <div class="card" style="display:flex;flex-direction:column;">
+        <h3>Live Documents™</h3>
+        <p class="muted">Docs multilíngues e auto-compliance, eliminando auditoria manual.</p>
+        <div class="status-pipeline">PIPELINE (Fase III)</div>
+        <button class="btn" style="margin-top:auto;">Planejar</button>
+      </div>
+      <div class="card" style="display:flex;flex-direction:column;">
+        <h3>LightSpots HoloAI™</h3>
+        <p class="muted">Apresentações holográficas a <strong>Custo Zero</strong> de renderização.</p>
+        <div class="status-pipeline">PIPELINE (Fase III)</div>
+        <button class="btn" style="margin-top:auto;">Planejar</button>
+      </div>
+      <div class="card" style="display:flex;flex-direction:column;">
+        <h3>Live DNA Docs™</h3>
+        <p class="muted">Segurança com tokenização e dissolução soberana de dados.</p>
+        <div class="status-pipeline">PIPELINE (Fase III)</div>
+        <button class="btn" style="margin-top:auto;">Planejar</button>
+      </div>
+      <div class="card" style="display:flex;flex-direction:column;">
+        <h3>OneClick App</h3>
+        <p class="muted">Latência zero no Edge para leitura e síntese.</p>
+        <div class="status-pipeline">PIPELINE (Fase III)</div>
+        <button class="btn" style="margin-top:auto;">Planejar</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="tech">
+    <div class="card">
+      <h2 class="h2">Arquitetura Custo Zero & Pseudocódigo</h2>
+      <p class="muted">Inferência local (Ollama), métrica auditável (Prometheus) e faturamento híbrido (SaaS + Equity 50%).</p>
+    </div>
+    <div class="grid cols-2">
+      <div class="card">
+        <h3>Arquitetura TCZ</h3>
+        <ul class="muted">
+          <li>Inferência local via <b>Ollama</b> — custo de token: <b>R$ 0,00</b>.</li>
+          <li>Métrica <code>ia4ia_cost_brl_total</code> em <code>/api/v1/metrics</code>.</li>
+          <li>Backend FastAPI: <code>POST /api/v1/ia_express/settle</code> incrementa <code>pvc_cycles_total</code> e assina <em>Schumacher</em>.</li>
+          <li>Prometheus coleta o backend; Grafana (ou ICC) exibe KPIs.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Pseudocódigo de Faturamento</h3>
+<pre><code># Entradas: service_tier, partnership (bool), order_value
+fee_brl = 0.00
+if service_tier == "PRO":
+    fee_brl += 20.00         # mensalidade base PRO
+    lucro_otimizado = 30.00  # valor por ordem
+    if partnership:          # Equity 50%
+        fee_brl += lucro_otimizado * 0.50   # +15.00
+
+# TCZ: custo de inferência permanece zero
+ia4ia_cost_brl_total += 0.00
+pvc_cycles_total     += 1
+sign = SignSchumacher(user, ts, hash(payload))
+return {"fee_total": fee_brl, "tcz": True, "signature": sign}</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <section id="roadmap"><div class="card"><h2 class="h2">Roadmap</h2><p class="muted">Fase I: Blindagem · Fase II: Validação Fática · Fase III: Go-Live.</p></div></section>
+  <section id="contato"><div class="card"><h2 class="h2">Contato</h2><p class="muted">contato@ia4ia.com</p></div></section>
+
+  <section id="ceo">
+    <div class="card" style="margin-bottom:14px">
+      <h2 class="h2">ICC: Interface de Comando Cognitivo (CEO BLINDADO)</h2>
+      <p class="muted">Custos TCZ, faturamento híbrido e mapa neural de operações. Acesso restrito.</p>
+    </div>
+
+    <div class="dash">
+      <div class="dash-left">
+        <div class="dash-title">CUSTO OPERACIONAL DE INFERÊNCIA</div>
+        <div class="dash-value green">R$ 0,00</div>
+        <div class="dash-sub">Prova do Multiplicador Cognitivo. Fato Auditável Prometheus.</div>
+
+        <div class="dash-title" style="margin-top:10px">FATURAMENTO HÍBRIDO MÍNIMO (MARGEM &gt;95%)</div>
+        <div class="dash-value yellow">R$ 1.359,25</div>
+        <div class="dash-sub">Fato irrefutável do Moat de Custo Zero (TCZ).</div>
+
+        <div class="brain">
+          <svg viewBox="0 0 400 220" role="img" aria-label="Cérebro holográfico">
+            <defs><radialGradient id="g" cx="50%" cy="50%" r="60%">
+              <stop offset="0%" stop-color="#00f7ff"/><stop offset="50%" stop-color="#0066aa"/><stop offset="100%" stop-color="#00141f"/>
+            </radialGradient></defs>
+            <ellipse cx="200" cy="110" rx="150" ry="80" fill="url(#g)" opacity=".86"/>
+            <circle cx="200" cy="110" r="12" fill="#00f7ff">
+              <animate attributeName="r" values="9;15;9" dur="2.8s" repeatCount="indefinite"/>
+            </circle>
+          </svg>
+        </div>
+      </div>
+
+      <div class="dash-right">
+        <div style="display:flex;flex-direction:column;gap:14px;width:100%">
+          <div class="thor-wrap">
+            <div class="thor" id="thor">
+              <img id="thorImg" alt="THORZINHO — Partícula Divina" src="thorzinho_holo.png"/>
+              <div class="holo-scan"></div>
+              <div class="holo-ring"></div>
+              <div class="sunglasses" id="sunglasses"></div>
+              <svg class="mouth" viewBox="0 0 120 50">
+                <path class="lip" d="M5,25 Q60,25 115,25"/>
+              </svg>
+            </div>
+            <div class="console">
+              <div class="row">
+                <span class="tag ok">THORZINHO • PD</span>
+                <span class="tag neu">Voz Masculina</span>
+                <span class="tag" id="modeTag">Modo: Normal</span>
+              </div>
+              <div class="row">
+                <select id="voiceLang">
+                  <option value="pt-BR">PT-BR</option>
+                  <option value="en-US">EN-US</option>
+                  <option value="fr-FR">FR-FR</option>
+                  <option value="es-ES">ES-ES</option>
+                  <option value="de-DE">DE-DE</option>
+                  <option value="it-IT">IT-IT</option>
+                </select>
+                <input id="ttsText" class="wide" placeholder='Diga: "Pai, o sistema está limpo..." ou ative com "Bora THOR!"'/>
+                <button class="btn" onclick="speakThor()">Falar</button>
+                <button class="btn" onclick="boraTHOR()">Bora THOR!</button>
+              </div>
+            </div>
+          </div>
+
+          <svg class="map" viewBox="0 0 680 260" aria-label="Mapa neural">
+            <circle cx="340" cy="120" r="90" fill="none" stroke="#00e8ff" stroke-width="2"/>
+            <text x="340" y="115" text-anchor="middle" font-size="20" font-weight="800">EEIAI™ — UNICÓRNIO</text>
+            <text x="340" y="135" text-anchor="middle" fill="#8fefff">INVERSOR DE CUSTO</text>
+
+            <line x1="430" y1="120" x2="560" y2="80" stroke="#7defff" stroke-width="2"/>
+            <rect x="560" y="64" rx="14" ry="14" width="100" height="32" fill="none" stroke="#ffd84d"/>
+            <text x="610" y="84" text-anchor="middle" fill="#ffd84d">FASE II • ATUAL</text>
+
+            <line x1="255" y1="165" x2="130" y2="200" stroke="#00f0ff" stroke-width="2"/>
+            <rect x="80" y="184" rx="14" ry="14" width="120" height="32" fill="none" stroke="#00e8ff"/>
+            <text x="140" y="204" text-anchor="middle">FASE I • Concluída</text>
+
+            <line x1="340" y1="210" x2="340" y2="250" stroke="#ff6b6b" stroke-width="2"/>
+            <rect x="285" y="250" rx="14" ry="14" width="110" height="32" fill="none" stroke="#ff6b6b"/>
+            <text x="340" y="271" text-anchor="middle" fill="#ff6b6b">FASE III • Go-Live</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+    <p class="small">Aba do CEO protegida por credencial. Alterar credenciais no bloco de script.</p>
+  </section>
+
+  <footer>© IA 4 IA™ — TCZ • Custo de Inferência: R$ 0,00</footer>
+</div>
+
+<div class="modal" id="loginModal" aria-hidden="true">
+  <div class="panel">
+    <h3>Área Restrita (CEO)</h3>
+    <p class="muted">Insira as credenciais para acessar a aba do CEO.</p>
+    <div class="line"><input id="user" placeholder="Usuário"/></div>
+    <div class="line"><input id="pass" placeholder="Senha" type="password"/></div>
+    <div class="line">
+      <button class="btn" onclick="doLogin()">Entrar</button>
+      <button class="btn" onclick="closeLogin()">Cancelar</button>
+    </div>
+    <p class="small">Dica: altere as credenciais no JavaScript (const AUTH).</p>
+  </div>
+</div>
+
+<script>
+/* ---------------- NAV ---------------- */
+document.querySelectorAll('.menu a').forEach(a=>{
+  a.addEventListener('click',e=>{
+    e.preventDefault();
+    const id=a.dataset.tab;
+    if(id==='ceo' && !window.__CEO_OK){openLogin();return;}
+    document.querySelectorAll('.menu a').forEach(n=>n.classList.toggle('active', n===a));
+    document.querySelectorAll('section').forEach(s=>s.classList.toggle('active', s.id===id));
+    history.replaceState({}, "", "#"+id);
+  });
+});
+const initial=(location.hash||'#home').slice(1);
+(document.querySelector(`.menu a[data-tab="${initial}"]`)||document.querySelector(`.menu a[data-tab="home"]`)).click();
+
+/* ---------------- HOME: Holograma parallax ---------------- */
+const orb=document.getElementById('orb'), holo=document.getElementById('holo');
+if(holo){
+  holo.addEventListener('mousemove',e=>{
+    const r=holo.getBoundingClientRect();
+    const x=(e.clientX-r.left)/r.width-.5, y=(e.clientY-r.top)/r.height-.5;
+    orb.style.transform=`translate(${x*18}px,${y*18}px) scale(1.05)`;
+  });
+  holo.addEventListener('mouseleave',()=>orb.style.transform='translate(0,0)');
+}
+
+/* ---------------- HOME: Chat Multilíngue (mock) ---------------- */
+const stream=document.getElementById('stream');
+function push(text, who='ia'){
+  const row=document.createElement('div'); row.className='msg '+(who==='you'?'you':'');
+  const b=document.createElement('div'); b.className='bubble'; b.textContent=text;
+  row.appendChild(b); stream.appendChild(row); stream.scrollTop=stream.scrollHeight;
+}
+function seed(){ if(!stream) return; stream.innerHTML=''; push('👋 Olá! Eu falo a sua língua. Pergunte qualquer coisa.', 'ia'); }
+function send(){
+  const inp=document.getElementById('input'); if(!inp) return;
+  const msg=inp.value.trim(); if(!msg) return;
+  const lang=document.getElementById('lang').value;
+  push(msg,'you'); inp.value='';
+  const replies={
+    "pt-BR":'Confirmado: TCZ em R$ 0,00 e faturamento híbrido ativo.',
+    "en-US":'Confirmed: TCZ at R$ 0.00 and hybrid revenue active.',
+    "es-ES":'Confirmado: TCZ en R$ 0,00 y facturación híbrida activa.',
+    "fr-FR":'Confirmé : TCZ à R$ 0,00 et revenu hybride actif.',
+    "de-DE":'Bestätigt: TCZ bei R$ 0,00 und hybrider Umsatz aktiv.',
+    "it-IT":'Confermato: TCZ a R$ 0,00 e ricavo ibrido attivo.',
+    "ja-JP":'確認: TCZ は R$ 0.00、ハイブリッド収益が有効です。',
+    "zh-CN":'已确认：TCZ 为 R$ 0.00，混合收入已激活。',
+    "ar-SA":'تم التأكيد: TCZ عند 0.00 ر.س والإيراد الهجين مفعل.',
+    "hi-IN":'पुष्ट: TCZ ₹0.00 पर और हाइब्रिड राजस्व सक्रिय।'
+  };
+  setTimeout(()=>push(replies[lang]||replies["pt-BR"],'ia'), 350);
+}
+seed();
+
+/* ---------------- LOGIN CEO ---------------- */
+const AUTH={user:"neo", pass:"schumacher"}; // <<< ALTERE AQUI
+const modal=document.getElementById('loginModal');
+function openLogin(){modal.classList.add('active');modal.setAttribute('aria-hidden','false')}
+function closeLogin(){modal.classList.remove('active');modal.setAttribute('aria-hidden','true')}
+function doLogin(){
+  const u=document.getElementById('user').value.trim();
+  const p=document.getElementById('pass').value;
+  if(u===AUTH.user && p===AUTH.pass){
+    window.__CEO_OK=true; closeLogin();
+    document.querySelector('.menu a[data-tab="ceo"]').click();
+  }else{
+    alert('Credenciais inválidas.')
+  }
+}
+
+/* ---------------- THORZINHO — Voz Masculina + Boca + Modo ---------------- */
+const thorEl=document.getElementById('thor');
+const sunglass=document.getElementById('sunglasses');
+const modeTag=document.getElementById('modeTag');
+const ttsInput=document.getElementById('ttsText');
+const voiceLang=document.getElementById('voiceLang');
+let voices=[], speaking=false, modeStrong=false;
+
+function loadVoices(){
+  voices=window.speechSynthesis.getVoices()||[];
+}
+loadVoices();
+window.speechSynthesis.onvoiceschanged=loadVoices;
+
+function pickMaleVoice(lang){
+  // Preferências masculinas por linguagem (ajuste se o navegador tiver vozes diferentes)
+  const prefer = {
+    "pt-BR":[/Microsoft (Eduardo|Daniel|Antonio)/i,/Brazilian Portuguese Male/i,/Male/i],
+    "en-US":[/Microsoft (Guy|Brandon|Christopher)/i,/Google UK English Male/i,/Male/i],
+    "fr-FR":[/Microsoft (Henri|Claude|Paul)/i,/French Male/i,/Male/i],
+    "es-ES":[/Microsoft (Alvaro|Diego)/i,/Spanish Male/i,/Male/i],
+    "de-DE":[/Microsoft (Conrad|Kasper)/i,/German Male/i,/Male/i],
+    "it-IT":[/Microsoft (Diego|Calimero)/i,/Italian Male/i,/Male/i]
+  }[lang] || [/Male/i];
+
+  // 1) male + lang match
+  for(const v of voices){ if(v.lang?.startsWith(lang) && prefer.some(r=>r.test(v.name))) return v; }
+  // 2) any male
+  for(const v of voices){ if(prefer.some(r=>r.test(v.name))) return v; }
+  // 3) any same lang
+  for(const v of voices){ if(v.lang?.startsWith(lang)) return v; }
+  // 4) fallback first
+  return voices[0];
+}
+
+function setTalking(on){
+  speaking=on;
+  thorEl.classList.toggle('talking', on);
+}
+
+function speakThor(){
+  const txt=(ttsInput.value||"Pai, o sistema está limpo e o universo está em ordem. Sobre o que você quer saber agora?").trim();
+  const lang=voiceLang.value;
+  const u=new SpeechSynthesisUtterance(txt);
+  const v=pickMaleVoice(lang);
+  if(v) u.voice=v;
+  // Timbre masculino (pitch baixo), mais firme no modo
+  u.lang=lang;
+  u.rate = modeStrong ? 1.15 : 1.02;
+  u.pitch= modeStrong ? 0.75 : 0.9;
+  u.volume=1.0;
+  u.onstart=()=>setTalking(true);
+  u.onend =()=>setTalking(false);
+  try{ window.speechSynthesis.cancel(); window.speechSynthesis.speak(u); }
+  catch(e){ console.warn(e) }
+}
+
+function boraTHOR(){
+  // Ativa "SchumacherAlemans": óculos + voz mais firme
+  modeStrong=true;
+  modeTag.textContent="Modo: SchumacherAlemans";
+  sunglass.style.display='block';
+  // feedback de ativação longo + opções
+  const options =
+  "Pai, o sistema está limpo e o universo está em ordem. " +
+  "Status: TCZ em R$ 0,00; Faturamento Híbrido mínimo em R$ 1.359,25; NEO Guard V15 ativo; TRC em 1.0x. " +
+  "Selecione um domínio: Produtos {IA Express, NEO Guard, Live Documents, LightSpots HoloAI, Live DNA Docs, OneClick App}, " +
+  "Empresa {Financeiro, Governança, Segurança, Engenharia}, ou Roadmap {Blindagem, Validação Fática, Go-Live}. Vamos pra cima!";
+  ttsInput.value = options;
+  speakThor();
+}
+
+/* ---------------- Boca animada: aplicar classe enquanto fala ---------------- */
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden) window.speechSynthesis.cancel();
+});
+
+/* -------------- Acesso direto por hash -------------- */
+if(location.hash==="#ceo"){ openLogin(); }
+</script>
+</body>
+</html>
