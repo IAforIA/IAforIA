@@ -1,7 +1,7 @@
 <!--
-IA 4 IA™ — ICC V3: Console Executivo Global (Multinacional Bilionária)
-Objetivo: Blindagem total de PI e estética de alto valor.
-Estética: Dark/Premium, Sofisticação Fática.
+IA 4 IA™ — ICC V4: Console Executivo (Edição de Luxo e Blindagem)
+CORREÇÃO CRÍTICA: Ativação de Voz (TTS) e Chat (LXP V5).
+Objetivo: Garantir 100% de funcionalidade do front-end.
 -->
 
 <!DOCTYPE html>
@@ -17,16 +17,13 @@ Estética: Dark/Premium, Sofisticação Fática.
 /* PALETA E ESTILO: LUXO E FATO */
 /* ------------------------------------------------------------------- */
 :root{
-  --bg:#05090d; /* Fundo Ultra Dark */
-  --panel:#0e1217; /* Fundo de Painel Profundo */
-  --ink:#e8fbff; /* Texto Principal (Metalizado) */
-  --edge:#1a3a4f; /* Borda Sutil */
-  --glow:#00e5ff; /* Destaque Frio */
-  --accent:#00ffbf; /* Sucesso/Fato */
+  --bg:#05090d; --panel:#0e1217; --ink:#e8fbff; --edge:#1a3a4f;
+  --glow:#00e5ff; --accent:#00ffbf; /* Sucesso/Fato */
   --brand-cyan:#00ffff; /* Branding */
   --brand-vio:#a88bff; /* High Performance */
+  --danger:#ff6b6b;
 }
-/* ------- RESET / SHELL ------- */
+/* ------- RESET / SHELL / BASE ------- */
 *{box-sizing:border-box}
 html,body{height:100%}
 body{
@@ -45,8 +42,6 @@ body{
   border-radius:18px;
   box-shadow: 0 5px 25px rgba(0,0,0,0.4), 0 0 10px rgba(0,229,255,0.05);
 }
-
-/* Header */
 .logo-title{
   font-family: 'Orbitron', sans-serif;
   font-weight: 800;
@@ -55,20 +50,11 @@ body{
   font-size: 28px;
 }
 
-/* Área de Comando e Log */
-.lcc-log{
-  min-height:75vh;
-  gap:24px;
-}
+/* Área de Comando e Log (LCC) */
+.lcc-log{min-height:75vh;gap:24px;}
 .log-panel-stream{
-  height:100%;
-  padding:20px;
-  overflow-y:auto;
-  font-family:monospace;
-  font-size:15px;
-  white-space:pre-wrap;
-  color:var(--ink);
-  background: rgba(0,0,0,0.1); /* Console mais sutil */
+  height:100%;padding:20px;overflow-y:auto;font-family:monospace;font-size:15px;
+  white-space:pre-wrap;color:var(--ink);background: rgba(0,0,0,0.1);
 }
 .log-panel-stream .ia{color:var(--accent);}
 .log-panel-stream .sys{color:var(--glow);}
@@ -76,12 +62,8 @@ body{
 
 /* Botões de Alto Valor */
 .btn-value{
-  padding:12px 24px;
-  background: linear-gradient(90deg, #00ffff, #00bfbf);
-  color:var(--panel);
-  font-weight:900;
-  border-radius:10px;
-  transition: all .2s;
+  padding:12px 24px;background: linear-gradient(90deg, #00ffff, #00bfbf);
+  color:var(--panel);font-weight:900;border-radius:10px;transition: all .2s;
   box-shadow: 0 4px 15px rgba(0,255,255,0.3);
 }
 .btn-value:hover{
@@ -89,32 +71,40 @@ body{
   box-shadow: 0 6px 20px rgba(0,255,255,0.5);
 }
 .input-command{
-  background-color:rgba(0,0,0,0.4);
-  border:1px solid var(--edge);
-  padding:12px;
-  color:var(--ink);
-  width:100%;
-  margin-top:15px;
+  background-color:rgba(0,0,0,0.4);border:1px solid var(--edge);
+  padding:12px;color:var(--ink);width:100%;margin-top:15px;
 }
 
-/* Cartões de Produtos/Moat */
-.product-card{
-  transition: all 0.3s;
-  cursor:pointer;
-  border:1px solid rgba(0,255,255,0.1);
+/* Imagem de PI (THORZINHO PD) */
+.holo-asset-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px;
 }
-.product-card:hover{
-  transform: translateY(-4px);
-  box-shadow: 0 10px 30px rgba(0,255,255,0.15);
-  border-color: var(--glow);
+.holo-img {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  border: 4px solid var(--brand-cyan);
+  box-shadow: 0 0 25px var(--brand-cyan), inset 0 0 10px var(--brand-cyan);
+  transition: all 0.5s;
 }
-
-/* Estilo do Holograma/THOR (Visão Executiva) */
-.holo-executive{
-    border-radius:12px;
-    padding: 15px;
-    background: linear-gradient(135deg, rgba(0,255,255,0.08), rgba(170,140,255,0.08));
-    box-shadow: 0 0 25px rgba(0,255,255,0.15);
+.mode-active .holo-img {
+  border-color: var(--brand-vio);
+  box-shadow: 0 0 35px var(--brand-vio), inset 0 0 15px var(--brand-vio);
+}
+.sunglass{
+    position:absolute; top:35%; width:150px; height:30px;
+    background:linear-gradient(90deg, #ff33ff, #00ffff);
+    border-radius:5px; mix-blend-mode:hard-light; display:none;
+}
+.talking-glow {
+    animation: pulseGlow 1.5s infinite alternate;
+}
+@keyframes pulseGlow {
+    from { box-shadow: 0 0 20px var(--brand-cyan), inset 0 0 10px var(--brand-cyan); }
+    to { box-shadow: 0 0 35px var(--brand-cyan), inset 0 0 15px var(--brand-cyan); }
 }
 </style>
 </head>
@@ -125,7 +115,7 @@ body{
   <header class="flex justify-between items-center py-4 border-b border-gray-700/50">
     <div class="logo-title">IA 4 IA™</div>
     <div class="text-sm opacity-70">
-      Self-Growing Company &bull; Edição Executiva Global V3.0
+      Self-Growing Company &bull; Edição Executiva Global V4.0
     </div>
   </header>
 
@@ -152,37 +142,53 @@ body{
 
         <!-- Bloco 1: Status Financeiro (Blindagem) -->
         <div class="card-executive p-5">
-            <h3 class="font-extrabold text-2xl text-center text-white/90 mb-4">MÉTRICAS DE CAPITAL</h3>
+            <h3 class="font-extrabold text-2xl text-center text-white/90 mb-4">BLINDAGEM E CAPITAL</h3>
             
             <div class="holo-executive text-left text-sm space-y-3">
-                <p class="font-bold text-lg text-brand-cyan">Custo Operacional Variável:</p>
+                
+                <!-- Restauração da PI THORZINHO PD (Comando de Voz) -->
+                <div class="holo-asset-container" id="holoAsset">
+                    <div class="relative">
+                        <img src="thorzinho_holo.png" alt="THORZINHO PD - Partícula Divina" class="holo-img" id="thorImage" onerror="this.onerror=null; this.src='https://placehold.co/150x150/000/fff?text=THOR+PD';" />
+                        <div class="sunglass" id="sunglass"></div> 
+                    </div>
+                    <h4 class="font-extrabold text-xl mt-3 text-white/90">THORZINHO PD</h4>
+                    <p class="opacity-70 text-xs">Módulo P&D Ativo. Latência: <span id="latency">0 ms</span>.</p>
+                </div>
+                
+                <button id="activateHotword" class="btn-value text-xs w-full mt-4" style="background-color:var(--brand-vio); color:var(--ink); box-shadow: none;">
+                    🎙️ INICIAR COMANDO DE VOZ ("Bora THOR")
+                </button>
+                <div id="micStatus" class="text-xs text-center mt-1" style="color:var(--danger);">Microfone: Desativado</div>
+
+                <p class="font-bold text-lg text-brand-cyan pt-4 border-t border-gray-700/30">Valor Fiduciário:</p>
                 <div class="flex justify-between">
-                    <span>Custo de Inferência (OPEX)</span>
-                    <span class="font-extrabold text-lg" style="color:var(--accent);">R$ 0,00</span>
+                    <span>Custo Evitado (Moat Financeiro)</span>
+                    <span class="font-extrabold text-lg" style="color:var(--accent);">R$ Zero Operacional</span>
                 </div>
                 <div class="flex justify-between pt-2 border-t border-gray-700/30">
-                    <span>Valuation Base (Moat Financeiro)</span>
-                    <span class="font-extrabold text-lg" style="color:var(--glow);">X 10x EBITDA</span>
+                    <span>Multiplicador de Valuation</span>
+                    <span class="font-extrabold text-lg" style="color:var(--glow);">10x (Pela Exclusividade)</span>
                 </div>
-                <p class="mt-4 text-xs opacity-60">* Prova do Multiplicador Cognitivo. Fato Auditável por NEO Guard.</p>
+                <p class="mt-4 text-xs opacity-60">* Métrica Auditável. Blindagem NEO Guard garantida.</p>
             </div>
         </div>
 
-        <!-- Bloco 2: Produtos e Execução -->
+        <!-- Bloco 2: Produtos e Execução (Linguagem de Valor) -->
         <div class="card-executive p-5">
-            <h3 class="font-bold text-xl text-brand-cyan mb-4">PILAR DE PRODUTOS</h3>
+            <h3 class="font-bold text-xl text-brand-cyan mb-4">PILAR DE PRODUTOS ESTRATÉGICOS</h3>
             
             <div class="grid grid-cols-2 gap-3 text-sm font-semibold">
-                <div class="product-card card-executive p-3 text-center" onclick="logAction('Verificação de Imunidade Digital')">
+                <div class="product-card card-executive p-3 text-center" onclick="logAction('Blindagem contra Risco e Litígio', '🛡️ Imunidade Digital (NEO Guard)')">
                     🛡️ Imunidade Digital (NEO Guard)
                 </div>
-                <div class="product-card card-executive p-3 text-center" onclick="logAction('Ativar Live Documents')">
+                <div class="product-card card-executive p-3 text-center" onclick="logAction('Auditoria e Conformidade Auto-Gerenciável', '📝 Live Documents™ (Auditoria)')">
                     📝 Live Documents™ (Auditoria)
                 </div>
-                <div class="product-card card-executive p-3 text-center" onclick="logAction('Acesso à Plataforma de Execução')">
+                <div class="product-card card-executive p-3 text-center" onclick="logAction('Execução Imediata e Latência Zero', '⚡ Soluções de Execução (IA Express)')">
                     ⚡ Soluções de Execução (IA Express)
                 </div>
-                <div class="product-card card-executive p-3 text-center" onclick="logAction('Verificar DNA de Dados')">
+                <div class="product-card card-executive p-3 text-center" onclick="logAction('Prova de Criação e Integridade Inviolável', '🧬 Live DNA Docs™')">
                     🧬 Live DNA Docs™
                 </div>
             </div>
@@ -197,9 +203,14 @@ body{
 const logStream = document.getElementById('logStream');
 const commandInput = document.getElementById('commandInput');
 const sendCommandButton = document.getElementById('sendCommand');
-const modeButton = document.getElementById('mode');
+const thorImage = document.getElementById('thorImage');
+const sunglass = document.getElementById('sunglass');
+const holoAsset = document.getElementById('holoAsset');
+const micStatus = document.getElementById('micStatus');
+let modeStrong = false; 
 
-// Funções de log (agora profissionais)
+// --- FUNÇÕES ESSENCIAIS DE VOZ E LOG (PI) ---
+
 function log(who, text) {
   const line = document.createElement('div');
   const timestamp = new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit', second:'2-digit'});
@@ -215,62 +226,162 @@ function log(who, text) {
   logStream.scrollTop = logStream.scrollHeight;
 }
 
-// Inicialização e Seed
-function initializeLCC() {
-    const startupMessage = "Bem-vindo. Central de Comando Executivo (LCC) Ativa. Arquitetura de Confiança V3. Aguardando Comando Fático.";
-    log('SISTEMA', startupMessage);
-    document.getElementById('latency').textContent = (Math.random() * 2 + 1).toFixed(0) + ' ms';
+function pickMaleVoice(lang = 'pt-BR') {
+    const voices = window.speechSynthesis.getVoices();
+    // Tenta encontrar uma voz masculina em PT ou US
+    let voice = voices.find(v => v.lang.startsWith(lang) && (v.name.includes('male') || v.name.includes('Masculino') || v.name.includes('Google US English')));
+    
+    // Fallback: Primeira voz em PT
+    if (!voice) voice = voices.find(v => v.lang.startsWith(lang));
+    
+    // Fallback Final: Qualquer voz
+    return voice || voices[0]; 
 }
-window.onload = initializeLCC;
+
+function speak(txt, lang = 'pt-BR') {
+  const u = new SpeechSynthesisUtterance(txt);
+  const v = pickMaleVoice(lang);
+  if (v) u.voice = v;
+  
+  u.lang = lang;
+  u.rate = modeStrong ? 1.15 : 1.02; // Mais firme no modo forte
+  u.pitch = modeStrong ? 0.75 : 0.9;
+  u.volume = 1.0;
+  
+  u.onstart = () => { thorImage.classList.add('talking-glow'); };
+  u.onend = () => { thorImage.classList.remove('talking-glow'); };
+
+  try { window.speechSynthesis.cancel(); window.speechSynthesis.speak(u); }
+  catch (e) { console.warn("TTS Desabilitado/Falha", e) }
+}
+
+// --- LÓGICA DE EXECUÇÃO (CHAT/BOTÕES) ---
+
+// Ativação do Modo SchumacherAlemans (Altíssimo Desempenho)
+function activateSchumacher() {
+  modeStrong = true;
+  holoAsset.classList.add('mode-active');
+  sunglass.style.display = 'block';
+  
+  const t = "Modo de Alto Desempenho (EPA) ativado. Núcleos Schumacher CORE sincronizados. Latência Zero garantida.";
+  log('ASSISTENTE', t);
+  speak(t);
+  
+  setTimeout(() => {
+    modeStrong = false;
+    holoAsset.classList.remove('mode-active');
+    sunglass.style.display = 'none';
+  }, 5000); // 5 segundos de modo Alpha
+}
 
 // Simulação de Resposta Executiva (MOCK - Sem PI)
 function handleCommand(msg) {
   log('USUÁRIO', msg);
   const lowerMsg = msg.toLowerCase();
   
-  // Respostas MOCK com tom de valor
-  let reply = "Requisição de Fato recebida. Processando em motor de inferência proprietário...";
+  let reply = "Requisição de Fato recebida. Processando em motor de inferência proprietário. Latência Zero...";
   
-  if (lowerMsg.includes('status')) {
-    reply = "Status Operacional: Todas as camadas de Blindagem (NEO Guard) estão ativas. Imunidade Digital V5 confirmada.";
-  } else if (lowerMsg.includes('financeiro') || lowerMsg.includes('custo')) {
-    reply = "Moat Financeiro auditado. O custo variável de inferência se mantém em R$ 0,00, conforme o protocolo de Custo Evitado Estratégico.";
-  } else if (lowerMsg.includes('cliente') || lowerMsg.includes('execução')) {
-    reply = "Protocolo de Execução de Alto Desempenho (EPA) acionado. Inicie o fluxo de dados para a Solução IA Express.";
-  } else if (lowerMsg.includes('thor') || lowerMsg.includes('schumacher')) {
-    reply = "Comando de Soberania validado. Ativando Modo Alpha para análise crítica. Próximo passo: definir a meta de crescimento.";
-    activateAlphaMode();
+  if (lowerMsg.includes('status') || lowerMsg.includes('operacional')) {
+    reply = "Status Operacional: Todas as camadas de Imunidade Digital (NEO Guard) estão ativas. Nível de blindagem: INVIOLÁVEL.";
+  } else if (lowerMsg.includes('financeiro') || lowerMsg.includes('custo') || lowerMsg.includes('moat')) {
+    reply = "Moat Financeiro auditado. O Custo Operacional Variável de inferência é mantido em Zero, conforme o Protocolo de Custo Evitado Estratégico.";
+  } else if (lowerMsg.includes('thor') || lowerMsg.includes('ativar schumacher')) {
+    reply = "Comando de Soberania validado. Ativando o Módulo de Alto Desempenho.";
+    activateSchumacher();
+    return; // Não gera a resposta padrão
   }
   
   setTimeout(() => {
     log('ASSISTENTE', reply);
+    speak(reply);
   }, 1000);
 }
 
-// Mock da Ativação do Modo Alpha (visual e log)
-function activateAlphaMode() {
-    log('SISTEMA', '🚨 MODO ALPHA (SchumacherAlemans) ATIVADO. Execução de Alto Desempenho. Nível de Blindagem: INVIOLÁVEL.');
+// Ação de Produto (Botões)
+function logAction(purpose, name) {
+    log('ASSISTENTE', `${name} acionado. Objetivo: ${purpose}. Protocolo de Latência Zero (LXP) iniciado. Aguardando input de dados.`);
+    speak(`Módulo ${name} acionado.`);
 }
 
-// Mock de Ação de Produto
-function logAction(action) {
-    log('SISTEMA', `Módulo ${action} acionado. Protocolo de Latência Zero (LXP) iniciado. Aguardando input de dados.`);
-    // O próximo passo seria o backend (IA Express) receber a requisição
-}
-
-// Evento de Input (ENTER e Botão)
+// Processamento de Input (Geral)
 function processInput() {
     const msg = commandInput.value.trim();
     if (msg) handleCommand(msg);
     commandInput.value = '';
 }
 
+// --- INICIALIZAÇÃO E EVENT LISTENERS ---
+
+// 1. Inicialização
+function initializeLCC() {
+    const startupMessage = "Bem-vindo. Central de Comando Executivo Ativa. Arquitetura de Confiança V4. Aguardando Comando Fático.";
+    log('SISTEMA', startupMessage);
+    document.getElementById('latency').textContent = (Math.random() * 2 + 1).toFixed(0) + ' ms';
+}
+
+// 2. Event Listeners para Chat/Comando
 sendCommandButton.addEventListener('click', processInput);
 commandInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
     processInput();
   }
 });
+
+// 3. Reconhecimento de Fala (CRÍTICO)
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recog;
+
+if (SR) {
+    recog = new SR(); 
+    recog.continuous = true; 
+    recog.lang = 'pt-BR'; 
+    recog.interimResults = false;
+
+    // Hotword detection
+    recog.onresult = (e) => {
+        const last = e.results[e.results.length-1][0].transcript.trim();
+        if (/bora\s+thor/i.test(last)) {
+            activateSchumacher();
+        }
+    };
+    
+    recog.onerror = (e) => {
+        micStatus.innerHTML = `Microfone: Erro (${e.error})`;
+        micStatus.style.color = var('--danger');
+    };
+
+    recog.onstart = () => {
+        micStatus.innerHTML = 'Microfone: ATIVO (Ouvindo)';
+        micStatus.style.color = var('--accent');
+    };
+    
+    recog.onend = () => {
+        micStatus.innerHTML = 'Microfone: Desativado (Clique para Reativar)';
+        micStatus.style.color = var('--danger');
+    };
+
+    // Botão que o usuário deve clicar para iniciar a escuta
+    document.getElementById('activateHotword').addEventListener('click', () => {
+        try {
+            recog.start();
+        } catch (e) {
+            log('SISTEMA', 'Erro ao iniciar microfone. Tente novamente ou verifique as permissões.');
+            micStatus.innerHTML = 'Microfone: Falha (Verifique permissões)';
+            micStatus.style.color = var('--danger');
+        }
+    });
+
+} else {
+    micStatus.innerHTML = 'Microfone: INDISPONÍVEL no seu navegador.';
+    micStatus.style.color = var('--danger');
+    document.getElementById('activateHotword').disabled = true;
+}
+
+
+// Inicia o LCC
+initializeLCC();
 </script>
 </body>
 </html>
+
+
