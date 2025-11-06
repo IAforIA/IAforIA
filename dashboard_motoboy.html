@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Guriri Express - Painel Tático Motoboy (ITM-V3.1)</title>
+<meta name="theme-color" content="#050505"/>
+<style>
+  /* ITM-V3.1: FOCO TÁTICO, COERÊNCIA ELITE E L-DOCS */
+  :root{
+    --bg:#050505; 
+    --card:#18181A; 
+    --ink:#FFFFFF; 
+    --muted:#888888; 
+    --edge:#333333; 
+    --glow:#00FFFF; /* Ciano Preditivo (GPS/Status) */
+    --brand:#0077FF; /* Comando Principal: Azul Elétrico */
+    --danger:#FF4400; /* Crítico/Atraso */
+    --ok:#00CC00; /* Sucesso/Rota Otimizada/L-Docs */
+    --warn:#FFC300; /* Atenção */
+    --fuchsia:#FF31FF;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+
+  body{
+    margin:0;
+    background-color:var(--bg);
+    color:var(--ink); 
+    font:400 16px/1.4 'Inter', 'Segoe UI', Arial, sans-serif;
+    padding:20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .shell{max-width:400px; width:100%;}
+  .header-info{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:10px 0; border-bottom:1px solid var(--edge);
+    margin-bottom:15px;
+  }
+  .header-info h1{
+    font-size:1.4em; margin:0; color:var(--glow);
+  }
+  .header-info .status-box{
+    font-size:0.9em; padding:5px 10px; border-radius:5px;
+    font-weight:bold;
+  }
+  .status-online{background:var(--ok); color:var(--bg);}
+  .status-offline{background:var(--danger); color:var(--ink);}
+
+  /* MAPA SIMULADO */
+  .map-simulacao{
+    background:var(--card); height:150px; border-radius:10px;
+    border:2px dashed var(--glow); position:relative;
+    display:flex; align-items:center; justify-content:center;
+    font-size:1.5em; font-weight:bold; color:var(--glow);
+    box-shadow:0 0 15px rgba(0,255,255,0.2);
+  }
+  .map-simulacao p{margin:0; text-align:center;}
+
+  /* MISSOES */
+  .missoes-container{
+    background:var(--card); border-radius:10px;
+    padding:15px; margin-top:15px;
+  }
+  .missoes-container h2{
+    font-size:1.1em; margin:0 0 10px 0; border-bottom:1px solid var(--edge); padding-bottom:5px;
+  }
+  .missao-item{
+    display:flex; align-items:center; margin-bottom:10px;
+    cursor:pointer; padding:8px; border-radius:5px;
+    transition:background 0.2s;
+  }
+  .missao-item:hover{background:rgba(0,119,255,0.1);}
+  .missao-status{
+    width:10px; height:10px; border-radius:50%; margin-right:10px;
+  }
+  .status-ativo{background:var(--glow); box-shadow:0 0 5px var(--glow);}
+  .status-pendente{background:var(--muted);}
+  .missao-detalhe strong{color:var(--ink); display:block;}
+  .missao-detalhe small{color:var(--muted); font-size:0.85em;}
+  
+  /* BOTOES TATICOS */
+  .btn-tatico{
+    width:100%; padding:15px; border:none; border-radius:10px;
+    font-weight:bold; cursor:pointer; margin-top:10px;
+    transition:transform 0.1s, box-shadow 0.2s;
+    color:var(--bg); /* Texto escuro no fundo colorido */
+    box-shadow:0 4px 10px rgba(0,0,0,0.4);
+  }
+  .btn-tatico:active{transform:translateY(2px);}
+  .muted{color:var(--muted);}
+
+/* === CHAT SLIDE-IN === */
+.chat-panel {
+  position:fixed;
+  right:18px;
+  bottom:18px;
+  width:360px;
+  max-height:78vh;
+  background:linear-gradient(180deg,#0b0b0d,#0b0b0f);
+  border:1px solid rgba(255,255,255,0.04);
+  border-radius:12px;
+  box-shadow:0 10px 40px rgba(0,0,0,0.7);
+  display:flex;
+  flex-direction:column;
+  transform:translateY(110%);
+  transition:transform .28s ease;
+  z-index:9999;
+  overflow:hidden;
+}
+.chat-panel.open { transform:translateY(0%); }
+.chat-panel .head {
+  padding:10px 12px;
+  background:linear-gradient(90deg,var(--fuchsia),var(--glow));
+  color:#000;
+  font-weight:700;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.chat-panel .body {
+  padding:10px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  flex:1;
+  overflow:auto;
+  background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+}
+.chat-row { display:flex; gap:8px; align-items:flex-end; }
+.msg-bot { background:#0d1b2a; color:var(--glow); padding:8px 10px; border-radius:10px; max-width:80%; }
+.msg-me { background:#0a1f15; color:var(--ok); padding:8px 10px; border-radius:10px; align-self:flex-end; max-width:80%; }
+.chat-input-row { display:flex; gap:8px; padding:8px; border-top:1px solid rgba(255,255,255,0.03); background:transparent; }
+.chat-input-row input { flex:1; padding:8px; border-radius:8px; border:1px solid rgba(255,255,255,0.03); background:#091015; color:var(--ink); }
+.chat-input-row button { padding:8px 12px; border-radius:8px; border:none; background:var(--fuchsia); color:#000; font-weight:700; cursor:pointer; }
+
+/* small toast */
+.toast {
+  position:fixed; left:50%; transform:translateX(-50%); bottom:110px; background:#121212; color:#fff; padding:8px 12px; border-radius:8px; box-shadow:0 6px 20px rgba(0,0,0,0.6); opacity:0; transition:opacity .25s;
+}
+.toast.show{ opacity:1; }
+</style>
+</head>
+<body>
+
+<div class="shell">
+    <div class="header-info">
+        <h1>ITM-V3.1 (Motoboy 07)</h1>
+        <div class="status-box status-online" id="global-status">
+            ONLINE (LXP)
+        </div>
+    </div>
+
+    <!-- MAPA / RASTREIO ATUAL -->
+    <div class="map-simulacao">
+        <p>ROTA OTIMIZADA PELA IA EXPRESS</p>
+    </div>
+
+    <!-- INFORMAÇÕES TÁTICAS DA MISSÃO ATIVA -->
+    <div class="missoes-container">
+        <h2 style="color:var(--brand);">MISSÃO ATIVA: ENTREGA #789</h2>
+        
+        <div class="missao-item" style="padding-left:0; background:rgba(0,119,255,0.1);">
+            <div class="missao-status status-ativo"></div>
+            <div class="missao-detalhe">
+                <strong>Entrega #789</strong> (R$ 5.00)
+                <small>CLIENTE: Farmácia Principal (COLETA)</small>
+                <small>DESTINO: R. das Flores, 123 - Centro (1.2 km)</small>
+            </div>
+        </div>
+
+        <div style="padding-top:10px; text-align:center;">
+             <p class="muted" style="margin:0; font-size:14px;">Próxima etapa: Coleta #790 (IA C9-AI)</p>
+        </div>
+    </div>
+    
+    <!-- CHAT TÁTICO -->
+    <button class="btn-tatico" id="open-chat" style="background:var(--fuchsia); color:var(--ink); margin-top:20px;">
+        CHAT TÁTICO &bull; CONTINGÊNCIA CENTRAL
+    </button>
+
+    <!-- LIVE DOCUMENTS -->
+    <button class="btn-tatico" style="background:var(--ok); font-size:18px; font-weight:900;" 
+            onclick="document.getElementById('live-documents-capture').click()">
+        ATIVAR LIVE DOCUMENTS (COLETAR & COMPROVAR)
+    </button>
+    <!-- O input oculto simula a câmera/upload -->
+    <input type="file" id="live-documents-capture" accept="image/*" capture="environment" style="display:none;">
+    
+    <p class="muted" style="text-align:center; font-size:12px; margin-top:5px; margin-bottom:15px;">
+        Início dos Docs Criptografados e Catalogados &bull; Transmissão Fática Imediata.
+    </p>
+
+    <button class="btn-tatico" id="next-mission" style="background:var(--brand);">
+        NAVEGAR PARA PRÓXIMA MISSÃO
+    </button>
+
+</div>
+
+<!-- CHAT SLIDE-IN PANEL (embedded, not popup) -->
+<div id="chatPanel" class="chat-panel" aria-hidden="true">
+  <div class="head">
+    <div>CHAT TÁTICO — MOTOboy 07</div>
+    <div style="font-size:12px;opacity:.9" id="chatStatus">conectando...</div>
+  </div>
+  <div class="body" id="chatBody" role="log" aria-live="polite"></div>
+  <div class="chat-input-row">
+    <input id="chatText" placeholder="Mensagem para Central / THOR..." />
+    <button id="sendChatBtn">ENVIAR</button>
+  </div>
+</div>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script>
+/*
+  Final motoboy panel script:
+  - preserves layout and text exactly
+  - adds embedded slide-in chat (no popups)
+  - WebSocket connection to /ws/motoboy_07
+  - Live-Docs upload with GPS + offline queue + automatic retry
+  - lightweight toast notifications
+  - non-destructive: does not modify existing DOM elements' structure or text
+*/
+
+/* ===== CONFIG ===== */
+let MOTOBOY_ID = 'motoboy_07';
+function extractOrderId() {
+  try {
+    const h2 = document.querySelector('.missoes-container h2');
+    if (!h2) return 'order_unknown';
+    const m = h2.textContent.match(/ENTREGA\s*#?(\d+)/i);
+    return m ? 'order_' + m[1] : 'order_unknown';
+  } catch (e){ return 'order_unknown'; }
+}
+const ORDER_ID = extractOrderId();
+
+/* ===== UI HELPERS ===== */
+const statusBox = document.getElementById('global-status');
+function setStatus(text, cls) {
+  statusBox.textContent = text;
+  statusBox.className = 'status-box ' + (cls || '');
+}
+function toast(msg, timeout=2500){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=> t.classList.remove('show'), timeout);
+}
+
+/* ===== CHAT PANEL ===== */
+const chatPanel = document.getElementById('chatPanel');
+const chatBody = document.getElementById('chatBody');
+const chatStatus = document.getElementById('chatStatus');
+document.getElementById('open-chat').addEventListener('click', () => {
+  chatPanel.classList.toggle('open');
+  chatPanel.setAttribute('aria-hidden', chatPanel.classList.contains('open') ? 'false' : 'true');
+});
+
+/* append message (keeps layout identical style) */
+function appendChat(text, who='bot') {
+  const d = document.createElement('div');
+  d.className = who === 'me' ? 'msg-me' : 'msg-bot';
+  d.textContent = text;
+  chatBody.appendChild(d);
+  chatBody.scrollTop = chatBody.scrollHeight;
+}
+
+/* send button */
+document.getElementById('sendChatBtn').addEventListener('click', sendChatFromInput);
+document.getElementById('chatText').addEventListener('keypress', (e)=>{ if(e.key==='Enter') sendChatFromInput(); });
+
+function sendChatFromInput(){
+  const inp = document.getElementById('chatText');
+  const txt = inp.value.trim();
+  if(!txt) return;
+  appendChat('Você: ' + txt, 'me');
+  inp.value = '';
+  // send via WS if available, else queue to localStorage (chat queue)
+  const m = { type:'chat', payload:{ from: MOTOBOY_ID, to:'central', text: txt, order_id: ORDER_ID, ts:new Date().toISOString() } };
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify(m));
+  } else {
+    queueChatMessage(m);
+    toast('Conexão offline — mensagem enfileirada');
+  }
+}
+
+/* ===== WEBSOCKET (chat & realtime) ===== */
+let ws = null;
+let wsBackoff = 1000;
+let wsUrl = null;
+
+function buildWsUrl(){
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  // connect to path /ws/{user}
+  wsUrl = `${proto}://${location.host}/ws/${MOTOBOY_ID}`;
+  return wsUrl;
+}
+
+async function connectWS(){
+  // ensure auth and attach token to WS url
+  const defaultId = MOTOBOY_ID;
+  let access = localStorage.getItem('guriri_access');
+  let refresh = localStorage.getItem('guriri_refresh');
+  let uid = localStorage.getItem('guriri_user') || defaultId;
+  if(!access){
+    uid = prompt('Motoboy ID:', defaultId) || defaultId;
+    const pwd = prompt('Senha para ' + uid + ':');
+    if(!pwd){ alert('Autenticação necessária'); throw new Error('no password'); }
+    const res = await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:uid,password:pwd})});
+    if(!res.ok){ alert('Falha ao autenticar'); throw new Error('auth failed'); }
+    const j = await res.json(); access = j.access_token; refresh = j.refresh_token; localStorage.setItem('guriri_access', access); localStorage.setItem('guriri_refresh', refresh); localStorage.setItem('guriri_user', j.id);
+  }
+  MOTOBOY_ID = uid;
+  const url = buildWsUrl() + '?token=' + encodeURIComponent(access || '');
+  try {
+    ws = new WebSocket(url);
+  } catch (e){
+    console.warn('WS connect error', e);
+    scheduleReconnect();
+    setStatus('OFFLINE (WS)','status-offline');
+    chatStatus.textContent = 'offline';
+    return;
+  }
+
+  ws.onopen = ()=> {
+    wsBackoff = 1000;
+    setStatus('ONLINE (LXP)','status-online');
+    chatStatus.textContent = 'online';
+    toast('Conectado ao servidor');
+    // flush any queued live docs and chat messages
+    triggerSync();
+    flushChatQueue();
+  };
+
+  ws.onmessage = (ev) => {
+    try {
+      const msg = JSON.parse(ev.data);
+      if(msg.type === 'chat'){
+        const text = (msg.payload && msg.payload.text) ? `${msg.payload.from || 'Central'}: ${msg.payload.text}` : JSON.stringify(msg.payload || msg);
+        appendChat(text, 'bot');
+      } else if (msg.type === 'new_pedido'){
+        const p = msg.payload || {};
+        appendChat(`Novo pedido ${p.id} • R$ ${p.valor?.toFixed ? p.valor.toFixed(2) : p.valor} • Pagamento: ${p.payment_method || 'N/A'}`,'bot');
+      } else if (msg.type === 'order_update'){
+        appendChat('Atualização: ' + (msg.payload.text || JSON.stringify(msg.payload)), 'bot');
+      } else if (msg.type === 'live_doc_uploaded'){
+        appendChat('LiveDocs confirmado: ' + (msg.payload.file || msg.payload.path || ''), 'bot');
+        toast('LiveDocs enviado');
+      } else {
+        // generic
+        appendChat('MSG: ' + JSON.stringify(msg), 'bot');
+      }
+    } catch (e) { console.warn('ws msg parse err', e); }
+  };
+
+  ws.onclose = ()=> {
+    setStatus('OFFLINE (WS)','status-offline');
+    chatStatus.textContent = 'offline';
+    scheduleReconnect();
+  };
+
+  ws.onerror = (err)=> {
+    console.warn('ws err', err);
+    // close to trigger reconnect sequence
+    try { ws.close(); } catch(e){}
+  };
+}
+
+function scheduleReconnect(){
+  setTimeout(()=> {
+    wsBackoff = Math.min(Math.floor(wsBackoff * 1.5), 60000);
+    connectWS();
+  }, wsBackoff);
+}
+
+/* ===== CHAT QUEUE (for offline) ===== */
+const CHAT_QUEUE_KEY = 'guriri_chat_queue_v1';
+function queueChatMessage(msg){
+  const q = JSON.parse(localStorage.getItem(CHAT_QUEUE_KEY) || '[]');
+  q.push(msg);
+  localStorage.setItem(CHAT_QUEUE_KEY, JSON.stringify(q));
+}
+function flushChatQueue(){
+  const q = JSON.parse(localStorage.getItem(CHAT_QUEUE_KEY) || '[]');
+  if(!q.length) return;
+  if(!(ws && ws.readyState === WebSocket.OPEN)) return;
+  // send all in order
+  while(q.length){
+    const m = q.shift();
+    ws.send(JSON.stringify(m));
+  }
+  localStorage.setItem(CHAT_QUEUE_KEY, JSON.stringify([]));
+  toast('Mensagens enfileiradas enviadas');
+}
+
+/* ===== LIVE DOCS (upload) ===== */
+const QUEUE_KEY = 'ldocs_queue_v1';
+
+function enqueueLiveDoc(payload) {
+  const q = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
+  q.push(payload);
+  localStorage.setItem(QUEUE_KEY, JSON.stringify(q));
+  triggerSync();
+}
+
+async function triggerSync() {
+  if (!navigator.onLine) {
+    setStatus('OFFLINE (QUEUE)', 'status-offline');
+    return;
+  }
+  const q = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
+  if (!q.length) return;
+  setStatus('SYNCING L-DOCS...', '');
+  for (let i = 0; i < q.length; i++){
+    const item = q[i];
+    try {
+      await sendLiveDocToServer(item);
+      // remove first
+      const newQ = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
+      newQ.shift();
+      localStorage.setItem(QUEUE_KEY, JSON.stringify(newQ));
+    } catch (e) {
+      console.warn('sync failed for item', e);
+      setStatus('SYNC FAILED, RETRYING', 'status-offline');
+      break;
+    }
+  }
+  if((JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]')).length === 0){
+    setStatus('ONLINE (LXP)', 'status-online');
+  }
+}
+
+/* convert base64 to blob */
+function base64ToBlob(base64, mime) {
+  const binStr = atob((base64.split(',')[1] || base64));
+  const len = binStr.length;
+  const arr = new Uint8Array(len);
+  for (let i=0;i<len;i++) arr[i] = binStr.charCodeAt(i);
+  return new Blob([arr], { type: mime || 'image/jpeg' });
+}
+
+/* send live doc to server (multipart) */
+async function sendLiveDocToServer(item) {
+  const blob = base64ToBlob(item.file_b64, item.mime);
+  const fd = new FormData();
+  fd.append('order_id', item.order_id);
+  fd.append('motoboy', item.motoboy);
+  fd.append('file', blob, item.filename);
+  if(item.coords){
+    fd.append('lat', String(item.coords.lat));
+    fd.append('lon', String(item.coords.lon));
+  }
+  // call backend endpoint
+  const res = await fetch('/api/upload', { method:'POST', body: fd });
+  if(!res.ok) throw new Error('upload failed ' + res.status);
+  const j = await res.json();
+  // notify via ws
+  if(ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type:'live_doc_uploaded', payload: { order_id: item.order_id, file: j.path || item.filename } }));
+  }
+  return j;
+}
+
+/* ===== GEO & file input handling ===== */
+function getCoords(timeout = 8000){
+  return new Promise((resolve) => {
+    if(!navigator.geolocation) return resolve(null);
+    let done = false;
+    const timer = setTimeout(()=>{ if(!done){ done=true; resolve(null); } }, timeout);
+    navigator.geolocation.getCurrentPosition((pos)=> {
+      if(done) return;
+      done = true; clearTimeout(timer);
+      resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude, accuracy: pos.coords.accuracy });
+    }, (err)=> {
+      if(done) return;
+      done = true; clearTimeout(timer);
+      resolve(null);
+    }, { enableHighAccuracy: true, maximumAge:5000, timeout });
+  });
+}
+
+document.getElementById('live-documents-capture').addEventListener('change', async function(e){
+  const f = e.target.files[0];
+  if(!f) return;
+  setStatus('PROCESSANDO L-DOC...', '');
+  const coords = await getCoords(7000);
+  const reader = new FileReader();
+  reader.onload = async function(){
+    const file_b64 = reader.result;
+    const payload = {
+      temp_id: 't_' + Date.now() + '_' + Math.random().toString(36).slice(2,9),
+      order_id: ORDER_ID,
+      motoboy: MOTOBOY_ID,
+      filename: f.name,
+      mime: f.type || 'image/jpeg',
+      file_b64: file_b64,
+      coords: coords,
+      ts: new Date().toISOString()
+    };
+    if(navigator.onLine){
+      try {
+        setStatus('ENVIANDO L-DOC...', '');
+        await sendLiveDocToServer(payload);
+        setStatus('LIVE DOCS ENVIADO', 'status-online');
+        appendChat('LiveDocs enviado (auto)', 'me');
+        toast('LiveDocs enviado');
+      } catch (err) {
+        console.warn('Envio falhou, enfileirando', err);
+        enqueueLiveDoc(payload);
+        setStatus('ENFILEIRADO (OFFLINE)', 'status-offline');
+        appendChat('LiveDocs enfileirado (envio falhou)', 'me');
+      }
+    } else {
+      enqueueLiveDoc(payload);
+      setStatus('ENFILEIRADO (OFFLINE)', 'status-offline');
+      appendChat('LiveDocs enfileirado (offline)', 'me');
+    }
+  };
+  reader.readAsDataURL(f);
+});
+
+/* ===== ONLINE/OFFLINE events ===== */
+window.addEventListener('online', ()=> {
+  setStatus('ONLINE (LXP)', 'status-online');
+  triggerSync();
+  connectWS(); // attempt reconnect
+});
+window.addEventListener('offline', ()=> {
+  setStatus('OFFLINE (NETWORK)', 'status-offline');
+});
+
+/* ===== INIT ===== */
+setStatus('CONNECTING...', '');
+appendChat('Sistema pronto. Abra o chat para comunicar com a Central / THOR.', 'bot');
+connectWS();
+setTimeout(triggerSync, 1500);
+
+/* ===== debug helper ===== */
+function queueLog(k, v){ console.log('L-DOC LOG', k, v); }
+</script>
+</body>
+</html>

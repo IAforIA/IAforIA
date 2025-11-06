@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+httpx
+aiofiles
+python-multipart
+aiosqlite
+PyJWT
+websockets

@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Guriri Express Central - Dashboard Fático (CEO)</title>
+<style>
+  /* Base Style from IA 4 IA™ */
+  :root{
+    --bg:#080b0f;--card:#0d1217;--ink:#e8fbff;--muted:#a8c8d0;
+    --edge:#00e5ff33;--glow:#00e5ff;--ok:#00ffbf;--warn:#ffd84d;--danger:#ff6b6b;
+    --brand:#8cf7ff;--accent:#2fffd3;--vio:#a88bff;--fuchsia:#ff31ff;--cyan:#00ffff;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;background:radial-gradient(1200px 900px at 50% 0%,#0b151d 0%, var(--bg) 45%) fixed;
+    color:var(--ink); font:16px/1.45 Inter, system-ui,Segoe UI,Roboto,Arial;
+  }
+  .shell{max-width:1280px;margin:18px auto;padding:0 18px}
+  .card{
+    background:linear-gradient(180deg,#0d141a,#0a1014);border:1px solid var(--edge);border-radius:12px;
+    padding:15px;box-shadow:0 4px 10px rgba(0,0,0,.3); margin-bottom:20px;
+  }
+  .grid-container{
+    display:grid;gap:20px;
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 1024px){
+    .grid-container{grid-template-columns: 350px 1fr 300px;}
+  }
+
+  /* KPIs */
+  .kpi-box{
+    padding:15px; border-radius:8px; margin-bottom:10px;
+    border-left:5px solid var(--accent);
+    background:rgba(0,0,0,0.15);
+  }
+  .kpi-label{font-size:0.9em; color:var(--muted);}
+  .kpi-value{font-size:1.8em; font-weight:bold; margin-top:5px;}
+
+  /* TABELA OPERACIONAL */
+  .op-table{width:100%; border-collapse:collapse; font-size:0.95em;}
+  .op-table th, .op-table td{padding:10px; text-align:left; border-bottom:1px solid var(--edge);}
+  .op-table th{color:var(--cyan); font-weight:normal; border-top:1px solid var(--edge);}
+  .badge{padding:3px 8px; border-radius:15px; font-size:0.8em; font-weight:bold;}
+  .badge.ok{background:var(--ok); color:var(--bg);}
+  .badge.warn{background:var(--warn); color:var(--bg);}
+  .badge.danger{background:var(--danger); color:var(--ink);}
+
+  /* CHAT/LOG CENTRAL */
+  .chat-log{height:300px; overflow-y:auto; background:rgba(0,0,0,0.2); padding:10px; border-radius:8px; display:flex; flex-direction:column;}
+  .chat-log p{margin:5px 0; padding:8px 12px; border-radius:10px; max-width:90%; word-wrap:break-word;}
+  .chat-log .system{background:#153042; color:var(--cyan); align-self:flex-start;}
+  .chat-log .ceo{background:#450045; color:var(--ink); align-self:flex-end;}
+
+  /* Campo de envio (novo) */
+  .chat-input{
+    margin-top:10px; display:flex; border-top:1px solid var(--edge); padding-top:10px;
+  }
+  .chat-input input{
+    flex:1; background:#0c141a; border:1px solid var(--edge); border-radius:8px;
+    padding:10px; color:var(--ink); outline:none;
+  }
+  .chat-input button{
+    background:var(--fuchsia); color:var(--ink); border:none; border-radius:8px;
+    padding:10px 16px; margin-left:8px; cursor:pointer; font-weight:bold;
+    transition:0.2s;
+  }
+  .chat-input button:hover{
+    background:var(--vio); transform:scale(1.05);
+  }
+
+  /* LISTA MOTOBOY */
+  .motoboy-item{
+    padding:10px; border-bottom:1px solid var(--edge); cursor:pointer;
+    display:flex; justify-content:space-between; align-items:center;
+  }
+  .motoboy-item:hover{background:rgba(255,255,255,0.05);}
+  .motoboy-item.selected{border-left:5px solid var(--fuchsia);}
+  .status-dot{width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:5px;}
+  .online{background:var(--ok);}
+  .offline{background:var(--danger);}
+</style>
+</head>
+<body>
+
+<div class="shell">
+    <div style="font-size:24px; font-weight:900; color:var(--cyan); margin-bottom:20px;">
+        GURIRI EXPRESS CENTRAL &bull; ICC (CEO)
+    </div>
+
+    <div class="grid-container">
+
+        <!-- 1. PAINEL DE COMANDO/KPIS TCZ -->
+        <div>
+            <div class="card">
+                <h2 style="margin-top:0; color:var(--ok);">KPIS TCZ & LATÊNCIA FÁTICA</h2>
+                
+                <div class="kpi-box" style="border-color:var(--ok);">
+                    <div class="kpi-label">CUSTO DE INFERÊNCIA/REQ</div>
+                    <div class="kpi-value" style="color:var(--ok);">R$ 0,00</div>
+                    <small style="color:var(--cyan);">TCZ Verificado. ZERO OPEX.</small>
+                </div>
+
+                <div class="kpi-box" style="border-color:var(--fuchsia);">
+                    <div class="kpi-label">LATÊNCIA MÉDIA (LMIC)</div>
+                    <div class="kpi-value" style="color:var(--fuchsia);">4.9 ms</div>
+                    <small style="color:var(--cyan);">Meta (< 5ms) atingida. LXP Ativo.</small>
+                </div>
+                
+                <div class="kpi-box" style="border-color:var(--warn);">
+                    <div class="kpi-label">ÍNDICE DE CONTINGÊNCIA (NEO GUARD)</div>
+                    <div class="kpi-value" style="color:var(--warn);">1.2%</div>
+                    <small style="color:var(--warn);">Baixa. 2 re-roteamentos automáticos (Acidente/Desvio).</small>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-top:0; color:var(--brand);">ALERTAS E EVENTOS TCZ</h3>
+                <div style="font-size:14px; color:var(--muted);">
+                    <p style="color:var(--ok);">✅ **18:35:** Agente DDNS TCZ Concluído (IP Sincronizado).</p>
+                    <p style="color:var(--warn);">⚠️ **18:30:** Motoboy (05) desviou 500m da rota ideal (Reajuste IA EXPRESS).</p>
+                    <p style="color:var(--danger);">🛑 **17:58:** Falha de comunicação GPS (02). IA reencaminhou pacote de dados.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. PAINEL CENTRAL (OPERAÇÕES E LOG) -->
+        <div>
+            <div class="card" style="min-height:500px;">
+                <h2 style="margin-top:0; color:var(--cyan);">OPERAÇÕES EM TEMPO REAL</h2>
+                <div class="chat-log" id="log-central">
+                    <p class="system">🤖 **THOR:** Sistema de Comando ativado. Status de contingência: ON. Esperando novos pedidos B2B.</p>
+                </div>
+
+                <!-- Campo de chat visível -->
+                <div class="chat-input">
+                    <input id="chatMessage" placeholder="Digite uma mensagem ao THOR ou Motoboy..." />
+                    <button id="sendBtn">Enviar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. GESTÃO DE AGENTES/MOTOBOYS -->
+        <div>
+            <div class="card">
+                <h2 style="margin-top:0; color:var(--fuchsia);">GESTÃO DE MOTOBOYS (8 ATIVOS)</h2>
+                <div id="motoboy-list">
+                    <div class="motoboy-item" onclick="selectAgent('Matheus (05)', 'warn')">
+                        <span><span class="status-dot online"></span> Matheus (05)</span>
+                        <span style="font-size:12px; color:var(--warn);">⚠️ Alerta (Re-Roteado)</span>
+                    </div>
+                    <div class="motoboy-item" onclick="selectAgent('Fernando (02)', 'ok')">
+                        <span><span class="status-dot online"></span> Fernando (02)</span>
+                        <span style="font-size:12px; color:var(--ok);">Em Entrega Final</span>
+                    </div>
+                     <div class="motoboy-item" onclick="selectAgent('Rafael (07)', 'offline')">
+                        <span><span class="status-dot offline"></span> Rafael (07)</span>
+                        <span style="font-size:12px; color:var(--danger);">Offline (Acidente Simulado)</span>
+                    </div>
+                    <div class="motoboy-item" onclick="selectAgent('Daniel (01)', 'ok')">
+                        <span><span class="status-dot online"></span> Daniel (01)</span>
+                        <span style="font-size:12px; color:var(--ok);">Livre/Pronto</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-top:0; color:var(--vio);">COMANDO DE EMERGÊNCIA</h3>
+                <button onclick="emergencyScale()" style="width:100%; padding:10px; background:var(--vio); color:var(--ink); border:none; border-radius:8px; font-weight:bold;">
+                    ATIVAR ESCALA AUTOMÁTICA (HOT-SWAP)
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+/*
+  Script adicionado:
+  - WebSocket robusto com reconexão exponencial
+  - Enfileiramento local de mensagens (localStorage) enquanto offline
+  - Recebimento de mensagens e logs para exibir no chat-log
+  - Envio de mensagens do CEO -> envia JSON { type: 'chat', payload: { from: 'central', to: 'all'|'motoboy:ID'|'client:ID', text } }
+  - NÃO altera layout nem elementos visuais originais
+*/
+
+const WS_PATH = '/ws/central';       // endpoint WS esperado no backend
+const OUTBOX_KEY = 'central_outbox'; // mensagens pendentes quando offline
+let ws = null;
+let reconnectMs = 1000;
+let wsConnected = false;
+
+// DOM
+const logEl = document.getElementById('log-central');
+const inputEl = document.getElementById('chatMessage');
+const sendBtn = document.getElementById('sendBtn');
+
+// Adiciona mensagem no painel (mantém classes .system ou .ceo)
+function addCentralLog(text, type='system') {
+    const p = document.createElement('p');
+    p.className = type === 'ceo' ? 'ceo' : 'system';
+    p.textContent = text;
+    logEl.appendChild(p);
+    logEl.scrollTop = logEl.scrollHeight;
+}
+
+// Constrói e mostra mensagem recebida via WS
+function handleIncoming(msg) {
+    // msg: { type, payload }
+    try {
+        if (!msg || !msg.type) return;
+        if (msg.type === 'chat') {
+            const from = (msg.payload && msg.payload.from) ? msg.payload.from : 'unknown';
+            const text = (msg.payload && msg.payload.text) ? msg.payload.text : JSON.stringify(msg.payload || {});
+            // se for central-originado, mostra como ceo; senão system
+            const cls = (from === 'central' || from === 'CEO') ? 'ceo' : 'system';
+            addCentralLog(`${from}: ${text}`, cls);
+        } else if (msg.type === 'new_pedido') {
+            const p = msg.payload || {};
+            addCentralLog(`📦 Novo pedido ${p.id} • R$ ${p.valor?.toFixed ? p.valor.toFixed(2) : p.valor} • Pagamento: ${p.payment_method || 'N/A'} • CEP: ${p.cep || ''} • Ref: ${p.reference || ''}`, 'system');
+        } else if (msg.type === 'log' || msg.type === 'event') {
+            const txt = msg.payload && (msg.payload.text || msg.payload.message) ? (msg.payload.text || msg.payload.message) : JSON.stringify(msg.payload || {});
+            addCentralLog(`🛈 ${txt}`, 'system');
+        } else {
+            addCentralLog(`RAW ${msg.type}: ${JSON.stringify(msg.payload || {})}`, 'system');
+        }
+    } catch(e){ console.warn('handleIncoming error', e); }
+}
+
+// WS connect with backoff
+async function connectWS(){
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    // prompt for central credentials if access token not present (development flow)
+    let access = localStorage.getItem('guriri_access');
+    let refresh = localStorage.getItem('guriri_refresh');
+    let uid = localStorage.getItem('guriri_user') || 'central';
+    if(!access){
+        uid = prompt('Central id (default: central):','central') || 'central';
+        const pwd = prompt('Senha para ' + uid + ':');
+        if(!pwd){ alert('Autenticação necessária'); }
+        try{
+            const res = await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:uid,password:pwd})});
+            if(res.ok){ const j = await res.json(); access = j.access_token; refresh = j.refresh_token; localStorage.setItem('guriri_access', access); localStorage.setItem('guriri_refresh', refresh); localStorage.setItem('guriri_user', j.id); }
+        }catch(e){ console.warn('central auth failed', e); }
+    }
+    const url = `${proto}://${location.host}${WS_PATH}` + (access ? ('?token=' + encodeURIComponent(access)) : '');
+    try {
+        ws = new WebSocket(url);
+    } catch(e) {
+        scheduleReconnect();
+        return;
+    }
+
+    ws.addEventListener('open', () => {
+        wsConnected = true;
+        reconnectMs = 1000;
+        addCentralLog('🤝 Conectado ao servidor de tempo real (WS).', 'system');
+        // flush outbox
+        flushOutbox();
+    });
+
+    ws.addEventListener('message', (ev) => {
+        try {
+            const data = JSON.parse(ev.data);
+            handleIncoming(data);
+        } catch (err) {
+            addCentralLog('⚠️ Mensagem WS inválida recebida', 'system');
+            console.warn('ws parse err', err, ev.data);
+        }
+    });
+
+    ws.addEventListener('close', () => {
+        wsConnected = false;
+        addCentralLog('🔌 Conexão WS fechada. Reconectando...', 'system');
+        scheduleReconnect();
+    });
+
+    ws.addEventListener('error', (err) => {
+        console.warn('WS error', err);
+        wsConnected = false;
+        try { ws.close(); } catch(e){}
+    });
+}
+
+function scheduleReconnect(){
+    setTimeout(()=> {
+        reconnectMs = Math.min(60000, Math.floor(reconnectMs * 1.5));
+        connectWS();
+    }, reconnectMs);
+}
+
+// Outbox (localStorage) para mensagens enquanto offline
+function getOutbox(){ return JSON.parse(localStorage.getItem(OUTBOX_KEY) || '[]'); }
+function pushOutbox(item){
+    const q = getOutbox();
+    q.push(item);
+    localStorage.setItem(OUTBOX_KEY, JSON.stringify(q));
+}
+function flushOutbox(){
+    if (!wsConnected) return;
+    const q = getOutbox();
+    if (!q.length) return;
+    // enviar em ordem
+    (async () => {
+        while (q.length > 0) {
+            const item = q.shift();
+            try {
+                ws.send(JSON.stringify(item));
+                // remove primeiro
+                localStorage.setItem(OUTBOX_KEY, JSON.stringify(q));
+                addCentralLog('📤 Mensagem enviada (fila): ' + (item.payload && item.payload.text ? item.payload.text : JSON.stringify(item)), 'system');
+                await new Promise(r => setTimeout(r, 120)); // tiny gap
+            } catch(err){
+                // volta para o localStorage e sai
+                q.unshift(item);
+                localStorage.setItem(OUTBOX_KEY, JSON.stringify(q));
+                break;
+            }
+        }
+    })();
+}
+
+// Envio de mensagem (do input)
+function sendMessage(){
+    const text = inputEl.value.trim();
+    if (!text) return;
+    const pkg = { type: 'chat', payload: { from: 'central', to: 'all', text: text, ts: new Date().toISOString() } };
+    // mostra localmente como CEO
+    addCentralLog(`👨‍💼 CEO: ${text}`, 'ceo');
+    inputEl.value = '';
+    // tenta enviar via WS
+    try {
+        if (ws && wsConnected && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify(pkg));
+            addCentralLog('✅ Enviado ao cluster.', 'system');
+        } else {
+            pushOutbox(pkg);
+            addCentralLog('📥 Sem conexão — mensagem enfileirada e será enviada ao reconectar.', 'system');
+            scheduleReconnect();
+        }
+    } catch(e){
+        pushOutbox(pkg);
+        addCentralLog('📥 Erro no envio — mensagem enfileirada.', 'system');
+        scheduleReconnect();
+    }
+}
+
+// Hook no botão e Enter
+sendBtn.addEventListener('click', sendMessage);
+inputEl.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); sendMessage(); } });
+
+// MOCK functions preserved
+function selectAgent(name, status) {
+    document.querySelectorAll('.motoboy-item').forEach(item => item.classList.remove('selected'));
+    // marca visualmente o selecionado (procura pelo texto)
+    const items = Array.from(document.querySelectorAll('.motoboy-item'));
+    const it = items.find(i => i.textContent.includes(name.split(' ')[0]));
+    if (it) it.classList.add('selected');
+    addCentralLog(`Comando: Painel de ${name} solicitado.`, 'ceo');
+    // opcional: foco no campo de chat para interação rápida
+    inputEl.focus();
+}
+
+function emergencyScale() {
+    addCentralLog('🚨 COMANDO: ATIVAR ESCALA AUTOMÁTICA RECEBIDO.', 'ceo');
+    setTimeout(() => {
+        addCentralLog('🤖 **THOR:** Processando Protocolo Hot-Swap. 5 motoboys inativos notificados por push. 2 agentes em standby assumindo.', 'system');
+        document.getElementById('motoboy-list').innerHTML += `
+             <div class="motoboy-item" onclick="selectAgent('Agente X (10)', 'ok')" style="margin-top:10px;">
+                <span><span class="status-dot online"></span> Agente X (10)</span>
+                <span style="font-size:12px; color:var(--cyan);">Reação Rápida (10s)</span>
+            </div>
+        `;
+    }, 1500);
+}
+
+// Inicialização
+addCentralLog('⏳ Iniciando conexão WS...', 'system');
+connectWS();
+
+// reenviar fila quando navegador volta online
+window.addEventListener('online', () => {
+    addCentralLog('🔔 Navegador online — tentando reenviar fila...', 'system');
+    if (wsConnected) flushOutbox(); else connectWS();
+});
+
+// status simplificado no console para depuração
+console.info('Dashboard Central inicializado. WS path: ' + WS_PATH);
+</script>
+</body>
+</html>
