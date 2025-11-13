@@ -50,13 +50,42 @@ function Router() {
   );
 }
 
+// Safe localStorage wrapper for browsers that block storage
+const safeStorage = {
+  getItem: (key: string): string | null => {
+    try {
+      return localStorage.getItem(key);
+    } catch (e) {
+      return null;
+    }
+  },
+  setItem: (key: string, value: string): void => {
+    try {
+      localStorage.setItem(key, value);
+    } catch (e) {
+      // Silently fail if localStorage is blocked
+    }
+  },
+  removeItem: (key: string): void => {
+    try {
+      localStorage.removeItem(key);
+    } catch (e) {
+      // Silently fail if localStorage is blocked
+    }
+  }
+};
+
 export default function App() {
   const [user, setUser] = useState<{ id: string; name: string; role: string } | null>(null);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('guriri_user');
+    const storedUser = safeStorage.getItem('guriri_user');
     if (storedUser) {
-      setUser(JSON.parse(storedUser));
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (e) {
+        // Invalid JSON, ignore
+      }
     }
   }, []);
 
@@ -75,8 +104,8 @@ export default function App() {
       const data = await response.json();
       const userData = { id: data.id, name: data.name, role: data.role };
       setUser(userData);
-      localStorage.setItem('guriri_user', JSON.stringify(userData));
-      localStorage.setItem('guriri_token', data.access_token);
+      safeStorage.setItem('guriri_user', JSON.stringify(userData));
+      safeStorage.setItem('guriri_token', data.access_token);
       return true;
     } catch (error) {
       return false;
@@ -85,8 +114,8 @@ export default function App() {
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('guriri_user');
-    localStorage.removeItem('guriri_token');
+    safeStorage.removeItem('guriri_user');
+    safeStorage.removeItem('guriri_token');
   };
 
   return (
