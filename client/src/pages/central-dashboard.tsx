@@ -100,9 +100,10 @@ export default function CentralDashboard() {
                 {orders.slice(0, 9).map((order) => (
                   <OrderCard
                     key={order.id}
+                    id={order.id}
                     origin={`${order.coletaRua}, ${order.coletaNumero} - ${order.coletaBairro}`}
                     destination={`${order.entregaRua}, ${order.entregaNumero} - ${order.entregaBairro}`}
-                    status={order.status as OrderStatus} // CORRIGIDO: Tipagem segura
+                    status={order.status as OrderStatus}
                     value={order.valor}
                     driverName={order.motoboyName || undefined}
                     onView={() => console.log('View order:', order.id)}

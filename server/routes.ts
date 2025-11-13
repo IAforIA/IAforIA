@@ -1,13 +1,12 @@
 import { Router } from "express";
-// Removidas importações de http, WebSocketServer, WebSocket que agora estão em app.ts
 import { storage } from "./storage.js";
 import { AIEngine } from "./ai-engine.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { insertOrderSchema, insertMotoboySchema, insertChatMessageSchema } from "@shared/schema";
 import { authenticateToken, requireRole, verifyTokenFromQuery } from "./middleware/auth.js";
-// Importa a função broadcast global do app.ts
-import { broadcast } from "./app.js"; 
+// Importa a função broadcast global do index.ts
+import { broadcast } from "./index.js"; 
 
 // CRÍTICO: Variáveis de ambiente separadas para melhor segurança
 if (!process.env.JWT_SECRET) {
@@ -67,7 +66,7 @@ export async function registerRoutes() {
     }
   });
 
-  router.post("/api/orders", authenticateToken, requireRole(['client', 'central']), async (req, res) => {
+  router.post("/api/orders", authenticateToken, requireRole('client', 'central'), async (req, res) => {
     try {
       // Usar userId do token JWT para garantir que o cliente correto crie o pedido
       // const userId = (req as any).user.id; 
@@ -83,7 +82,7 @@ export async function registerRoutes() {
     }
   });
 
-  router.post("/api/orders/:id/accept", authenticateToken, requireRole(['motoboy', 'central']), async (req, res) => {
+  router.post("/api/orders/:id/accept", authenticateToken, requireRole('motoboy', 'central'), async (req, res) => {
     try {
       // Garantir que o motoboy que aceita o pedido é quem ele diz ser
       // const motoboyIdFromToken = (req as any).user.id; 
@@ -100,7 +99,7 @@ export async function registerRoutes() {
     }
   });
 
-  router.post("/api/orders/:id/deliver", authenticateToken, requireRole(['motoboy', 'central']), async (req, res) => {
+  router.post("/api/orders/:id/deliver", authenticateToken, requireRole('motoboy', 'central'), async (req, res) => {
     try {
       await storage.updateOrderStatus(req.params.id, 'delivered');
       const order = await storage.getOrder(req.params.id);
@@ -115,7 +114,7 @@ export async function registerRoutes() {
   });
 
   // --- Rotas de Motoboys (AGORA AUTENTICADAS/AUTORIZADAS) ---
-  router.get("/api/motoboys", authenticateToken, requireRole(['central']), async (req, res) => {
+  router.get("/api/motoboys", authenticateToken, requireRole('central'), async (req, res) => {
     try {
       const motoboys = await storage.getAllMotoboys();
       res.json(motoboys);
@@ -124,7 +123,7 @@ export async function registerRoutes() {
     }
   });
 
-  router.post("/api/motoboys/:id/location", authenticateToken, requireRole(['motoboy']), async (req, res) => {
+  router.post("/api/motoboys/:id/location", authenticateToken, requireRole('motoboy'), async (req, res) => {
     try {
       // Tipagem corrigida para number (conforme IStorage/AI-Engine)
       const { lat, lng } = req.body; 
@@ -159,7 +158,7 @@ export async function registerRoutes() {
     }
   });
 
-  router.get("/api/insights", authenticateToken, requireRole(['central']), async (req, res) => { 
+  router.get("/api/insights", authenticateToken, requireRole('central'), async (req, res) => { 
     try {
       const orders = await storage.getAllOrders();
       const motoboys = await storage.getAllMotoboys();

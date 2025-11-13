@@ -11,7 +11,7 @@ import DriverDashboard from "@/pages/driver-dashboard";
 import TestSimple from "@/pages/test-simple";
 import NotFound from "@/pages/not-found";
 
-type AuthUser = { id: string; name: string; role: string };
+type AuthUser = { id: string; name: string; role: string; phone?: string };
 
 type AuthContextType = {
   user: AuthUser | null;

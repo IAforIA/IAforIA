@@ -122,6 +122,7 @@ export const insertOrderSchema = createInsertSchema(orders).omit({
 });
 export type InsertOrder = z.infer<typeof insertOrderSchema>;
 export type Order = typeof orders.$inferSelect;
+export type OrderStatus = 'pending' | 'in_progress' | 'delivered' | 'cancelled';
 
 // --- Tabela de Live Docs (live_docs) ---
 export const liveDocs = pgTable("live_docs", {

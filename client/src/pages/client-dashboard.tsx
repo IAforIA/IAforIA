@@ -228,7 +228,7 @@ export default function ClientDashboard() {
                         )} />
                       </div>
 
-                      <Button type="submit" className="w-full" isLoading={createOrderMutation.isPending} data-testid="button-submit-order">
+                      <Button type="submit" className="w-full" disabled={createOrderMutation.isPending} data-testid="button-submit-order">
                         {createOrderMutation.isPending ? "Criando Pedido..." : "Criar Pedido"}
                       </Button>
                     </form>
@@ -253,6 +253,7 @@ export default function ClientDashboard() {
                 {clientOrders.slice(0, 9).map((order) => (
                   <OrderCard
                     key={order.id}
+                    id={order.id}
                     origin={`${order.coletaRua}, ${order.coletaNumero} - ${order.coletaBairro}`}
                     destination={`${order.entregaRua}, ${order.entregaNumero} - ${order.entregaBairro}`}
                     status={order.status as OrderStatus}
