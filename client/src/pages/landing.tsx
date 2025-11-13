@@ -16,10 +16,16 @@ export default function Landing() {
             <span className="font-semibold text-lg">Guriri Express</span>
           </div>
           <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <Button variant="ghost" asChild data-testid="button-login">
-              <Link href="/central">Entrar</Link>
+            <Button variant="ghost" asChild data-testid="link-central">
+              <Link href="/central">Central</Link>
             </Button>
+            <Button variant="ghost" asChild data-testid="link-client">
+              <Link href="/client">Cliente</Link>
+            </Button>
+            <Button variant="ghost" asChild data-testid="link-driver">
+              <Link href="/driver">Entregador</Link>
+            </Button>
+            <ThemeToggle />
           </div>
         </div>
       </header>

@@ -48,15 +48,17 @@ export function AppSidebar({ role }: AppSidebarProps) {
   return (
     <Sidebar>
       <SidebarHeader className="p-4 border-b">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center">
-            <TruckIcon className="w-5 h-5 text-primary-foreground" />
+        <Link href="/" data-testid="link-home">
+          <div className="flex items-center gap-2 hover-elevate active-elevate-2 rounded-md p-2 -m-2">
+            <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center">
+              <TruckIcon className="w-5 h-5 text-primary-foreground" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-sm">Guriri Express</h2>
+              <p className="text-xs text-muted-foreground capitalize">{role}</p>
+            </div>
           </div>
-          <div>
-            <h2 className="font-semibold text-sm">Guriri Express</h2>
-            <p className="text-xs text-muted-foreground capitalize">{role}</p>
-          </div>
-        </div>
+        </Link>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
