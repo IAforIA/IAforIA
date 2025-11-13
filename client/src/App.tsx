@@ -8,6 +8,7 @@ import Landing from "@/pages/landing";
 import CentralDashboard from "@/pages/central-dashboard";
 import ClientDashboard from "@/pages/client-dashboard";
 import DriverDashboard from "@/pages/driver-dashboard";
+import TestSimple from "@/pages/test-simple";
 import NotFound from "@/pages/not-found";
 
 type AuthContextType = {
@@ -42,6 +43,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Landing} />
+      <Route path="/test" component={TestSimple} />
       <Route path="/central" component={CentralDashboard} />
       <Route path="/client" component={ClientDashboard} />
       <Route path="/driver" component={DriverDashboard} />
