@@ -8,8 +8,20 @@ import type {
   MotoboySchedule, InsertMotoboySchedule,
   ClientSchedule, InsertClientSchedule
 } from "@shared/schema";
+import { 
+  users, 
+  motoboys, 
+  clients, 
+  orders, 
+  liveDocs, 
+  chatMessages, 
+  motoboySchedules, 
+  clientSchedules 
+} from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcryptjs";
+import { eq, desc, sql as drizzleSql } from "drizzle-orm";
+import { db } from "./db.js";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -374,39 +386,178 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export class DbStorage implements IStorage {
+  async getUser(id: string): Promise<User | undefined> {
+    const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
+    return result[0];
+  }
 
-// Initialize test users
-(async () => {
-  await storage.createUser({
-    id: 'central',
-    name: 'Admin Central',
-    role: 'central',
-    phone: '27999999999',
-    email: 'central@guriri.com',
-    password: 'central123',
-    status: 'active',
-  });
+  async getUserByRole(role: string): Promise<User[]> {
+    return await db.select().from(users).where(eq(users.role, role));
+  }
 
-  await storage.createUser({
-    id: 'client',
-    name: 'Cliente Teste',
-    role: 'client',
-    phone: '27988888888',
-    email: 'client@empresa.com',
-    password: 'client123',
-    status: 'active',
-  });
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const hashedPassword = await bcrypt.hash(insertUser.password, 10);
+    const result = await db.insert(users).values({
+      ...insertUser,
+      password: hashedPassword,
+    }).returning();
+    return result[0];
+  }
 
-  await storage.createUser({
-    id: 'motoboy',
-    name: 'Motoboy João',
-    role: 'motoboy',
-    phone: '27977777777',
-    email: 'motoboy@guriri.com',
-    password: 'motoboy123',
-    status: 'active',
-  });
+  async updateUserStatus(id: string, status: string): Promise<void> {
+    await db.update(users).set({ status }).where(eq(users.id, id));
+  }
 
-  console.log('✓ Test users initialized');
-})();
+  async getAllMotoboys(): Promise<Motoboy[]> {
+    return await db.select().from(motoboys);
+  }
+
+  async getMotoboy(id: string): Promise<Motoboy | undefined> {
+    const result = await db.select().from(motoboys).where(eq(motoboys.id, id)).limit(1);
+    return result[0];
+  }
+
+  async createMotoboy(insertMotoboy: InsertMotoboy): Promise<Motoboy> {
+    const result = await db.insert(motoboys).values(insertMotoboy).returning();
+    return result[0];
+  }
+
+  async updateMotoboy(id: string, data: Partial<Motoboy>): Promise<void> {
+    await db.update(motoboys).set(data).where(eq(motoboys.id, id));
+  }
+
+  async updateMotoboyLocation(id: string, lat: string, lng: string): Promise<void> {
+    await db.update(motoboys).set({ 
+      currentLat: lat,
+      currentLng: lng 
+    }).where(eq(motoboys.id, id));
+  }
+
+  async setMotoboyOnline(id: string, online: boolean): Promise<void> {
+    await db.update(motoboys).set({ online }).where(eq(motoboys.id, id));
+  }
+
+  async getAllClients(): Promise<Client[]> {
+    return await db.select().from(clients);
+  }
+
+  async getClient(id: string): Promise<Client | undefined> {
+    const result = await db.select().from(clients).where(eq(clients.id, id)).limit(1);
+    return result[0];
+  }
+
+  async createClient(insertClient: InsertClient): Promise<Client> {
+    const result = await db.insert(clients).values(insertClient).returning();
+    return result[0];
+  }
+
+  async getAllOrders(): Promise<Order[]> {
+    return await db.select().from(orders).orderBy(desc(orders.createdAt));
+  }
+
+  async getOrder(id: string): Promise<Order | undefined> {
+    const result = await db.select().from(orders).where(eq(orders.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getOrdersByClient(clientId: string): Promise<Order[]> {
+    return await db.select().from(orders)
+      .where(eq(orders.clientId, clientId))
+      .orderBy(desc(orders.createdAt));
+  }
+
+  async getOrdersByMotoboy(motoboyId: string): Promise<Order[]> {
+    return await db.select().from(orders)
+      .where(eq(orders.motoboyId, motoboyId))
+      .orderBy(desc(orders.createdAt));
+  }
+
+  async getPendingOrders(): Promise<Order[]> {
+    return await db.select().from(orders)
+      .where(eq(orders.status, 'pending'))
+      .orderBy(desc(orders.createdAt));
+  }
+
+  async createOrder(insertOrder: InsertOrder): Promise<Order> {
+    const result = await db.insert(orders).values({
+      ...insertOrder,
+      status: 'pending',
+    }).returning();
+    return result[0];
+  }
+
+  async updateOrderStatus(id: string, status: string): Promise<void> {
+    const updateData: any = { status };
+    if (status === 'delivered') {
+      updateData.deliveredAt = drizzleSql`NOW()`;
+    }
+    await db.update(orders).set(updateData).where(eq(orders.id, id));
+  }
+
+  async assignOrderToMotoboy(orderId: string, motoboyId: string, motoboyName: string): Promise<void> {
+    await db.update(orders).set({
+      motoboyId,
+      motoboyName,
+      status: 'in_progress',
+      acceptedAt: drizzleSql`NOW()`,
+    }).where(eq(orders.id, orderId));
+  }
+
+  async getLiveDocsByOrder(orderId: string): Promise<LiveDoc[]> {
+    return await db.select().from(liveDocs)
+      .where(eq(liveDocs.orderId, orderId))
+      .orderBy(desc(liveDocs.uploadedAt));
+  }
+
+  async createLiveDoc(insertDoc: InsertLiveDoc): Promise<LiveDoc> {
+    const result = await db.insert(liveDocs).values(insertDoc).returning();
+    return result[0];
+  }
+
+  async getChatMessages(limit: number = 100): Promise<ChatMessage[]> {
+    return await db.select().from(chatMessages)
+      .orderBy(desc(chatMessages.createdAt))
+      .limit(limit);
+  }
+
+  async createChatMessage(insertMessage: InsertChatMessage): Promise<ChatMessage> {
+    const result = await db.insert(chatMessages).values(insertMessage).returning();
+    return result[0];
+  }
+
+  async getMotoboySchedule(motoboyId: string): Promise<MotoboySchedule[]> {
+    return await db.select().from(motoboySchedules)
+      .where(eq(motoboySchedules.motoboyId, motoboyId));
+  }
+
+  async saveMotoboySchedule(insertSchedule: InsertMotoboySchedule): Promise<MotoboySchedule> {
+    const result = await db.insert(motoboySchedules).values(insertSchedule).returning();
+    return result[0];
+  }
+
+  async getClientSchedule(clientId: string): Promise<ClientSchedule[]> {
+    return await db.select().from(clientSchedules)
+      .where(eq(clientSchedules.clientId, clientId));
+  }
+
+  async saveClientSchedule(insertSchedule: InsertClientSchedule): Promise<ClientSchedule> {
+    const result = await db.insert(clientSchedules).values(insertSchedule).returning();
+    return result[0];
+  }
+}
+
+function createStorage(): IStorage {
+  if (process.env.DATABASE_URL) {
+    if (!db) {
+      throw new Error('DATABASE_URL is set but database connection failed');
+    }
+    console.log('✓ Using PostgreSQL database storage');
+    return new DbStorage();
+  } else {
+    console.log('✓ Using in-memory storage');
+    return new MemStorage();
+  }
+}
+
+export const storage = createStorage();
