@@ -1,0 +1,21 @@
+import { AppSidebar } from '../app-sidebar';
+import { SidebarProvider } from "@/components/ui/sidebar";
+
+export default function AppSidebarExample() {
+  const style = {
+    "--sidebar-width": "20rem",
+    "--sidebar-width-icon": "4rem",
+  };
+
+  return (
+    <SidebarProvider style={style as React.CSSProperties}>
+      <div className="flex h-screen w-full">
+        <AppSidebar role="central" />
+        <div className="flex-1 p-8">
+          <h1 className="text-2xl font-bold">Conteúdo Principal</h1>
+          <p className="text-muted-foreground mt-2">A sidebar está ativa à esquerda</p>
+        </div>
+      </div>
+    </SidebarProvider>
+  );
+}
