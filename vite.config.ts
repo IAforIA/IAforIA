@@ -1,12 +1,12 @@
 import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
+import reactRefresh from "@vitejs/plugin-react-refresh"; // Importação corrigida
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
 // Envolve a configuração em uma função assíncrona
 export default defineConfig(async ({ command, mode }) => {
   const plugins = [
-    react(),
+    reactRefresh(), // Uso corrigido
     runtimeErrorOverlay(),
   ];
 
