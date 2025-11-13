@@ -3,8 +3,9 @@
     /* Configurações de Projeto */
     "target": "ESNext",
     "module": "ESNext",
-    "moduleResolution": "bundler", 
-    "lib": ["esnext"], 
+    "moduleResolution": "bundler",
+    "lib": ["esnext", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
     "allowImportingTsExtensions": true,
     "esModuleInterop": true,
     "skipLibCheck": true,

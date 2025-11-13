@@ -68,8 +68,30 @@ function Router() {
   );
 }
 
-// O safeStorage wrapper permanece, mas é menos crítico se você mudar para HttpOnly cookies
-const safeStorage = { /* ... (mesma implementação) ... */ };
+// Safe localStorage wrapper para browsers que bloqueiam storage
+const safeStorage = {
+  getItem: (key: string): string | null => {
+    try {
+      return localStorage.getItem(key);
+    } catch (e) {
+      return null;
+    }
+  },
+  setItem: (key: string, value: string): void => {
+    try {
+      localStorage.setItem(key, value);
+    } catch (e) {
+      // Silently fail if localStorage is blocked
+    }
+  },
+  removeItem: (key: string): void => {
+    try {
+      localStorage.removeItem(key);
+    } catch (e) {
+      // Silently fail if localStorage is blocked
+    }
+  }
+};
 
 export default function App() {
   const [user, setUser] = useState<AuthUser | null>(null);

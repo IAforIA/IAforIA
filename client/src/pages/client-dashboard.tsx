@@ -235,7 +235,40 @@ export default function ClientDashboard() {
                   </Form>
                 </DialogContent>
               </Dialog>
+              <ThemeToggle />
               <Button variant="outline" onClick={logout} data-testid="button-logout">Sair</Button>
+            </div>
+          </header>
+
+          <main className="flex-1 overflow-auto p-6">
+            <div className="max-w-7xl mx-auto space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <StatCard title="Total Pedidos" value={totalOrders} icon={Package} />
+                <StatCard title="Aguardando" value={pending} icon={Clock} />
+                <StatCard title="Concluídos" value={delivered} icon={CheckCircle} />
+                <StatCard title="Cancelados" value={cancelled} icon={XCircle} />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {clientOrders.slice(0, 9).map((order) => (
+                  <OrderCard
+                    key={order.id}
+                    origin={`${order.coletaRua}, ${order.coletaNumero} - ${order.coletaBairro}`}
+                    destination={`${order.entregaRua}, ${order.entregaNumero} - ${order.entregaBairro}`}
+                    status={order.status as OrderStatus}
+                    value={order.valor}
+                    driverName={order.motoboyName || undefined}
+                    onView={() => console.log('View order:', order.id)}
+                  />
+                ))}
+              </div>
+
+              {clientOrders.length === 0 && (
+                <Card className="p-12 text-center">
+                  <Package className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-muted-foreground">Nenhum pedido criado ainda</p>
+                </Card>
+              )}
             </div>
           </main>
         </div>
