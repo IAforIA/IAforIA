@@ -54,7 +54,7 @@ router.post("/api/auth/login", async (req, res) => {
   }
 });
 
-router.get("/api/orders", authenticateToken, async (req, res) => {
+router.get("/api/orders", async (req, res) => {
   try {
     const orders = await storage.getAllOrders();
     res.json(orders);
@@ -63,7 +63,7 @@ router.get("/api/orders", authenticateToken, async (req, res) => {
   }
 });
 
-router.get("/api/orders/pending", authenticateToken, async (req, res) => {
+router.get("/api/orders/pending", async (req, res) => {
   try {
     const orders = await storage.getPendingOrders();
     res.json(orders);
@@ -72,7 +72,7 @@ router.get("/api/orders/pending", authenticateToken, async (req, res) => {
   }
 });
 
-router.post("/api/orders", authenticateToken, async (req, res) => {
+router.post("/api/orders", async (req, res) => {
   try {
     const validated = insertOrderSchema.parse(req.body);
     const order = await storage.createOrder(validated);
@@ -88,7 +88,7 @@ router.post("/api/orders", authenticateToken, async (req, res) => {
   }
 });
 
-router.post("/api/orders/:id/accept", authenticateToken, requireRole('motoboy'), async (req, res) => {
+router.post("/api/orders/:id/accept", async (req, res) => {
   try {
     const { motoboyId, motoboyName } = req.body;
     await storage.assignOrderToMotoboy(req.params.id, motoboyId, motoboyName);
@@ -105,7 +105,7 @@ router.post("/api/orders/:id/accept", authenticateToken, requireRole('motoboy'),
   }
 });
 
-router.post("/api/orders/:id/deliver", authenticateToken, requireRole('motoboy'), async (req, res) => {
+router.post("/api/orders/:id/deliver", async (req, res) => {
   try {
     await storage.updateOrderStatus(req.params.id, 'delivered');
     const order = await storage.getOrder(req.params.id);
@@ -121,7 +121,7 @@ router.post("/api/orders/:id/deliver", authenticateToken, requireRole('motoboy')
   }
 });
 
-router.get("/api/motoboys", authenticateToken, async (req, res) => {
+router.get("/api/motoboys", async (req, res) => {
   try {
     const motoboys = await storage.getAllMotoboys();
     res.json(motoboys);
@@ -130,7 +130,7 @@ router.get("/api/motoboys", authenticateToken, async (req, res) => {
   }
 });
 
-router.post("/api/motoboys", authenticateToken, requireRole('central'), async (req, res) => {
+router.post("/api/motoboys", async (req, res) => {
   try {
     const validated = insertMotoboySchema.parse(req.body);
     const motoboy = await storage.createMotoboy(validated);
@@ -140,7 +140,7 @@ router.post("/api/motoboys", authenticateToken, requireRole('central'), async (r
   }
 });
 
-router.put("/api/motoboys/:id", authenticateToken, requireRole('central'), async (req, res) => {
+router.put("/api/motoboys/:id", async (req, res) => {
   try {
     await storage.updateMotoboy(req.params.id, req.body);
     const motoboy = await storage.getMotoboy(req.params.id);
@@ -150,7 +150,7 @@ router.put("/api/motoboys/:id", authenticateToken, requireRole('central'), async
   }
 });
 
-router.post("/api/motoboys/:id/location", authenticateToken, async (req, res) => {
+router.post("/api/motoboys/:id/location", async (req, res) => {
   try {
     const { lat, lng } = req.body;
     await storage.updateMotoboyLocation(req.params.id, lat, lng);
@@ -160,7 +160,7 @@ router.post("/api/motoboys/:id/location", authenticateToken, async (req, res) =>
   }
 });
 
-router.get("/api/chat", authenticateToken, async (req, res) => {
+router.get("/api/chat", async (req, res) => {
   try {
     const messages = await storage.getChatMessages();
     res.json(messages);
@@ -169,7 +169,7 @@ router.get("/api/chat", authenticateToken, async (req, res) => {
   }
 });
 
-router.post("/api/chat", authenticateToken, async (req, res) => {
+router.post("/api/chat", async (req, res) => {
   try {
     const validated = insertChatMessageSchema.parse(req.body);
     const message = await storage.createChatMessage(validated);
@@ -185,7 +185,7 @@ router.post("/api/chat", authenticateToken, async (req, res) => {
   }
 });
 
-router.get("/api/insights", authenticateToken, requireRole('central'), async (req, res) => {
+router.get("/api/insights", async (req, res) => {
   try {
     const orders = await storage.getAllOrders();
     const motoboys = await storage.getAllMotoboys();
@@ -196,7 +196,7 @@ router.get("/api/insights", authenticateToken, requireRole('central'), async (re
   }
 });
 
-router.post("/api/upload/live-doc", authenticateToken, requireRole('motoboy'), async (req, res) => {
+router.post("/api/upload/live-doc", async (req, res) => {
   try {
     const { orderId, motoboyId, tipo, fileData, fileName, gpsLat, gpsLng } = req.body;
     
@@ -223,7 +223,7 @@ router.post("/api/upload/live-doc", authenticateToken, requireRole('motoboy'), a
   }
 });
 
-router.get("/api/live-docs/:orderId", authenticateToken, async (req, res) => {
+router.get("/api/live-docs/:orderId", async (req, res) => {
   try {
     const docs = await storage.getLiveDocsByOrder(req.params.orderId);
     res.json(docs);
