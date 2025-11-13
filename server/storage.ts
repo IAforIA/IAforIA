@@ -55,10 +55,20 @@ class DrizzleStorage implements IStorage {
   }
 
   async getLatestMotoboyLocations(): Promise<Map<string, MotoboyLocation>> {
-    // A implementação real no Drizzle é complexa. Retornamos um mapa vazio como placeholder.
-    // Em produção, isso precisaria de uma consulta SQL customizada ou de um serviço de cache.
-    console.warn("getLatestMotoboyLocations not fully implemented in DrizzleStorage.");
-    return new Map(); 
+    const allLocations = await db
+      .select()
+      .from(motoboyLocations)
+      .orderBy(desc(motoboyLocations.timestamp));
+    
+    const latestByMotoboy = new Map<string, MotoboyLocation>();
+    
+    for (const location of allLocations) {
+      if (!latestByMotoboy.has(location.motoboyId)) {
+        latestByMotoboy.set(location.motoboyId, location);
+      }
+    }
+    
+    return latestByMotoboy;
   }
 
   // --- Outros métodos (Exemplos rápidos de como implementar no Drizzle ORM) ---

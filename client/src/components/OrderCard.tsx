@@ -10,7 +10,7 @@ interface OrderCardProps {
   origin: string;
   destination: string;
   status: OrderStatus;
-  value: string;
+  value: string | number;
   driverName?: string;
   onView?: () => void;
 }
@@ -61,7 +61,9 @@ export default function OrderCard({
           )}
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-lg font-semibold" data-testid="text-order-value">R$ {value}</span>
+          <span className="text-lg font-semibold" data-testid="text-order-value">
+            R$ {typeof value === 'string' ? parseFloat(value).toFixed(2) : value.toFixed(2)}
+          </span>
           {onView && (
             <Button size="icon" variant="ghost" onClick={onView} data-testid="button-view-order">
               <Eye className="w-4 h-4" />
