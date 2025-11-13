@@ -239,21 +239,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
 
   wss.on('connection', (ws, req) => {
-    const urlParams = new URLSearchParams(req.url?.split('?')[1] || '');
-    const token = urlParams.get('token');
-    
-    const authUser = verifyTokenFromQuery(token);
-    
-    if (!authUser) {
-      console.log('WebSocket connection rejected: Invalid or missing token');
-      ws.close(1008, 'Unauthorized: Invalid or missing authentication token');
-      return;
-    }
-    
-    const userId = authUser.id;
+    const userId = `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     wsClients.set(userId, ws);
     
-    console.log(`WebSocket client connected: ${userId} (${authUser.role})`);
+    console.log(`WebSocket client connected: ${userId}`);
     
     ws.on('message', async (data) => {
       try {
@@ -273,10 +262,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         if (message.type === 'location_update') {
-          if (authUser.role !== 'motoboy') {
-            console.log('Unauthorized location update attempt');
-            return;
-          }
           await storage.updateMotoboyLocation(message.motoboyId, message.lat, message.lng);
         }
       } catch (error) {
