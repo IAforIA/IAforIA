@@ -1,0 +1,1175 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Guriri Express - Painel Tático Motoboy (ITM-V3.1)</title>
+<meta name="theme-color" content="#050505"/>
+<style>
+  /* ITM-V3.1: FOCO TÁTICO, COERÊNCIA ELITE E L-DOCS */
+  :root{
+    --bg:#050505; 
+    --card:#18181A; 
+    --ink:#FFFFFF; 
+    --muted:#888888; 
+    --edge:#333333; 
+    --glow:#00FFFF; /* Ciano Preditivo (GPS/Status) */
+    --brand:#0077FF; /* Comando Principal: Azul Elétrico */
+    --danger:#FF4400; /* Crítico/Atraso */
+    --ok:#00CC00; /* Sucesso/Rota Otimizada/L-Docs */
+    --warn:#FFC300; /* Atenção */
+    --fuchsia:#FF31FF;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+
+  body{
+    margin:0;
+    background-color:var(--bg);
+    color:var(--ink); 
+    font:400 16px/1.4 'Inter', 'Segoe UI', Arial, sans-serif;
+    padding:20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .shell{max-width:400px; width:100%;}
+  .header-info{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:10px 0; border-bottom:1px solid var(--edge);
+    margin-bottom:15px;
+  }
+  .header-info h1{
+    font-size:1.4em; margin:0; color:var(--glow);
+  }
+  .header-info .status-box{
+    font-size:0.9em; padding:5px 10px; border-radius:5px;
+    font-weight:bold;
+  }
+  .status-online{background:var(--ok); color:var(--bg);}
+  .status-offline{background:var(--danger); color:var(--ink);}
+
+  /* MAPA SIMULADO */
+  .map-simulacao{
+    background:var(--card); height:150px; border-radius:10px;
+    border:2px dashed var(--glow); position:relative;
+    display:flex; align-items:center; justify-content:center;
+    font-size:1.5em; font-weight:bold; color:var(--glow);
+    box-shadow:0 0 15px rgba(0,255,255,0.2);
+  }
+  .map-simulacao p{margin:0; text-align:center;}
+
+  /* MISSOES */
+  .missoes-container{
+    background:var(--card); border-radius:10px;
+    padding:15px; margin-top:15px;
+  }
+  .missoes-container h2{
+    font-size:1.1em; margin:0 0 10px 0; border-bottom:1px solid var(--edge); padding-bottom:5px;
+  }
+  .missao-item{
+    display:flex; align-items:center; margin-bottom:10px;
+    cursor:pointer; padding:8px; border-radius:5px;
+    transition:background 0.2s;
+  }
+  .missao-item:hover{background:rgba(0,119,255,0.1);}
+  .missao-status{
+    width:10px; height:10px; border-radius:50%; margin-right:10px;
+  }
+  .status-ativo{background:var(--glow); box-shadow:0 0 5px var(--glow);}
+  .status-pendente{background:var(--muted);}
+  .missao-detalhe strong{color:var(--ink); display:block;}
+  .missao-detalhe small{color:var(--muted); font-size:0.85em;}
+  
+  /* BOTOES TATICOS */
+  .btn-tatico{
+    width:100%; padding:15px; border:none; border-radius:10px;
+    font-weight:bold; cursor:pointer; margin-top:10px;
+    transition:transform 0.1s, box-shadow 0.2s;
+    color:var(--bg); /* Texto escuro no fundo colorido */
+    box-shadow:0 4px 10px rgba(0,0,0,0.4);
+  }
+  .btn-tatico:active{transform:translateY(2px);}
+  .muted{color:var(--muted);}
+
+/* === CHAT SLIDE-IN === */
+.chat-panel {
+  position:fixed;
+  right:18px;
+  bottom:18px;
+  width:360px;
+  max-height:78vh;
+  background:linear-gradient(180deg,#0b0b0d,#0b0b0f);
+  border:1px solid rgba(255,255,255,0.04);
+  border-radius:12px;
+  box-shadow:0 10px 40px rgba(0,0,0,0.7);
+  display:flex;
+  flex-direction:column;
+  transform:translateY(110%);
+  transition:transform .28s ease;
+  z-index:9999;
+  overflow:hidden;
+}
+.chat-panel.open { transform:translateY(0%); }
+.chat-panel .head {
+  padding:10px 12px;
+  background:linear-gradient(90deg,var(--fuchsia),var(--glow));
+  color:#000;
+  font-weight:700;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.chat-panel .body {
+  padding:10px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  flex:1;
+  overflow:auto;
+  background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+}
+.chat-row { display:flex; gap:8px; align-items:flex-end; }
+.msg-bot { background:#0d1b2a; color:var(--glow); padding:8px 10px; border-radius:10px; max-width:80%; }
+.msg-me { background:#0a1f15; color:var(--ok); padding:8px 10px; border-radius:10px; align-self:flex-end; max-width:80%; }
+.chat-input-row { display:flex; gap:8px; padding:8px; border-top:1px solid rgba(255,255,255,0.03); background:transparent; }
+.chat-input-row input { flex:1; padding:8px; border-radius:8px; border:1px solid rgba(255,255,255,0.03); background:#091015; color:var(--ink); }
+.chat-input-row button { padding:8px 12px; border-radius:8px; border:none; background:var(--fuchsia); color:#000; font-weight:700; cursor:pointer; }
+
+/* small toast */
+.toast {
+  position:fixed; left:50%; transform:translateX(-50%); bottom:110px; background:#121212; color:#fff; padding:8px 12px; border-radius:8px; box-shadow:0 6px 20px rgba(0,0,0,0.6); opacity:0; transition:opacity .25s;
+}
+.toast.show{ opacity:1; }
+</style>
+</head>
+<body>
+
+<div class="shell">
+    <div class="header-info">
+        <h1>ITM-V3.1 (Motoboy 07)</h1>
+        <div class="status-box status-online" id="global-status">
+            ONLINE (LXP)
+        </div>
+    </div>
+
+    <!-- PEDIDOS DISPONÍVEIS (novos pedidos aguardando aceite) -->
+    <div id="pedidos-disponiveis" style="margin-bottom:20px; display:none;">
+        <h2 style="color:var(--warn); font-size:1.2em; margin-bottom:10px;">
+            🆕 PEDIDOS DISPONÍVEIS
+        </h2>
+        <div id="lista-disponiveis"></div>
+    </div>
+
+    <!-- MAPA / RASTREIO ATUAL -->
+    <div class="map-simulacao">
+        <p id="map-status">AGUARDANDO GPS...</p>
+        <small id="gps-coords" style="font-size:10px; color:var(--muted);"></small>
+    </div>
+
+    <!-- INFORMAÇÕES TÁTICAS DA MISSÃO ATIVA -->
+    <div class="missoes-container" id="missao-ativa-container">
+        <h2 id="missao-ativa-titulo" style="color:var(--muted);">NENHUMA MISSÃO ATIVA</h2>
+        
+        <div id="missao-ativa-content" style="display:none;">
+            <div class="missao-item" style="padding-left:0; background:rgba(0,119,255,0.1);">
+                <div class="missao-status status-ativo"></div>
+                <div class="missao-detalhe">
+                    <strong id="missao-ativa-id">Carregando...</strong> (<span id="missao-ativa-taxa">R$ 0.00</span>)
+                    <small id="missao-ativa-cliente">CLIENTE: ...</small>
+                    <small id="missao-ativa-destino">DESTINO: ...</small>
+                    <small id="missao-ativa-obs" style="color:var(--warn);font-weight:bold;display:none;">⚠️ OBS: ...</small>
+                </div>
+            </div>
+        </div>
+
+        <div id="missao-ativa-empty" style="padding:20px; text-align:center; color:var(--muted);">
+             <p style="margin:0;">Aceite um pedido para começar sua missão</p>
+        </div>
+    </div>
+    
+    <!-- CHAT TÁTICO -->
+    <button class="btn-tatico" id="open-chat" style="background:var(--fuchsia); color:var(--ink); margin-top:20px;">
+        CHAT TÁTICO &bull; CONTINGÊNCIA CENTRAL
+    </button>
+
+    <!-- LIVE DOCUMENTS -->
+    <button class="btn-tatico" style="background:var(--ok); font-size:18px; font-weight:900;" 
+            onclick="document.getElementById('live-documents-capture').click()">
+        ATIVAR LIVE DOCUMENTS (COLETAR & COMPROVAR)
+    </button>
+    <!-- O input oculto simula a câmera/upload -->
+    <input type="file" id="live-documents-capture" accept="image/*" capture="environment" style="display:none;">
+    
+    <p class="muted" style="text-align:center; font-size:12px; margin-top:5px; margin-bottom:15px;">
+        Início dos Docs Criptografados e Catalogados &bull; Transmissão Fática Imediata.
+    </p>
+
+    <button class="btn-tatico" id="btn-gerenciar-escala" style="background:var(--fuchsia); margin-bottom:10px;">
+        📅 GERENCIAR MINHA ESCALA SEMANAL
+    </button>
+
+    <button class="btn-tatico" id="next-mission" style="background:var(--brand);">
+        NAVEGAR PARA PRÓXIMA MISSÃO
+    </button>
+
+</div>
+
+<!-- MODAL DE GESTÃO DE ESCALA -->
+<div id="modal-escala" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:10000; overflow-y:auto; padding:20px;">
+    <div style="max-width:600px; margin:40px auto; background:var(--card); border-radius:12px; padding:20px; border:2px solid var(--fuchsia);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:2px solid var(--fuchsia); padding-bottom:15px;">
+            <h2 style="margin:0; color:var(--fuchsia);">📅 MINHA ESCALA SEMANAL</h2>
+            <button id="fechar-modal-escala" style="background:transparent; border:none; color:var(--ink); font-size:28px; cursor:pointer; padding:0; width:35px; height:35px;">&times;</button>
+        </div>
+        
+        <p style="color:var(--muted); font-size:14px; margin-bottom:20px;">
+            Selecione os dias e turnos que você pode trabalhar. Seus horários ficarão visíveis na Central.
+        </p>
+
+        <div id="calendario-escala" style="background:rgba(0,0,0,0.3); padding:15px; border-radius:8px;">
+            <!-- Será preenchido via JavaScript -->
+        </div>
+
+        <div style="margin-top:20px; padding-top:15px; border-top:1px solid var(--edge);">
+            <h3 style="font-size:16px; margin-bottom:10px; color:var(--glow);">LEGENDA DOS TURNOS:</h3>
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; font-size:13px;">
+                <div style="background:rgba(255,170,0,0.2); padding:8px; border-radius:5px; border-left:3px solid #FFAA00;">
+                    <strong>🌅 MANHÃ</strong><br>
+                    <small>09:00 - 14:00</small>
+                </div>
+                <div style="background:rgba(255,195,0,0.2); padding:8px; border-radius:5px; border-left:3px solid #FFC300;">
+                    <strong>☀️ TARDE</strong><br>
+                    <small>14:00 - 18:00</small>
+                </div>
+                <div style="background:rgba(0,119,255,0.2); padding:8px; border-radius:5px; border-left:3px solid var(--brand);">
+                    <strong>🌙 NOITE</strong><br>
+                    <small>18:00 - 23:00</small>
+                </div>
+            </div>
+        </div>
+
+        <button id="salvar-escala" class="btn-tatico" style="background:var(--ok); margin-top:20px;">
+            ✅ SALVAR ESCALA
+        </button>
+    </div>
+</div>
+
+<!-- CHAT SLIDE-IN PANEL (embedded, not popup) -->
+<div id="chatPanel" class="chat-panel" aria-hidden="true">
+  <div class="head">
+    <div>CHAT TÁTICO — MOTOboy 07</div>
+    <div style="font-size:12px;opacity:.9" id="chatStatus">conectando...</div>
+  </div>
+  <div class="body" id="chatBody" role="log" aria-live="polite"></div>
+  <div class="chat-input-row">
+    <input id="chatText" placeholder="Mensagem para Central / THOR..." />
+    <button id="sendChatBtn">ENVIAR</button>
+  </div>
+</div>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script>
+/*
+  Final motoboy panel script:
+  - preserves layout and text exactly
+  - adds embedded slide-in chat (no popups)
+  - WebSocket connection to /ws/motoboy_07
+  - Live-Docs upload with GPS + offline queue + automatic retry
+  - lightweight toast notifications
+  - non-destructive: does not modify existing DOM elements' structure or text
+*/
+
+/* ===== CONFIG ===== */
+let MOTOBOY_ID = 'motoboy_07';
+let currentPosition = null; // Posição GPS atual
+let gpsWatchId = null; // ID do watchPosition
+let pedidosDisponiveis = []; // Lista de pedidos aguardando aceite
+let pedidoAtivo = null; // Pedido atualmente sendo entregue
+
+function extractOrderId() {
+  try {
+    const h2 = document.querySelector('.missoes-container h2');
+    if (!h2) return 'order_unknown';
+    const m = h2.textContent.match(/ENTREGA\s*#?(\d+)/i);
+    return m ? 'order_' + m[1] : 'order_unknown';
+  } catch (e){ return 'order_unknown'; }
+}
+const ORDER_ID = extractOrderId();
+
+/* ===== GERENCIAMENTO DE PEDIDOS DISPONÍVEIS ===== */
+function addPedidoDisponivel(pedido){
+  // Evita duplicatas
+  if(pedidosDisponiveis.find(p => p.id === pedido.id)) return;
+  
+  pedidosDisponiveis.push(pedido);
+  renderPedidosDisponiveis();
+}
+
+function renderPedidosDisponiveis(){
+  const container = document.getElementById('pedidos-disponiveis');
+  const lista = document.getElementById('lista-disponiveis');
+  
+  if(pedidosDisponiveis.length === 0){
+    container.style.display = 'none';
+    return;
+  }
+  
+  container.style.display = 'block';
+  lista.innerHTML = '';
+  
+  pedidosDisponiveis.forEach(pedido => {
+    const div = document.createElement('div');
+    div.className = 'missao-item';
+    div.style.cssText = 'background:rgba(255,195,0,0.1); margin-bottom:10px; padding:10px; border-radius:5px; border:1px solid var(--warn);';
+    div.innerHTML = `
+      <div class="missao-detalhe">
+        <strong>Pedido #${pedido.id.substring(0,10)}...</strong> <span style="color:var(--ok);">R$ ${pedido.valor?.toFixed(2) || '0.00'}</span>
+        <small>CLIENTE: ${pedido.cliente}</small>
+        <small>COLETA: ${pedido.coleta}</small>
+        <small>ENTREGA: ${pedido.entrega}</small>
+        <button onclick="aceitarPedido('${pedido.id}')" 
+                style="margin-top:8px; width:100%; padding:10px; background:var(--ok); color:var(--bg); border:none; border-radius:5px; font-weight:bold; cursor:pointer;">
+          ✅ ACEITAR PEDIDO
+        </button>
+      </div>
+    `;
+    lista.appendChild(div);
+  });
+}
+
+async function aceitarPedido(pedidoId){
+  try {
+    // Chamar API para atribuir pedido
+    const response = await fetch(`/api/pedido/${pedidoId}/assign`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        motoboy_id: MOTOBOY_ID,
+        motoboy_nome: MOTOBOY_ID // Pode melhorar pegando nome real
+      })
+    });
+    
+    if(!response.ok) throw new Error('Falha ao aceitar pedido');
+    
+    // Remover da lista de disponíveis
+    pedidosDisponiveis = pedidosDisponiveis.filter(p => p.id !== pedidoId);
+    renderPedidosDisponiveis();
+    
+    // Notificar central via WebSocket
+    if(ws && ws.readyState === WebSocket.OPEN){
+      ws.send(JSON.stringify({
+        type: 'pedido_aceito',
+        payload: {
+          pedido_id: pedidoId,
+          motoboy_id: MOTOBOY_ID
+        }
+      }));
+    }
+    
+    toast('Pedido aceito com sucesso!');
+    appendChat(`✅ Você aceitou o pedido #${pedidoId.substring(0,10)}`, 'user');
+    
+    // Carregar detalhes do pedido ativo e atualizar missão
+    await loadPedidoAtivo(pedidoId);
+  } catch(e) {
+    console.error('Erro ao aceitar pedido:', e);
+    toast('Erro ao aceitar pedido');
+  }
+}
+
+async function loadPedidoAtivo(pedidoId){
+  try {
+    // Buscar detalhes completos do pedido
+    const response = await fetch(`/api/pedido/${pedidoId}`);
+    
+    if (!response.ok) {
+      throw new Error('Erro ao buscar dados do pedido');
+    }
+    
+    const pedidoData = await response.json();
+    pedidoAtivo = pedidoData;
+    
+    // Atualizar seção "MISSÃO ATIVA"
+    updateMissaoAtiva(pedidoData);
+    
+    toast('✅ Rota carregada! Missão ativa.');
+  } catch (err) {
+    console.error('Erro ao carregar pedido ativo:', err);
+    toast('⚠️ Erro ao carregar dados da missão');
+    // Fallback com dados mínimos
+    pedidoAtivo = {id: pedidoId};
+    updateMissaoAtiva({id: pedidoId, cliente: 'Carregando...', coleta: 'Carregando...', entrega: 'Carregando...'});
+  }
+}
+
+/* ===== GPS E NAVEGAÇÃO ===== */
+function initGPS(){
+  if(!navigator.geolocation){
+    document.getElementById('map-status').textContent = 'GPS NÃO DISPONÍVEL';
+    return;
+  }
+  
+  // Watch position contínuo
+  gpsWatchId = navigator.geolocation.watchPosition(
+    (position) => {
+      currentPosition = {
+        lat: position.coords.latitude,
+        lon: position.coords.longitude,
+        accuracy: position.coords.accuracy
+      };
+      
+      document.getElementById('map-status').textContent = 'GPS ATIVO - RASTREANDO';
+      document.getElementById('gps-coords').textContent = 
+        `LAT: ${currentPosition.lat.toFixed(6)} | LON: ${currentPosition.lon.toFixed(6)} | ±${Math.round(currentPosition.accuracy)}m`;
+      
+      // Enviar posição para servidor periodicamente
+      sendPositionUpdate();
+    },
+    (error) => {
+      console.error('GPS Error:', error);
+      document.getElementById('map-status').textContent = 'ERRO GPS: ' + error.message;
+    },
+    {
+      enableHighAccuracy: true,
+      maximumAge: 10000,
+      timeout: 5000
+    }
+  );
+}
+
+function sendPositionUpdate(){
+  // Enviar posição via WebSocket para central
+  if(ws && ws.readyState === WebSocket.OPEN && currentPosition){
+    ws.send(JSON.stringify({
+      type: 'position_update',
+      payload: {
+        motoboy_id: MOTOBOY_ID,
+        lat: currentPosition.lat,
+        lon: currentPosition.lon,
+        timestamp: new Date().toISOString()
+      }
+    }));
+  }
+}
+
+function navegarParaProximo(){
+  if(!currentMission){
+    toast('Nenhuma missão ativa! Aceite um pedido primeiro.');
+    return;
+  }
+  
+  if(!currentPosition){
+    toast('Aguardando GPS... Tente novamente em alguns segundos.');
+    return;
+  }
+  
+  // Buscar endereço de entrega do pedido ativo
+  const destino = currentMission.entrega || currentMission.coleta;
+  
+  if (!destino || destino === 'N/A') {
+    toast('⚠️ Endereço de destino não disponível!');
+    return;
+  }
+  
+  // Abrir Google Maps com navegação em tempo real
+  const mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${currentPosition.lat},${currentPosition.lon}&destination=${encodeURIComponent(destino)}&travelmode=driving`;
+  window.open(mapsUrl, '_blank');
+  toast(`🗺️ Navegando para: ${destino.substring(0, 40)}...`);
+  
+  // Registrar no log
+  appendChat(`📍 Navegação iniciada para ${destino}`, 'user');
+}
+
+/* ===== UI HELPERS ===== */
+const statusBox = document.getElementById('global-status');
+function setStatus(text, cls) {
+  statusBox.textContent = text;
+  statusBox.className = 'status-box ' + (cls || '');
+}
+function toast(msg, timeout=2500){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=> t.classList.remove('show'), timeout);
+}
+
+/* ===== CHAT PANEL ===== */
+const chatPanel = document.getElementById('chatPanel');
+const chatBody = document.getElementById('chatBody');
+const chatStatus = document.getElementById('chatStatus');
+document.getElementById('open-chat').addEventListener('click', () => {
+  chatPanel.classList.toggle('open');
+  chatPanel.setAttribute('aria-hidden', chatPanel.classList.contains('open') ? 'false' : 'true');
+});
+
+/* append message (keeps layout identical style) */
+function appendChat(text, who='bot') {
+  const d = document.createElement('div');
+  d.className = who === 'me' ? 'msg-me' : 'msg-bot';
+  d.textContent = text;
+  chatBody.appendChild(d);
+  chatBody.scrollTop = chatBody.scrollHeight;
+}
+
+/* send button */
+document.getElementById('sendChatBtn').addEventListener('click', sendChatFromInput);
+document.getElementById('chatText').addEventListener('keypress', (e)=>{ if(e.key==='Enter') sendChatFromInput(); });
+
+/* navigation button */
+document.getElementById('next-mission').addEventListener('click', navegarParaProximo);
+
+function sendChatFromInput(){
+  const inp = document.getElementById('chatText');
+  const txt = inp.value.trim();
+  if(!txt) return;
+  appendChat('Você: ' + txt, 'me');
+  inp.value = '';
+  // send via WS if available, else queue to localStorage (chat queue)
+  const m = { type:'chat', payload:{ from: MOTOBOY_ID, to:'central', text: txt, order_id: ORDER_ID, ts:new Date().toISOString() } };
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify(m));
+  } else {
+    queueChatMessage(m);
+    toast('Conexão offline — mensagem enfileirada');
+  }
+}
+
+/* ===== WEBSOCKET (chat & realtime) ===== */
+let ws = null;
+let wsCentral = null; // Conexão adicional para room 'central' (receber novos pedidos)
+let wsBackoff = 1000;
+let wsUrl = null;
+let reconnectAttempts = 0;
+const MAX_RECONNECT_ATTEMPTS = 5;
+
+function buildWsUrl(room = null){
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  // connect to path /ws/{user} ou /ws/central para receber broadcasts
+  const target = room || MOTOBOY_ID;
+  wsUrl = `${proto}://${location.host}/ws/${target}`;
+  return wsUrl;
+}
+
+async function connectWS(){
+  // ensure auth and attach token to WS url
+  const defaultId = MOTOBOY_ID;
+  let access = localStorage.getItem('guriri_access');
+  let refresh = localStorage.getItem('guriri_refresh');
+  let uid = localStorage.getItem('guriri_user') || defaultId;
+  if(!access){
+    uid = prompt('Motoboy ID:', defaultId) || defaultId;
+    const pwd = prompt('Senha para ' + uid + ':');
+    if(!pwd){ alert('Autenticação necessária'); throw new Error('no password'); }
+    const res = await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:uid,password:pwd})});
+    if(!res.ok){ alert('Falha ao autenticar'); throw new Error('auth failed'); }
+    const j = await res.json(); access = j.access_token; refresh = j.refresh_token; localStorage.setItem('guriri_access', access); localStorage.setItem('guriri_refresh', refresh); localStorage.setItem('guriri_user', j.id);
+  }
+  MOTOBOY_ID = uid;
+  const url = buildWsUrl() + '?token=' + encodeURIComponent(access || '');
+  try {
+    ws = new WebSocket(url);
+  } catch (e){
+    console.warn('WS connect error', e);
+    scheduleReconnect();
+    setStatus('OFFLINE (WS)','status-offline');
+    chatStatus.textContent = 'offline';
+    return;
+  }
+
+  ws.onopen = ()=> {
+    wsBackoff = 1000;
+    reconnectAttempts = 0; // Reset counter on successful connection
+    setStatus('ONLINE (LXP)','status-online');
+    chatStatus.textContent = 'online';
+    toast('Conectado ao servidor');
+    // flush any queued live docs and chat messages
+    triggerSync();
+    flushChatQueue();
+    // Conectar também ao room central para receber novos pedidos
+    connectCentralWS();
+  };
+
+  ws.onmessage = (ev) => {
+    try {
+      const msg = JSON.parse(ev.data);
+      if(msg.type === 'chat'){
+        const text = (msg.payload && msg.payload.text) ? `${msg.payload.from || 'Central'}: ${msg.payload.text}` : JSON.stringify(msg.payload || msg);
+        appendChat(text, 'bot');
+      } else if (msg.type === 'new_pedido'){
+        const p = msg.payload || {};
+        appendChat(`Novo pedido ${p.id} • R$ ${p.valor?.toFixed ? p.valor.toFixed(2) : p.valor} • Pagamento: ${p.payment_method || 'N/A'}`,'bot');
+      } else if (msg.type === 'order_update'){
+        appendChat('Atualização: ' + (msg.payload.text || JSON.stringify(msg.payload)), 'bot');
+      } else if (msg.type === 'live_doc_uploaded'){
+        appendChat('LiveDocs confirmado: ' + (msg.payload.file || msg.payload.path || ''), 'bot');
+        toast('LiveDocs enviado');
+      } else {
+        // generic
+        appendChat('MSG: ' + JSON.stringify(msg), 'bot');
+      }
+    } catch (e) { console.warn('ws msg parse err', e); }
+  };
+
+  ws.onclose = ()=> {
+    setStatus('OFFLINE (WS)','status-offline');
+    chatStatus.textContent = 'offline';
+    scheduleReconnect();
+  };
+
+  ws.onerror = (err)=> {
+    console.warn('ws err', err);
+    // close to trigger reconnect sequence
+    try { ws.close(); } catch(e){}
+  };
+}
+
+function scheduleReconnect(){
+  reconnectAttempts++;
+  if (reconnectAttempts > MAX_RECONNECT_ATTEMPTS) {
+    alert('❌ Muitas tentativas falhadas. Faça logout e login novamente em /logout');
+    window.location.href = '/logout';
+    return; // STOP reconnect loop
+  }
+  setTimeout(()=> {
+    wsBackoff = Math.min(Math.floor(wsBackoff * 1.5), 60000);
+    connectWS();
+    connectCentralWS(); // Reconectar ao room central também
+  }, wsBackoff);
+}
+
+/* ===== CONEXÃO AO ROOM CENTRAL (receber novos pedidos) ===== */
+async function connectCentralWS(){
+  let access = localStorage.getItem('guriri_access');
+  if(!access) return; // Aguarda autenticação principal
+  
+  const url = buildWsUrl('central') + '?token=' + encodeURIComponent(access);
+  try {
+    wsCentral = new WebSocket(url);
+  } catch (e){
+    console.warn('WS Central connect error', e);
+    return;
+  }
+
+  wsCentral.onopen = ()=> {
+    console.log('Conectado ao room central para receber novos pedidos');
+  };
+
+  wsCentral.onmessage = (ev) => {
+    try {
+      const msg = JSON.parse(ev.data);
+      if(msg.type === 'new_pedido'){
+        handleNewPedido(msg.payload);
+      }
+    } catch (e) { console.warn('ws central msg parse err', e); }
+  };
+
+  wsCentral.onclose = ()=> {
+    console.log('Desconectado do room central');
+    // Vai reconectar via scheduleReconnect
+  };
+
+  wsCentral.onerror = (err)=> {
+    console.warn('ws central err', err);
+    try { wsCentral.close(); } catch(e){}
+  };
+}
+
+/* ===== HANDLER PARA NOVOS PEDIDOS ===== */
+function handleNewPedido(pedido){
+  // Exibe notificação de novo pedido disponível
+  appendChat(`🆕 NOVO PEDIDO #${pedido.id} • R$ ${pedido.valor?.toFixed(2) || '0.00'} • ${pedido.cliente}`, 'bot');
+  toast('Novo pedido disponível!');
+  
+  // Adiciona à lista de pedidos disponíveis
+  addPedidoDisponivel(pedido);
+}
+
+/* ===== CHAT QUEUE (for offline) ===== */
+const CHAT_QUEUE_KEY = 'guriri_chat_queue_v1';
+function queueChatMessage(msg){
+  const q = JSON.parse(localStorage.getItem(CHAT_QUEUE_KEY) || '[]');
+  q.push(msg);
+  localStorage.setItem(CHAT_QUEUE_KEY, JSON.stringify(q));
+}
+function flushChatQueue(){
+  const q = JSON.parse(localStorage.getItem(CHAT_QUEUE_KEY) || '[]');
+  if(!q.length) return;
+  if(!(ws && ws.readyState === WebSocket.OPEN)) return;
+  // send all in order
+  while(q.length){
+    const m = q.shift();
+    ws.send(JSON.stringify(m));
+  }
+  localStorage.setItem(CHAT_QUEUE_KEY, JSON.stringify([]));
+  toast('Mensagens enfileiradas enviadas');
+}
+
+/* ===== LIVE DOCS (upload) ===== */
+const QUEUE_KEY = 'ldocs_queue_v1';
+
+function enqueueLiveDoc(payload) {
+  const q = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
+  q.push(payload);
+  localStorage.setItem(QUEUE_KEY, JSON.stringify(q));
+  triggerSync();
+}
+
+async function triggerSync() {
+  if (!navigator.onLine) {
+    setStatus('OFFLINE (QUEUE)', 'status-offline');
+    return;
+  }
+  const q = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
+  if (!q.length) return;
+  setStatus('SYNCING L-DOCS...', '');
+  for (let i = 0; i < q.length; i++){
+    const item = q[i];
+    try {
+      await sendLiveDocToServer(item);
+      // remove first
+      const newQ = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
+      newQ.shift();
+      localStorage.setItem(QUEUE_KEY, JSON.stringify(newQ));
+    } catch (e) {
+      console.warn('sync failed for item', e);
+      setStatus('SYNC FAILED, RETRYING', 'status-offline');
+      break;
+    }
+  }
+  if((JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]')).length === 0){
+    setStatus('ONLINE (LXP)', 'status-online');
+  }
+}
+
+/* convert base64 to blob */
+function base64ToBlob(base64, mime) {
+  const binStr = atob((base64.split(',')[1] || base64));
+  const len = binStr.length;
+  const arr = new Uint8Array(len);
+  for (let i=0;i<len;i++) arr[i] = binStr.charCodeAt(i);
+  return new Blob([arr], { type: mime || 'image/jpeg' });
+}
+
+/* send live doc to server (multipart) */
+async function sendLiveDocToServer(item) {
+  const blob = base64ToBlob(item.file_b64, item.mime);
+  const fd = new FormData();
+  fd.append('order_id', item.order_id);
+  fd.append('motoboy', item.motoboy);
+  fd.append('file', blob, item.filename);
+  if(item.coords){
+    fd.append('lat', String(item.coords.lat));
+    fd.append('lon', String(item.coords.lon));
+  }
+  // call backend endpoint
+  const res = await fetch('/api/upload', { method:'POST', body: fd });
+  if(!res.ok) throw new Error('upload failed ' + res.status);
+  const j = await res.json();
+  // notify via ws
+  if(ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type:'live_doc_uploaded', payload: { order_id: item.order_id, file: j.path || item.filename } }));
+  }
+  return j;
+}
+
+/* ===== GEO & file input handling ===== */
+function getCoords(timeout = 8000){
+  return new Promise((resolve) => {
+    if(!navigator.geolocation) return resolve(null);
+    let done = false;
+    const timer = setTimeout(()=>{ if(!done){ done=true; resolve(null); } }, timeout);
+    navigator.geolocation.getCurrentPosition((pos)=> {
+      if(done) return;
+      done = true; clearTimeout(timer);
+      resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude, accuracy: pos.coords.accuracy });
+    }, (err)=> {
+      if(done) return;
+      done = true; clearTimeout(timer);
+      resolve(null);
+    }, { enableHighAccuracy: true, maximumAge:5000, timeout });
+  });
+}
+
+document.getElementById('live-documents-capture').addEventListener('change', async function(e){
+  const f = e.target.files[0];
+  if(!f) return;
+  setStatus('PROCESSANDO L-DOC...', '');
+  const coords = await getCoords(7000);
+  const reader = new FileReader();
+  reader.onload = async function(){
+    const file_b64 = reader.result;
+    const payload = {
+      temp_id: 't_' + Date.now() + '_' + Math.random().toString(36).slice(2,9),
+      order_id: ORDER_ID,
+      motoboy: MOTOBOY_ID,
+      filename: f.name,
+      mime: f.type || 'image/jpeg',
+      file_b64: file_b64,
+      coords: coords,
+      ts: new Date().toISOString()
+    };
+    if(navigator.onLine){
+      try {
+        setStatus('ENVIANDO L-DOC...', '');
+        await sendLiveDocToServer(payload);
+        setStatus('LIVE DOCS ENVIADO', 'status-online');
+        appendChat('LiveDocs enviado (auto)', 'me');
+        toast('LiveDocs enviado');
+      } catch (err) {
+        console.warn('Envio falhou, enfileirando', err);
+        enqueueLiveDoc(payload);
+        setStatus('ENFILEIRADO (OFFLINE)', 'status-offline');
+        appendChat('LiveDocs enfileirado (envio falhou)', 'me');
+      }
+    } else {
+      enqueueLiveDoc(payload);
+      setStatus('ENFILEIRADO (OFFLINE)', 'status-offline');
+      appendChat('LiveDocs enfileirado (offline)', 'me');
+    }
+  };
+  reader.readAsDataURL(f);
+});
+
+/* ===== HEARTBEAT SYSTEM ===== */
+let currentMission = null; // Armazena pedido ativo
+
+async function sendHeartbeat() {
+  if (!window.motoboyId) return;
+  
+  const payload = {
+    motoboy_id: window.motoboyId,
+    timestamp: new Date().toISOString()
+  };
+  
+  // Adicionar GPS se disponível
+  if (window.lastLat && window.lastLon) {
+    payload.lat = window.lastLat;
+    payload.lon = window.lastLon;
+  }
+  
+  try {
+    const res = await fetch('/api/motoboy/heartbeat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    
+    if (res.ok) {
+      console.log('💓 Heartbeat enviado', payload);
+    }
+  } catch (err) {
+    console.warn('Erro ao enviar heartbeat:', err);
+  }
+}
+
+// Enviar heartbeat a cada 30 segundos
+setInterval(sendHeartbeat, 30000);
+
+/* ===== MISSÃO ATIVA - Atualização Dinâmica ===== */
+function updateMissaoAtiva(pedidoData) {
+  const titulo = document.getElementById('missao-ativa-titulo');
+  const content = document.getElementById('missao-ativa-content');
+  const empty = document.getElementById('missao-ativa-empty');
+  
+  if (!pedidoData) {
+    // Limpar missão
+    currentMission = null;
+    if (titulo) titulo.textContent = 'NENHUMA MISSÃO ATIVA';
+    if (titulo) titulo.style.color = 'var(--muted)';
+    if (content) content.style.display = 'none';
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  
+  currentMission = pedidoData;
+  
+  // Atualizar título
+  if (titulo) {
+    titulo.textContent = `MISSÃO ATIVA: ENTREGA #${pedidoData.id.substring(0,8)}`;
+    titulo.style.color = 'var(--brand)';
+  }
+  
+  // Mostrar conteúdo
+  if (content) content.style.display = 'block';
+  if (empty) empty.style.display = 'none';
+  
+  // Atualizar detalhes
+  const taxa = pedidoData.taxa_motoboy || 7.0;
+  
+  const idElem = document.getElementById('missao-ativa-id');
+  if (idElem) idElem.textContent = `Entrega #${pedidoData.id.substring(0,8)}`;
+  
+  const taxaElem = document.getElementById('missao-ativa-taxa');
+  if (taxaElem) taxaElem.textContent = `R$ ${taxa.toFixed(2)}`;
+  
+  const clienteElem = document.getElementById('missao-ativa-cliente');
+  if (clienteElem) clienteElem.textContent = `CLIENTE: ${pedidoData.cliente || 'N/A'}`;
+  
+  const destinoElem = document.getElementById('missao-ativa-destino');
+  if (destinoElem) {
+    const coleta = pedidoData.coleta || 'N/A';
+    const entrega = pedidoData.entrega || 'N/A';
+    destinoElem.textContent = `COLETA: ${coleta} → ENTREGA: ${entrega}`;
+  }
+  
+  const obsElem = document.getElementById('missao-ativa-obs');
+  if (obsElem && pedidoData.obs) {
+    obsElem.textContent = `⚠️ OBS: ${pedidoData.obs}`;
+    obsElem.style.display = 'block';
+  } else if (obsElem) {
+    obsElem.style.display = 'none';
+  }
+  
+  toast(`✅ Missão #${pedidoData.id.substring(0,8)} ativada! Taxa: R$ ${taxa.toFixed(2)}`);
+}
+
+/* ===== UPLOAD LIVE DOCUMENTS - Finaliza Entrega ===== */
+const liveDocsInput = document.getElementById('live-documents-capture');
+if (liveDocsInput) {
+  liveDocsInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    if (!currentMission) {
+      toast('❌ Nenhuma missão ativa para anexar documento!');
+      return;
+    }
+    
+    toast('📤 Enviando Live Document...');
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('order_id', currentMission.id);
+    formData.append('motoboy', window.motoboyId || 'unknown');
+    
+    // Adicionar GPS
+    if (window.lastLat && window.lastLon) {
+      formData.append('lat', window.lastLat);
+      formData.append('lon', window.lastLon);
+    }
+    
+    try {
+      // 1. Upload do documento
+      const uploadRes = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      });
+      
+      if (!uploadRes.ok) {
+        throw new Error('Erro no upload');
+      }
+      
+      toast('✅ Documento enviado!');
+      
+      // 2. Marcar pedido como entregue
+      const deliverRes = await fetch(`/api/pedido/${currentMission.id}/deliver`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          motoboy_id: window.motoboyId,
+          delivered_at: new Date().toISOString()
+        })
+      });
+      
+      if (!deliverRes.ok) {
+        throw new Error('Erro ao finalizar entrega');
+      }
+      
+      toast('🎉 Entrega finalizada com sucesso!');
+      
+      // 3. Limpar missão atual
+      updateMissaoAtiva(null);
+      
+      // 4. Buscar próximo pedido disponível
+      setTimeout(async () => {
+        try {
+          const nextRes = await fetch('/api/pedidos?status=pending&limit=1');
+          const nextPedidos = await nextRes.json();
+          
+          if (nextPedidos.length > 0) {
+            toast('📦 Próxima missão disponível! Verifique a lista de pedidos.');
+          } else {
+            toast('✨ Nenhum pedido pendente. Aguarde novas missões!');
+          }
+        } catch (err) {
+          console.warn('Erro ao buscar próximo pedido:', err);
+        }
+      }, 2000);
+      
+    } catch (err) {
+      console.error('Erro no processo de entrega:', err);
+      toast('❌ Erro ao processar entrega. Tente novamente.');
+    }
+    
+    // Limpar input
+    e.target.value = '';
+  });
+}
+
+/* ===== ONLINE/OFFLINE events ===== */
+window.addEventListener('online', ()=> {
+  setStatus('ONLINE (LXP)', 'status-online');
+  triggerSync();
+  connectWS(); // attempt reconnect
+});
+window.addEventListener('offline', ()=> {
+  setStatus('OFFLINE (NETWORK)', 'status-offline');
+});
+
+/* ===== GESTÃO DE ESCALA ===== */
+let minhaEscala = []; // Array de {dia_semana, turno, id}
+
+// Abrir modal de escala
+document.getElementById('btn-gerenciar-escala').addEventListener('click', async () => {
+  document.getElementById('modal-escala').style.display = 'block';
+  await carregarMinhaEscala();
+  renderCalendarioEscala();
+});
+
+// Fechar modal
+document.getElementById('fechar-modal-escala').addEventListener('click', () => {
+  document.getElementById('modal-escala').style.display = 'none';
+});
+
+// Carregar escala do motoboy
+async function carregarMinhaEscala() {
+  try {
+    const res = await fetch(`/api/escalas?motoboy_id=${MOTOBOY_ID}`);
+    const data = await res.json();
+    minhaEscala = data.escalas || [];
+    console.log('Escala carregada:', minhaEscala);
+  } catch (err) {
+    console.error('Erro ao carregar escala:', err);
+    toast('❌ Erro ao carregar escala');
+  }
+}
+
+// Renderizar calendário de escala
+function renderCalendarioEscala() {
+  const container = document.getElementById('calendario-escala');
+  const dias = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
+  const turnos = [
+    { cod: 'MANHA', nome: 'MANHÃ', emoji: '🌅', cor: '#FFAA00' },
+    { cod: 'TARDE', nome: 'TARDE', emoji: '☀️', cor: '#FFC300' },
+    { cod: 'NOITE', nome: 'NOITE', emoji: '🌙', cor: '#0077FF' }
+  ];
+
+  let html = '<div style="display:grid; gap:15px;">';
+
+  dias.forEach((dia, idx) => {
+    html += `
+      <div style="background:rgba(255,255,255,0.05); padding:12px; border-radius:8px; border-left:3px solid var(--fuchsia);">
+        <div style="font-weight:bold; margin-bottom:8px; color:var(--fuchsia);">${dia}</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;">
+    `;
+
+    turnos.forEach(turno => {
+      const escalado = minhaEscala.find(e => e.dia_semana === idx && e.turno === turno.cod);
+      const checked = escalado ? 'checked' : '';
+      const bgColor = escalado ? turno.cor : 'rgba(255,255,255,0.05)';
+      const textColor = escalado ? '#000' : 'var(--muted)';
+
+      html += `
+        <label style="display:flex; align-items:center; justify-content:center; padding:10px; border-radius:5px; background:${bgColor}; color:${textColor}; cursor:pointer; transition:all 0.2s; font-size:13px; font-weight:${escalado ? 'bold' : 'normal'};">
+          <input type="checkbox" 
+                 data-dia="${idx}" 
+                 data-turno="${turno.cod}" 
+                 ${checked}
+                 style="margin-right:5px;"
+                 onchange="toggleEscala(${idx}, '${turno.cod}', this.checked)">
+          ${turno.emoji}<br>${turno.nome.substring(0,3)}
+        </label>
+      `;
+    });
+
+    html += `
+        </div>
+      </div>
+    `;
+  });
+
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+// Toggle escala (marcar/desmarcar)
+window.toggleEscala = function(dia, turno, checked) {
+  // Atualizar visualmente
+  renderCalendarioEscala();
+};
+
+// Salvar escala
+document.getElementById('salvar-escala').addEventListener('click', async () => {
+  try {
+    // Coletar checkboxes marcados
+    const checkboxes = document.querySelectorAll('#calendario-escala input[type="checkbox"]');
+    const novaEscala = [];
+
+    checkboxes.forEach(cb => {
+      if (cb.checked) {
+        novaEscala.push({
+          dia_semana: parseInt(cb.dataset.dia),
+          turno: cb.dataset.turno
+        });
+      }
+    });
+
+    console.log('Nova escala:', novaEscala);
+
+    // Remover escalas antigas
+    for (const escalaAntiga of minhaEscala) {
+      await fetch(`/api/escalas/${escalaAntiga.id}`, { method: 'DELETE' });
+    }
+
+    // Criar novas escalas
+    for (const item of novaEscala) {
+      await fetch('/api/escalas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          motoboy_id: MOTOBOY_ID,
+          dia_semana: item.dia_semana,
+          turno: item.turno
+        })
+      });
+    }
+
+    toast('✅ Escala salva com sucesso!');
+    
+    // Recarregar escala
+    await carregarMinhaEscala();
+    
+    // Fechar modal
+    setTimeout(() => {
+      document.getElementById('modal-escala').style.display = 'none';
+    }, 1500);
+
+  } catch (err) {
+    console.error('Erro ao salvar escala:', err);
+    toast('❌ Erro ao salvar escala. Tente novamente.');
+  }
+});
+
+/* ===== INIT ===== */
+setStatus('CONNECTING...', '');
+appendChat('Sistema pronto. Abra o chat para comunicar com a Central / THOR.', 'bot');
+connectWS();
+setTimeout(triggerSync, 1500);
+
+// Inicializar GPS
+initGPS();
+toast('GPS inicializando...');
+
+// Inicializar sistema de heartbeat
+setTimeout(() => {
+  sendHeartbeat(); // Primeiro heartbeat
+  toast('💓 Sistema de heartbeat ativo (30s)');
+}, 3000);
+
+/* ===== debug helper ===== */
+function queueLog(k, v){ console.log('L-DOC LOG', k, v); }
+</script>
+</body>
+</html>

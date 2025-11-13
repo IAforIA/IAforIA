@@ -1,0 +1,1319 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Guriri Express Central - Dashboard Fático (CEO)</title>
+<style>
+  /* Base Style from IA 4 IA™ */
+  :root{
+    --bg:#080b0f;--card:#0d1217;--ink:#e8fbff;--muted:#a8c8d0;
+    --edge:#00e5ff33;--glow:#00e5ff;--ok:#00ffbf;--warn:#ffd84d;--danger:#ff6b6b;
+    --brand:#8cf7ff;--accent:#2fffd3;--vio:#a88bff;--fuchsia:#ff31ff;--cyan:#00ffff;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;background:radial-gradient(1200px 900px at 50% 0%,#0b151d 0%, var(--bg) 45%) fixed;
+    color:var(--ink); font:16px/1.45 Inter, system-ui,Segoe UI,Roboto,Arial;
+  }
+  .shell{max-width:1280px;margin:18px auto;padding:0 18px}
+  .card{
+    background:linear-gradient(180deg,#0d141a,#0a1014);border:1px solid var(--edge);border-radius:12px;
+    padding:15px;box-shadow:0 4px 10px rgba(0,0,0,.3); margin-bottom:20px;
+  }
+  .grid-container{
+    display:grid;gap:20px;
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 1024px){
+    .grid-container{grid-template-columns: 350px 1fr 300px;}
+  }
+
+  /* KPIs */
+  .kpi-box{
+    padding:15px; border-radius:8px; margin-bottom:10px;
+    border-left:5px solid var(--accent);
+    background:rgba(0,0,0,0.15);
+  }
+  .kpi-label{font-size:0.9em; color:var(--muted);}
+  .kpi-value{font-size:1.8em; font-weight:bold; margin-top:5px;}
+
+  /* TABELA OPERACIONAL */
+  .op-table{width:100%; border-collapse:collapse; font-size:0.95em;}
+  .op-table th, .op-table td{padding:10px; text-align:left; border-bottom:1px solid var(--edge);}
+  .op-table th{color:var(--cyan); font-weight:normal; border-top:1px solid var(--edge);}
+  .badge{padding:3px 8px; border-radius:15px; font-size:0.8em; font-weight:bold;}
+  .badge.ok{background:var(--ok); color:var(--bg);}
+  .badge.warn{background:var(--warn); color:var(--bg);}
+  .badge.danger{background:var(--danger); color:var(--ink);}
+
+  /* CHAT/LOG CENTRAL */
+  .chat-log{height:300px; overflow-y:auto; background:rgba(0,0,0,0.2); padding:10px; border-radius:8px; display:flex; flex-direction:column;}
+  .chat-log p{margin:5px 0; padding:8px 12px; border-radius:10px; max-width:90%; word-wrap:break-word;}
+  .chat-log .system{background:#153042; color:var(--cyan); align-self:flex-start;}
+  .chat-log .ceo{background:#450045; color:var(--ink); align-self:flex-end;}
+
+  /* Campo de envio (novo) */
+  .chat-input{
+    margin-top:10px; display:flex; border-top:1px solid var(--edge); padding-top:10px;
+  }
+  .chat-input input{
+    flex:1; background:#0c141a; border:1px solid var(--edge); border-radius:8px;
+    padding:10px; color:var(--ink); outline:none;
+  }
+  .chat-input button{
+    background:var(--fuchsia); color:var(--ink); border:none; border-radius:8px;
+    padding:10px 16px; margin-left:8px; cursor:pointer; font-weight:bold;
+    transition:0.2s;
+  }
+  .chat-input button:hover{
+    background:var(--vio); transform:scale(1.05);
+  }
+
+  /* LISTA MOTOBOY */
+  .motoboy-item{
+    padding:10px; border-bottom:1px solid var(--edge); cursor:pointer;
+    display:flex; justify-content:space-between; align-items:center;
+  }
+  .motoboy-item:hover{background:rgba(255,255,255,0.05);}
+  .motoboy-item.selected{border-left:5px solid var(--fuchsia);}
+  .status-dot{width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:5px;}
+  .online{background:var(--ok);}
+  .offline{background:var(--danger);}
+
+  /* MOTOBOYS ONLINE CARDS */
+  .motoboy-online-card{
+    background:rgba(0,255,100,0.05); border-left:3px solid var(--ok);
+    padding:12px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;
+  }
+  .motoboy-online-card .name{font-weight:bold; color:var(--ok); font-size:1.1em;}
+  .motoboy-online-card .info{color:var(--muted); font-size:0.85em; margin-top:3px;}
+  .motoboy-online-card .status-badge{
+    background:var(--ok); color:#000; padding:4px 10px; border-radius:12px; font-size:0.75em; font-weight:bold;
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:10px;">
+        <div style="font-size:24px; font-weight:900; color:var(--cyan);">
+            🎯 GURIRI EXPRESS CENTRAL &bull; COMANDO OPERACIONAL
+        </div>
+        <button onclick="openAdminPanel()" style="background:var(--fuchsia); color:#000; border:none; padding:10px 20px; border-radius:8px; font-weight:bold; cursor:pointer; transition:0.2s;">
+            ⚙️ ADMINISTRAÇÃO
+        </button>
+    </div>
+
+    <div class="grid-container">
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- 1. PAINEL ESQUERDO: KPIs + PEDIDOS EM TEMPO REAL -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <div>
+            <!-- KPIs TCZ & LATÊNCIA -->
+            <div class="card">
+                <h2 style="margin-top:0; color:var(--ok); display:flex; justify-content:space-between; align-items:center;">
+                    <span>📊 KPIS OPERACIONAIS</span>
+                    <small id="kpi-last-update" style="font-size:11px; color:var(--muted); font-weight:normal;">Atualizando...</small>
+                </h2>
+                
+                <!-- Grid 2 colunas para KPIs -->
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                    <div class="kpi-box" style="border-color:var(--ok);">
+                        <div class="kpi-label">💰 RECEITA</div>
+                        <div class="kpi-value" style="color:var(--ok);" data-kpi="receita">R$ 0</div>
+                        <small style="color:var(--muted); font-size:10px;">Pedidos entregues</small>
+                    </div>
+
+                    <div class="kpi-box" style="border-color:var(--fuchsia);">
+                        <div class="kpi-label">⏱️ TCZ MÉDIO</div>
+                        <div class="kpi-value" style="color:var(--fuchsia);" data-kpi="tcz">0 min</div>
+                        <small style="color:var(--muted); font-size:10px;">Criação → Entrega</small>
+                    </div>
+
+                    <div class="kpi-box" style="border-color:var(--brand);">
+                        <div class="kpi-label">🔄 LATÊNCIA</div>
+                        <div class="kpi-value" style="color:var(--brand);" data-kpi="latencia">0 min</div>
+                        <small style="color:var(--muted); font-size:10px;">Aceite → Entrega</small>
+                    </div>
+                    
+                    <div class="kpi-box" style="border-color:var(--warn);">
+                        <div class="kpi-label">📈 TAXA</div>
+                        <div class="kpi-value" style="color:var(--warn);" data-kpi="taxa">0%</div>
+                        <small style="color:var(--muted); font-size:10px;">Aceitação</small>
+                    </div>
+
+                    <div class="kpi-box" style="border-color:var(--glow);">
+                        <div class="kpi-label">📦 PEDIDOS/H</div>
+                        <div class="kpi-value" style="color:var(--glow);" data-kpi="pedidos-hora">0/h</div>
+                        <small style="color:var(--muted); font-size:10px;">Últimas 24h</small>
+                    </div>
+
+                    <div class="kpi-box" style="border-color:var(--ok);">
+                        <div class="kpi-label">🏍️ MOTOBOYS</div>
+                        <div class="kpi-value" style="color:var(--ok);" id="motoboys-online-count">0</div>
+                        <small style="color:var(--muted); font-size:10px;">Online agora</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PEDIDOS EM TEMPO REAL -->
+            <div class="card">
+                <h3 style="margin-top:0; color:var(--brand); display:flex; justify-content:space-between; align-items:center;">
+                    <span>📋 PEDIDOS EM TEMPO REAL</span>
+                    <span id="pedidos-total-badge" style="background:var(--brand);color:#000;padding:2px 8px;border-radius:12px;font-size:11px;">0</span>
+                </h3>
+                <div id="pedidos-em-tempo-real" style="max-height:400px;overflow-y:auto;font-size:12px;">
+                    <p style="color:var(--muted);text-align:center;padding:20px;">🔄 Carregando pedidos...</p>
+                </div>
+            </div>
+
+            <!-- RELATÓRIOS AO VIVO -->
+            <div class="card">
+                <h3 style="margin-top:0; color:var(--accent);">📊 RELATÓRIOS CONSOLIDADOS</h3>
+                
+                <!-- Totais -->
+                <div style="background:rgba(0,150,255,0.1);padding:10px;border-radius:6px;margin-bottom:10px;border-left:3px solid var(--brand);">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px;">
+                        <div>📦 Total: <strong id="stats-pedidos-total">0</strong></div>
+                        <div>✅ Aceitos: <strong id="stats-pedidos-aceitos">0</strong></div>
+                        <div>🚚 Entregues: <strong id="stats-pedidos-entregues">0</strong></div>
+                        <div>📈 Taxa: <strong id="stats-taxa-aceitacao">0%</strong></div>
+                    </div>
+                </div>
+
+                <!-- Por Cliente -->
+                <div style="margin-bottom:10px;">
+                    <h4 style="color:var(--cyan);margin:5px 0;font-size:12px;">👥 POR CLIENTE</h4>
+                    <div id="stats-clientes" style="background:rgba(0,0,0,0.2);padding:8px;border-radius:4px;font-size:11px;max-height:120px;overflow-y:auto;">
+                        <em style="color:var(--muted);">Aguardando...</em>
+                    </div>
+                </div>
+
+                <!-- Por Motoboy -->
+                <div>
+                    <h4 style="color:var(--ok);margin:5px 0;font-size:12px;">🏍️ POR MOTOBOY</h4>
+                    <div id="stats-motoboys" style="background:rgba(0,0,0,0.2);padding:8px;border-radius:4px;font-size:11px;max-height:120px;overflow-y:auto;">
+                        <em style="color:var(--muted);">Aguardando...</em>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- 2. PAINEL CENTRAL: OPERAÇÕES EM TEMPO REAL (LOG/CHAT) -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <div>
+            <div class="card" style="min-height:700px;display:flex;flex-direction:column;">
+                <h2 style="margin-top:0; color:var(--cyan); display:flex; justify-content:space-between; align-items:center;">
+                    <span>💬 OPERAÇÕES EM TEMPO REAL</span>
+                    <span id="ws-status-indicator" style="font-size:11px;padding:3px 8px;border-radius:12px;background:var(--muted);color:#000;">● Conectando...</span>
+                </h2>
+                <div class="chat-log" id="log-central" style="flex:1;overflow-y:auto;">
+                    <p class="system">🤖 **THOR:** Sistema de Comando ativado. Aguardando conexão...</p>
+                </div>
+
+                <!-- Campo de chat -->
+                <div class="chat-input" style="margin-top:10px;">
+                    <input id="chatMessage" placeholder="Mensagem para THOR ou Motoboys..." style="flex:1;padding:10px;border-radius:4px;border:1px solid var(--muted);background:rgba(0,0,0,0.3);color:var(--ink);" />
+                    <button id="sendBtn" style="padding:10px 20px;background:var(--brand);color:#000;border:none;border-radius:4px;font-weight:bold;cursor:pointer;margin-left:10px;">Enviar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- 3. PAINEL DIREITO: GESTÃO DE MOTOBOYS + EMERGÊNCIA -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <div>
+            <!-- GESTÃO DE MOTOBOYS -->
+            <div class="card">
+                <h2 style="margin-top:0; color:var(--fuchsia); display:flex; justify-content:space-between; align-items:center;">
+                    <span>🏍️ GESTÃO DE MOTOBOYS</span>
+                    <span id="motoboys-count-badge" style="background:var(--ok);color:#000;padding:3px 10px;border-radius:12px;font-size:12px;">0</span>
+                </h2>
+                <div id="motoboy-list" style="max-height:400px;overflow-y:auto;font-size:13px;">
+                    <p style="color:var(--muted);text-align:center;padding:20px;">🔄 Carregando motoboys...</p>
+                </div>
+            </div>
+
+            <!-- COMANDO DE EMERGÊNCIA -->
+            <div class="card">
+                <h3 style="margin-top:0; color:var(--danger);">🚨 COMANDO DE EMERGÊNCIA</h3>
+                <button id="btn-emergency" onclick="emergencyScale()" style="width:100%; padding:12px; background:linear-gradient(135deg, var(--danger), var(--warn)); color:#fff; border:none; border-radius:8px; font-weight:bold;cursor:pointer;font-size:14px;box-shadow:0 4px 8px rgba(255,0,0,0.3);">
+                    ⚡ ATIVAR HOT-SWAP AUTOMÁTICO
+                </button>
+                <div id="emergency-status" style="margin-top:10px;padding:10px;background:rgba(255,0,0,0.1);border-radius:6px;display:none;border-left:3px solid var(--danger);">
+                    <small style="color:var(--muted);">Aguardando ativação...</small>
+                </div>
+                <p style="font-size:11px;color:var(--muted);margin-top:10px;text-align:center;">
+                    Redistribui pedidos pendentes para motoboys disponíveis
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+/*
+  DASHBOARD CENTRAL - SISTEMA SINCRONIZADO
+  - Todos os painéis atualizam harmoniosamente
+  - KPIs calculados em tempo real
+  - WebSocket para operações ao vivo
+*/
+
+const WS_PATH = '/ws/central';
+const OUTBOX_KEY = 'central_outbox';
+let ws = null;
+let reconnectMs = 1000;
+let wsConnected = false;
+let reconnectAttempts = 0;
+const MAX_RECONNECT_ATTEMPTS = 5;
+
+// DOM
+const logEl = document.getElementById('log-central');
+const inputEl = document.getElementById('chatMessage');
+const sendBtn = document.getElementById('sendBtn');
+const wsStatusIndicator = document.getElementById('ws-status-indicator');
+
+// Adiciona mensagem no painel
+function addCentralLog(text, type='system') {
+    const p = document.createElement('p');
+    p.className = type === 'ceo' ? 'ceo' : 'system';
+    p.textContent = text;
+    logEl.appendChild(p);
+    logEl.scrollTop = logEl.scrollHeight;
+}
+
+// Constrói e mostra mensagem recebida via WS
+function handleIncoming(msg) {
+    // msg: { type, payload }
+    try {
+        if (!msg || !msg.type) return;
+        if (msg.type === 'chat') {
+            const from = (msg.payload && msg.payload.from) ? msg.payload.from : 'unknown';
+            const text = (msg.payload && msg.payload.text) ? msg.payload.text : JSON.stringify(msg.payload || {});
+            // se for central-originado, mostra como ceo; senão system
+            const cls = (from === 'central' || from === 'CEO') ? 'ceo' : 'system';
+            addCentralLog(`${from}: ${text}`, cls);
+        } else if (msg.type === 'new_pedido') {
+            const p = msg.payload || {};
+            addCentralLog(`📦 Novo pedido ${p.id} • R$ ${p.valor?.toFixed ? p.valor.toFixed(2) : p.valor} • Pagamento: ${p.payment_method || 'N/A'} • CEP: ${p.cep || ''} • Ref: ${p.reference || ''}`, 'system');
+        } else if (msg.type === 'pedido_assigned') {
+            const p = msg.payload || {};
+            addCentralLog(`🚴 Pedido ${p.id} atribuído a ${p.motoboy_id || 'N/A'} • Status: ${p.status || 'N/A'}`, 'system');
+        } else if (msg.type === 'live_doc_uploaded') {
+            const p = msg.payload || {};
+            addCentralLog(`📸 Live Doc recebido • Pedido: ${p.order_id || 'N/A'} • Motoboy: ${p.motoboy || 'N/A'} • Localização: ${p.lat && p.lon ? p.lat + ', ' + p.lon : 'N/A'}`, 'system');
+        } else if (msg.type === 'stats_update') {
+            // NOVO: Atualizar painel de estatísticas
+            updateStats(msg.payload);
+        } else if (msg.type === 'motoboy_status') {
+            // NOVO: Atualizar status de motoboy em tempo real
+            console.info('[WS] Motoboy status atualizado:', msg.payload);
+            // Recarregar lista de motoboys online
+            atualizarGestaoMotoboys();
+        } else if (msg.type === 'pedido_delivered') {
+            const p = msg.payload || {};
+            addCentralLog(`✅ Pedido ${p.id} entregue por ${p.motoboy_id || 'N/A'}!`, 'system');
+            // Recarregar KPIs e motoboys
+            loadKPIs();
+            atualizarGestaoMotoboys();
+        } else if (msg.type === 'log' || msg.type === 'event') {
+            const txt = msg.payload && (msg.payload.text || msg.payload.message) ? (msg.payload.text || msg.payload.message) : JSON.stringify(msg.payload || {});
+            addCentralLog(`🛈 ${txt}`, 'system');
+        } else {
+            addCentralLog(`RAW ${msg.type}: ${JSON.stringify(msg.payload || {})}`, 'system');
+        }
+    } catch(e){ console.warn('handleIncoming error', e); }
+}
+
+// NOVO: Atualizar painel de estatísticas com dados REAIS
+async function updateStats(stats) {
+    try {
+        // Se stats não foi passado, buscar dados reais da API
+        if (!stats) {
+            const res = await fetch('/api/pedidos');
+            if (!res.ok) {
+                console.error('[Stats] Erro HTTP:', res.status);
+                return;
+            }
+            const data = await res.json();
+            
+            // A API retorna {"pedidos": [...]}
+            const pedidos = data.pedidos || data || [];
+            console.log('[Stats] Pedidos recebidos:', pedidos.length);
+            
+            // Calcular estatísticas reais
+            stats = {
+                pedidos_total: pedidos.length,
+                pedidos_aceitos: pedidos.filter(p => p.status === 'assigned' || p.status === 'in_transit' || p.status === 'delivered').length,
+                pedidos_entregues: pedidos.filter(p => p.status === 'delivered').length,
+                clientes: {},
+                motoboys: {}
+            };
+            
+            // Agrupar por cliente
+            pedidos.forEach(p => {
+                const cliente = p.cliente || 'Cliente Desconhecido';
+                if (!stats.clientes[cliente]) {
+                    stats.clientes[cliente] = { pedidos: 0 };
+                }
+                stats.clientes[cliente].pedidos++;
+            });
+            
+            // Agrupar por motoboy
+            pedidos.forEach(p => {
+                if (p.motoboy_id) {
+                    if (!stats.motoboys[p.motoboy_id]) {
+                        stats.motoboys[p.motoboy_id] = { aceitos: 0, entregues: 0 };
+                    }
+                    stats.motoboys[p.motoboy_id].aceitos++;
+                    if (p.status === 'delivered') {
+                        stats.motoboys[p.motoboy_id].entregues++;
+                    }
+                }
+            });
+        }
+        
+        console.log('[Stats] Atualizando UI com:', stats);
+        
+        // Atualizar interface
+        document.getElementById('stats-pedidos-total').textContent = stats.pedidos_total || 0;
+        document.getElementById('stats-pedidos-aceitos').textContent = stats.pedidos_aceitos || 0;
+        document.getElementById('stats-pedidos-entregues').textContent = stats.pedidos_entregues || 0;
+        
+        const taxaAceitacao = stats.pedidos_total > 0 
+            ? ((stats.pedidos_aceitos / stats.pedidos_total) * 100).toFixed(1) 
+            : 0;
+        document.getElementById('stats-taxa-aceitacao').textContent = taxaAceitacao + '%';
+        
+        // Por Cliente
+        const clientesDiv = document.getElementById('stats-clientes');
+        if (stats.clientes && Object.keys(stats.clientes).length > 0) {
+            let html = '';
+            for (const [cliente, data] of Object.entries(stats.clientes)) {
+                html += `<div style="margin:3px 0;">📍 ${cliente}: <strong>${data.pedidos}</strong> pedidos</div>`;
+            }
+            clientesDiv.innerHTML = html;
+        } else {
+            clientesDiv.innerHTML = '<div style="color:var(--muted);">Nenhum pedido ainda</div>';
+        }
+        
+        // Por Motoboy
+        const motoboysDiv = document.getElementById('stats-motoboys');
+        if (stats.motoboys && Object.keys(stats.motoboys).length > 0) {
+            let html = '';
+            for (const [motoboy, data] of Object.entries(stats.motoboys)) {
+                html += `<div style="margin:3px 0;">🏍️ ${motoboy}: <strong>${data.aceitos}</strong> aceitos, <strong>${data.entregues}</strong> entregues</div>`;
+            }
+            motoboysDiv.innerHTML = html;
+        } else {
+            motoboysDiv.innerHTML = '<div style="color:var(--muted);">Nenhuma entrega ainda</div>';
+        }
+        
+    } catch(e) {
+        console.error('Error updating stats:', e);
+    }
+}
+
+// Atualizar stats a cada 15 segundos
+setInterval(() => updateStats(null), 15000);
+setTimeout(() => updateStats(null), 3000);
+
+// WS connect with backoff
+async function connectWS(){
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    // Check for access token
+    let access = localStorage.getItem('guriri_access');
+    let refresh = localStorage.getItem('guriri_refresh');
+    let uid = localStorage.getItem('guriri_user') || 'central';
+    
+    if(!access){
+        // Redirect to login instead of prompting
+        window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+        return;
+    }
+    
+    const url = `${proto}://${location.host}${WS_PATH}` + (access ? ('?token=' + encodeURIComponent(access)) : '');
+    try {
+        ws = new WebSocket(url);
+    } catch(e) {
+        scheduleReconnect();
+        return;
+    }
+
+    ws.addEventListener('open', () => {
+        wsConnected = true;
+        reconnectMs = 1000;
+        reconnectAttempts = 0; // Reset counter on successful connection
+        addCentralLog('🤝 Conectado ao servidor de tempo real (WS).', 'system');
+        // flush outbox
+        flushOutbox();
+    });
+
+    ws.addEventListener('message', (ev) => {
+        try {
+            const data = JSON.parse(ev.data);
+            handleIncoming(data);
+        } catch (err) {
+            addCentralLog('⚠️ Mensagem WS inválida recebida', 'system');
+            console.warn('ws parse err', err, ev.data);
+        }
+    });
+
+    ws.addEventListener('close', () => {
+        wsConnected = false;
+        addCentralLog('🔌 Conexão WS fechada. Reconectando...', 'system');
+        scheduleReconnect();
+    });
+
+    ws.addEventListener('error', (err) => {
+        console.warn('WS error', err);
+        wsConnected = false;
+        try { ws.close(); } catch(e){}
+    });
+}
+
+function scheduleReconnect(){
+    reconnectAttempts++;
+    if (reconnectAttempts > MAX_RECONNECT_ATTEMPTS) {
+        addCentralLog('❌ Muitas tentativas falhadas. Faça logout e login novamente: /logout', 'system');
+        addCentralLog('🔗 <a href="/logout" style="color: #00e5ff;">Clique aqui para limpar e fazer novo login</a>', 'system');
+        return; // STOP reconnect loop
+    }
+    setTimeout(()=> {
+        reconnectMs = Math.min(60000, Math.floor(reconnectMs * 1.5));
+        connectWS();
+    }, reconnectMs);
+}
+
+// Outbox (localStorage) para mensagens enquanto offline
+function getOutbox(){ return JSON.parse(localStorage.getItem(OUTBOX_KEY) || '[]'); }
+function pushOutbox(item){
+    const q = getOutbox();
+    q.push(item);
+    localStorage.setItem(OUTBOX_KEY, JSON.stringify(q));
+}
+function flushOutbox(){
+    if (!wsConnected) return;
+    const q = getOutbox();
+    if (!q.length) return;
+    // enviar em ordem
+    (async () => {
+        while (q.length > 0) {
+            const item = q.shift();
+            try {
+                ws.send(JSON.stringify(item));
+                // remove primeiro
+                localStorage.setItem(OUTBOX_KEY, JSON.stringify(q));
+                addCentralLog('📤 Mensagem enviada (fila): ' + (item.payload && item.payload.text ? item.payload.text : JSON.stringify(item)), 'system');
+                await new Promise(r => setTimeout(r, 120)); // tiny gap
+            } catch(err){
+                // volta para o localStorage e sai
+                q.unshift(item);
+                localStorage.setItem(OUTBOX_KEY, JSON.stringify(q));
+                break;
+            }
+        }
+    })();
+}
+
+// Envio de mensagem (do input)
+function sendMessage(){
+    const text = inputEl.value.trim();
+    if (!text) return;
+    const pkg = { type: 'chat', payload: { from: 'central', to: 'all', text: text, ts: new Date().toISOString() } };
+    // mostra localmente como CEO
+    addCentralLog(`👨‍💼 CEO: ${text}`, 'ceo');
+    inputEl.value = '';
+    // tenta enviar via WS
+    try {
+        if (ws && wsConnected && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify(pkg));
+            addCentralLog('✅ Enviado ao cluster.', 'system');
+        } else {
+            pushOutbox(pkg);
+            addCentralLog('📥 Sem conexão — mensagem enfileirada e será enviada ao reconectar.', 'system');
+            scheduleReconnect();
+        }
+    } catch(e){
+        pushOutbox(pkg);
+        addCentralLog('📥 Erro no envio — mensagem enfileirada.', 'system');
+        scheduleReconnect();
+    }
+}
+
+// Hook no botão e Enter
+sendBtn.addEventListener('click', sendMessage);
+inputEl.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); sendMessage(); } });
+
+// MOCK functions preserved
+function selectAgent(name, status) {
+    document.querySelectorAll('.motoboy-item').forEach(item => item.classList.remove('selected'));
+    // marca visualmente o selecionado (procura pelo texto)
+    const items = Array.from(document.querySelectorAll('.motoboy-item'));
+    const it = items.find(i => i.textContent.includes(name.split(' ')[0]));
+    if (it) it.classList.add('selected');
+    addCentralLog(`Comando: Painel de ${name} solicitado.`, 'ceo');
+    // opcional: foco no campo de chat para interação rápida
+    inputEl.focus();
+}
+
+function emergencyScale() {
+    addCentralLog('🚨 COMANDO: ATIVAR ESCALA AUTOMÁTICA RECEBIDO.', 'ceo');
+    setTimeout(() => {
+        addCentralLog('🤖 **THOR:** Processando Protocolo Hot-Swap. 5 motoboys inativos notificados por push. 2 agentes em standby assumindo.', 'system');
+        document.getElementById('motoboy-list').innerHTML += `
+             <div class="motoboy-item" onclick="selectAgent('Agente X (10)', 'ok')" style="margin-top:10px;">
+                <span><span class="status-dot online"></span> Agente X (10)</span>
+                <span style="font-size:12px; color:var(--cyan);">Reação Rápida (10s)</span>
+            </div>
+        `;
+    }, 1500);
+}
+
+// Inicialização
+addCentralLog('⏳ Iniciando conexão WS...', 'system');
+connectWS();
+
+// ===== CARREGAR KPIs EM TEMPO REAL =====
+async function loadKPIs() {
+    try {
+        // Buscar pedidos e calcular KPIs diretamente
+        const pedidosRes = await fetch('/api/pedidos');
+        if (!pedidosRes.ok) {
+            console.error('[KPIs] Erro ao buscar pedidos:', pedidosRes.status);
+            return;
+        }
+        const pedidosData = await pedidosRes.json();
+        const pedidos = pedidosData.pedidos || pedidosData || [];
+        
+        console.log('[KPIs] Calculando com', pedidos.length, 'pedidos');
+        
+        // Buscar motoboys online
+        const motoboyRes = await fetch('/api/motoboys/online');
+        let motoboysCount = 0;
+        if (motoboyRes.ok) {
+            const motoboyData = await motoboyRes.json();
+            motoboysCount = (motoboyData.motoboys || []).length;
+        }
+        
+        // Calcular KPIs
+        const now = new Date();
+        const entregues = pedidos.filter(p => p.status === 'delivered');
+        const aceitos = pedidos.filter(p => p.status === 'assigned' || p.status === 'in_transit' || p.status === 'delivered');
+        
+        // RECEITA TOTAL (soma de todos os pedidos entregues)
+        const receitaTotal = entregues.reduce((sum, p) => sum + (p.valor || 0), 0);
+        
+        // TCZ MÉDIO (tempo entre criação e entrega)
+        let tczMedio = 0;
+        if (entregues.length > 0) {
+            const temposTcz = entregues
+                .filter(p => p.created_at && p.delivered_at)
+                .map(p => {
+                    const criado = new Date(p.created_at);
+                    const entregue = new Date(p.delivered_at);
+                    return (entregue - criado) / 60000; // minutos
+                });
+            if (temposTcz.length > 0) {
+                tczMedio = temposTcz.reduce((a, b) => a + b, 0) / temposTcz.length;
+            }
+        }
+        
+        // LATÊNCIA/FADIGA (tempo entre aceito e entrega)
+        let latenciaMedia = 0;
+        if (entregues.length > 0) {
+            const temposLatencia = entregues
+                .filter(p => p.assigned_at && p.delivered_at)
+                .map(p => {
+                    const aceito = new Date(p.assigned_at);
+                    const entregue = new Date(p.delivered_at);
+                    return (entregue - aceito) / 60000; // minutos
+                });
+            if (temposLatencia.length > 0) {
+                latenciaMedia = temposLatencia.reduce((a, b) => a + b, 0) / temposLatencia.length;
+            }
+        }
+        
+        // TAXA DE ACEITAÇÃO
+        const taxaAceitacao = pedidos.length > 0 
+            ? ((aceitos.length / pedidos.length) * 100).toFixed(1) 
+            : 0;
+        
+        // PEDIDOS POR HORA (últimas 24h)
+        const umDiaAtras = new Date(now - 24 * 60 * 60 * 1000);
+        const pedidosRecentes = pedidos.filter(p => {
+            const criado = new Date(p.created_at || now);
+            return criado >= umDiaAtras;
+        });
+        const pedidosPorHora = pedidosRecentes.length / 24;
+        
+        // Atualizar UI
+        const kpiTcz = document.querySelector('[data-kpi="tcz"]');
+        const kpiLatencia = document.querySelector('[data-kpi="latencia"]');
+        const kpiTaxa = document.querySelector('[data-kpi="taxa"]');
+        const kpiReceita = document.querySelector('[data-kpi="receita"]');
+        const kpiPedidosHora = document.querySelector('[data-kpi="pedidos-hora"]');
+        const kpiMotoboys = document.getElementById('motoboys-online-count');
+        
+        if (kpiTcz) kpiTcz.textContent = `${tczMedio.toFixed(1)} min`;
+        if (kpiLatencia) kpiLatencia.textContent = `${latenciaMedia.toFixed(1)} min`;
+        if (kpiTaxa) kpiTaxa.textContent = `${taxaAceitacao}%`;
+        if (kpiReceita) kpiReceita.textContent = `R$ ${receitaTotal.toFixed(2)}`;
+        if (kpiPedidosHora) kpiPedidosHora.textContent = `${pedidosPorHora.toFixed(1)}/h`;
+        if (kpiMotoboys) kpiMotoboys.textContent = motoboysCount;
+        
+        console.info(`[KPIs] ✅ Atualizados: Receita=R$${receitaTotal.toFixed(2)}, TCZ=${tczMedio.toFixed(1)}min, Taxa=${taxaAceitacao}%, Motoboys=${motoboysCount}`);
+        
+    } catch(e) {
+        console.error('[KPIs] ❌ Erro ao carregar:', e);
+    }
+}
+
+// Atualizar KPIs a cada 10 segundos (mais rápido que antes)
+setInterval(loadKPIs, 10000);
+// Carregar imediatamente na inicialização
+setTimeout(loadKPIs, 1000);
+
+// ===== CARREGAR MOTOBOYS ONLINE =====
+// ===== GESTÃO DE MOTOBOYS UNIFICADA =====
+async function atualizarGestaoMotoboys() {
+    try {
+        const res = await fetch('/api/motoboys/online');
+        if (!res.ok) {
+            console.error('[Motoboys] Erro HTTP:', res.status);
+            return;
+        }
+        const data = await res.json();
+        
+        const motoboys = data.motoboys || [];
+        console.log('[Motoboys] Recebidos:', motoboys.length, motoboys);
+        
+        // Atualizar contador KPI e badge de gestão
+        const countBadge = document.getElementById('motoboys-count-badge');
+        const countElement = document.getElementById('motoboys-online-count');
+        const listContainer = document.getElementById('motoboy-list');
+        
+        // Atualizar contadores
+        if (countBadge) countBadge.textContent = motoboys.length;
+        if (countElement) countElement.textContent = motoboys.length;
+        
+        // Se não tem motoboys
+        if (motoboys.length === 0) {
+            if (listContainer) {
+                listContainer.innerHTML = '<p style="color:var(--muted);text-align:center;">Nenhum motoboy online</p>';
+            }
+            return;
+        }
+        
+        // Buscar pedidos para ver quem está ocupado
+        let pedidos = [];
+        try {
+            const pedidosRes = await fetch('/api/pedidos');
+            if (pedidosRes.ok) {
+                const pedidosData = await pedidosRes.json();
+                pedidos = pedidosData.pedidos || pedidosData || [];
+            }
+        } catch (e) {
+            console.warn('[Motoboys] Não foi possível buscar pedidos:', e);
+        }
+        
+        // Atualizar lista de GESTÃO
+        if (listContainer) {
+            let html = '';
+            motoboys.forEach(m => {
+                const pedidoAtivo = pedidos.find(p => p.motoboy_id === m.motoboy_id && (p.status === 'assigned' || p.status === 'in_transit'));
+                const status = pedidoAtivo ? 'Em Entrega' : 'Livre/Pronto';
+                const statusColor = pedidoAtivo ? 'var(--warn)' : 'var(--ok)';
+                
+                const lastSeen = new Date(m.last_seen);
+                const secondsAgo = Math.floor((new Date() - lastSeen) / 1000);
+                const timeAgo = secondsAgo < 60 ? 'agora' : `${Math.floor(secondsAgo / 60)}min atrás`;
+                
+                html += `<div class="motoboy-item" style="cursor:pointer;padding:10px;margin:5px 0;background:rgba(255,255,255,0.05);border-radius:6px;" onclick="selectAgent('${m.motoboy_id}', '${status}')">
+                    <span>
+                        <span class="status-dot online" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ok);margin-right:5px;"></span> 
+                        <strong>${m.motoboy_id}</strong>
+                    </span>
+                    <span style="font-size:12px; color:${statusColor};">
+                        ${status} ${pedidoAtivo ? '(#' + pedidoAtivo.id.substring(0,6) + ')' : ''}<br>
+                        <small style="color:var(--muted);">${timeAgo}</small>
+                    </span>
+                </div>`;
+            });
+            listContainer.innerHTML = html;
+        }
+        
+        console.info(`[Motoboys] ${motoboys.length} online - UI atualizada`);
+    } catch(e) {
+        console.error('[Motoboys] Erro ao carregar:', e);
+    }
+}
+
+// Atualizar motoboys a cada 10 segundos
+setInterval(atualizarGestaoMotoboys, 10000);
+setTimeout(atualizarGestaoMotoboys, 1500);
+
+// ===== CARREGAR PEDIDOS EM TEMPO REAL (COM DETALHES COMPLETOS) =====
+async function loadPedidosTempoReal() {
+    try {
+        const res = await fetch('/api/pedidos');
+        if (!res.ok) {
+            console.error('[Pedidos] Erro HTTP:', res.status);
+            return;
+        }
+        const data = await res.json();
+        // API retorna {"pedidos": [...]}
+        const pedidos = data.pedidos || data || [];
+        console.log('[Pedidos] Recebidos:', pedidos.length, pedidos);
+        
+        const container = document.getElementById('pedidos-em-tempo-real');
+        if (!container) {
+            console.warn('[Pedidos] Container #pedidos-em-tempo-real não encontrado');
+            return;
+        }
+        
+        if (!pedidos || pedidos.length === 0) {
+            container.innerHTML = '<p style="color:var(--muted);text-align:center;padding:20px;">Nenhum pedido no sistema</p>';
+            return;
+        }
+        
+        // Organizar por status: pending, assigned/in_transit, delivered
+        const pending = pedidos.filter(p => p.status === 'pending');
+        const active = pedidos.filter(p => p.status === 'assigned' || p.status === 'in_transit');
+        const delivered = pedidos.filter(p => p.status === 'delivered');
+        
+        let html = '';
+        
+        // ========== PENDENTES (aguardando motoboy aceitar) ==========
+        if (pending.length > 0) {
+            html += '<div style="margin-bottom:15px;"><strong style="color:#FFA500;">🟡 PENDENTES - Aguardando Motoboy (' + pending.length + '):</strong><br>';
+            pending.forEach(p => {
+                const created = new Date(p.created_at || Date.now());
+                const minutosAtras = Math.floor((new Date() - created) / 60000);
+                const tempoEspera = minutosAtras < 1 ? 'agora' : `há ${minutosAtras}min`;
+                
+                html += `<div style="margin:8px 0;padding:10px;background:rgba(255,165,0,0.15);border-left:4px solid #FFA500;border-radius:6px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <strong style="font-size:14px;">📦 PEDIDO #${p.id.substring(0,8)}</strong>
+                        <span style="color:#FFA500;font-size:12px;font-weight:bold;">STATUS: PENDENTE</span>
+                    </div>
+                    <div style="margin-top:5px;font-size:12px;line-height:1.6;">
+                        <div><strong>Cliente:</strong> ${p.cliente || 'Não informado'}</div>
+                        ${p.phone ? `<div><strong>Telefone:</strong> ${p.phone}</div>` : ''}
+                        <div><strong>Coleta:</strong> ${p.coleta || 'Não informado'}</div>
+                        <div><strong>Entrega:</strong> ${p.entrega || 'Não informado'}</div>
+                        ${p.obs ? `<div><strong>⚠️ Observações:</strong> ${p.obs}</div>` : ''}
+                        <div style="margin-top:5px;color:var(--muted);">
+                            <strong>Valor:</strong> R$ ${(p.valor || 0).toFixed(2)} | 
+                            <strong>Taxa Motoboy:</strong> R$ ${(p.taxa_motoboy || 7).toFixed(2)} | 
+                            <strong>Criado:</strong> ${tempoEspera}
+                        </div>
+                    </div>
+                </div>`;
+            });
+            html += '</div>';
+        }
+        
+        // ========== ATIVAS (motoboy aceitou, em rota) ==========
+        if (active.length > 0) {
+            html += '<div style="margin-bottom:15px;"><strong style="color:#0096FF;">🔵 ATIVAS - Motoboy em Rota (' + active.length + '):</strong><br>';
+            active.forEach(p => {
+                const assigned_time = new Date(p.assigned_at || Date.now());
+                const minutosRota = Math.floor((new Date() - assigned_time) / 60000);
+                const tempoRota = minutosRota < 1 ? 'agora' : `há ${minutosRota}min`;
+                
+                html += `<div style="margin:8px 0;padding:10px;background:rgba(0,150,255,0.15);border-left:4px solid #0096FF;border-radius:6px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <strong style="font-size:14px;">🚚 PEDIDO #${p.id.substring(0,8)}</strong>
+                        <span style="color:#0096FF;font-size:12px;font-weight:bold;">STATUS: ATIVA</span>
+                    </div>
+                    <div style="margin-top:5px;font-size:12px;line-height:1.6;">
+                        <div><strong>🏍️ Motoboy:</strong> ${p.motoboy_id || 'N/A'}</div>
+                        <div><strong>Cliente:</strong> ${p.cliente || 'Não informado'}</div>
+                        ${p.phone ? `<div><strong>Telefone:</strong> ${p.phone}</div>` : ''}
+                        <div><strong>Coleta:</strong> ${p.coleta || 'Não informado'}</div>
+                        <div><strong>Entrega:</strong> ${p.entrega || 'Não informado'}</div>
+                        ${p.obs ? `<div><strong>⚠️ Observações:</strong> ${p.obs}</div>` : ''}
+                        <div style="margin-top:5px;color:var(--muted);">
+                            <strong>Valor:</strong> R$ ${(p.valor || 0).toFixed(2)} | 
+                            <strong>Taxa:</strong> R$ ${(p.taxa_motoboy || 7).toFixed(2)} | 
+                            <strong>Em rota:</strong> ${tempoRota}
+                        </div>
+                    </div>
+                </div>`;
+            });
+            html += '</div>';
+        }
+        
+        // ========== FINALIZADAS (entregue com Live Docs) ==========
+        if (delivered.length > 0) {
+            html += '<div><strong style="color:#00FF7F;">✅ FINALIZADAS - Com Live Docs (' + delivered.length + '):</strong><br>';
+            delivered.slice(0, 8).forEach(p => {
+                const delivered_time = new Date(p.delivered_at || Date.now());
+                const tempoFinalizado = delivered_time.toLocaleTimeString('pt-BR');
+                
+                html += `<div style="margin:8px 0;padding:10px;background:rgba(0,255,127,0.1);border-left:4px solid #00FF7F;border-radius:6px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <strong style="font-size:14px;">✅ PEDIDO #${p.id.substring(0,8)}</strong>
+                        <span style="color:#00FF7F;font-size:12px;font-weight:bold;">STATUS: FINALIZADA</span>
+                    </div>
+                    <div style="margin-top:5px;font-size:12px;line-height:1.6;">
+                        <div><strong>Motoboy:</strong> ${p.motoboy_id || 'N/A'}</div>
+                        <div><strong>Cliente:</strong> ${p.cliente || 'Não informado'}</div>
+                        <div><strong>Destino:</strong> ${p.entrega || 'Não informado'}</div>
+                        <div style="margin-top:5px;color:var(--muted);">
+                            <strong>Valor:</strong> R$ ${(p.valor || 0).toFixed(2)} | 
+                            <strong>Entregue:</strong> ${tempoFinalizado}
+                        </div>
+                        <button onclick="verLiveDocs('${p.id}')" style="margin-top:8px;padding:5px 10px;background:var(--ok);color:var(--ink);border:none;border-radius:4px;cursor:pointer;font-size:11px;font-weight:bold;">
+                            📄 VER LIVE DOCS
+                        </button>
+                    </div>
+                </div>`;
+            });
+            if (delivered.length > 8) {
+                html += `<p style="text-align:center;color:var(--muted);font-size:11px;margin-top:5px;">+ ${delivered.length - 8} pedidos finalizados não exibidos</p>`;
+            }
+            html += '</div>';
+        }
+        
+        container.innerHTML = html;
+        console.log('[Pedidos] UI atualizada -', pending.length, 'pendentes,', active.length, 'ativas,', delivered.length, 'finalizadas');
+        
+    } catch (e) {
+        console.error('[Pedidos Tempo Real] Erro:', e);
+        const container = document.getElementById('pedidos-em-tempo-real');
+        if (container) {
+            container.innerHTML = '<p style="color:var(--danger);text-align:center;">❌ Erro ao carregar pedidos</p>';
+        }
+    }
+}
+
+// Função para ver Live Docs
+function verLiveDocs(pedidoId) {
+    // Buscar documentos do pedido
+    fetch(`/api/docs/pedido/${pedidoId}`)
+        .then(res => {
+            if (!res.ok) throw new Error('Docs não encontrados');
+            return res.blob();
+        })
+        .then(blob => {
+            // Abrir em nova aba
+            const url = URL.createObjectURL(blob);
+            window.open(url, '_blank');
+        })
+        .catch(err => {
+            console.error('Erro ao buscar Live Docs:', err);
+            alert('Live Docs não disponível para este pedido');
+        });
+}
+
+// Atualizar pedidos a cada 5 segundos
+setInterval(loadPedidosTempoReal, 5000);
+setTimeout(loadPedidosTempoReal, 1000);
+// ===== FUNÇÃO DE EMERGÊNCIA =====
+function emergencyScale() {
+    const btn = document.getElementById('btn-emergency');
+    const status = document.getElementById('emergency-status');
+    
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'ATIVANDO...';
+        btn.style.background = 'var(--warn)';
+    }
+    
+    // Buscar motoboys disponíveis e pedidos pendentes
+    Promise.all([
+        fetch('/api/motoboys/online').then(r => r.json()),
+        fetch('/api/pedidos').then(r => r.json())
+    ]).then(([motoboyData, pedidos]) => {
+        const motoboys = motoboyData.motoboys || [];
+        const pending = pedidos.filter(p => p.status === 'pending');
+        
+        if (pending.length === 0) {
+            if (status) {
+                status.style.display = 'block';
+                status.innerHTML = '<small style="color:var(--ok);">✅ Nenhum pedido pendente. Sistema OK!</small>';
+            }
+            addCentralLog('🚨 EMERGÊNCIA: Nenhum pedido pendente para distribuir.', 'system');
+        } else {
+            // Atribuir automaticamente
+            let assigned = 0;
+            const availableMotoboys = motoboys.filter(m => {
+                // Motoboy sem pedido ativo
+                return !pedidos.some(p => p.motoboy_id === m.motoboy_id && (p.status === 'assigned' || p.status === 'in_transit'));
+            });
+            
+            pending.forEach((pedido, index) => {
+                if (index < availableMotoboys.length) {
+                    const motoboy = availableMotoboys[index];
+                    // Atribuir pedido (chamar API)
+                    fetch(`/api/pedido/${pedido.id}/assign`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            motoboy_id: motoboy.motoboy_id,
+                            motoboy_nome: motoboy.motoboy_id
+                        })
+                    }).then(() => {
+                        assigned++;
+                        addCentralLog(`🚨 ESCALA EMERGÊNCIA: Pedido #${pedido.id.substring(0,8)} → ${motoboy.motoboy_id}`, 'system');
+                    });
+                }
+            });
+            
+            if (status) {
+                status.style.display = 'block';
+                status.innerHTML = `<small style="color:var(--ok);">✅ ${assigned} pedidos distribuídos automaticamente!</small>`;
+            }
+        }
+        
+        if (btn) {
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.textContent = 'ATIVAR ESCALA AUTOMÁTICA (HOT-SWAP)';
+                btn.style.background = 'var(--vio)';
+            }, 3000);
+        }
+        
+        // Recarregar dados
+        setTimeout(() => {
+            loadPedidosTempoReal();
+            atualizarGestaoMotoboys();
+        }, 1000);
+        
+    }).catch(err => {
+        console.error('Erro na escala de emergência:', err);
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'ERRO - TENTAR NOVAMENTE';
+            btn.style.background = 'var(--danger)';
+        }
+    });
+}
+
+// reenviar fila quando navegador volta online
+window.addEventListener('online', () => {
+    addCentralLog('🔔 Navegador online — tentando reenviar fila...', 'system');
+    if (wsConnected) flushOutbox(); else connectWS();
+});
+
+// status simplificado no console para depuração
+console.info('Dashboard Central inicializado. WS path: ' + WS_PATH);
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PAINEL DE ADMINISTRAÇÃO
+// ═══════════════════════════════════════════════════════════════════════════
+
+function openAdminPanel() {
+    document.getElementById('admin-modal').style.display = 'flex';
+    loadAdminData();
+}
+
+function closeAdminPanel() {
+    document.getElementById('admin-modal').style.display = 'none';
+}
+
+async function loadAdminData() {
+    try {
+        // Carregar overview
+        const statsRes = await fetch('/api/admin/stats/overview');
+        if (statsRes.ok) {
+            const stats = await statsRes.json();
+            updateAdminStats(stats);
+        }
+        
+        // Carregar clientes
+        const clientesRes = await fetch('/api/admin/clientes/all');
+        if (clientesRes.ok) {
+            const data = await clientesRes.json();
+            renderAdminClientes(data.clientes || []);
+        }
+        
+        // Carregar motoboys
+        const motoboysRes = await fetch('/api/admin/motoboys/all');
+        if (motoboysRes.ok) {
+            const data = await motoboysRes.json();
+            renderAdminMotoboys(data.motoboys || []);
+        }
+        
+        // Carregar documentos
+        const docsRes = await fetch('/api/admin/documentos/all');
+        if (docsRes.ok) {
+            const docs = await docsRes.json();
+            renderAdminDocumentos(docs);
+        }
+        
+    } catch (err) {
+        console.error('Erro ao carregar dados admin:', err);
+    }
+}
+
+function updateAdminStats(stats) {
+    document.getElementById('admin-stat-clientes').textContent = stats.clientes.total;
+    document.getElementById('admin-stat-motoboys').textContent = stats.motoboys.total;
+    document.getElementById('admin-stat-motoboys-online').textContent = stats.motoboys.online;
+    document.getElementById('admin-stat-pedidos-total').textContent = stats.pedidos.total;
+    document.getElementById('admin-stat-pedidos-pendentes').textContent = stats.pedidos.pendentes;
+    document.getElementById('admin-stat-docs-total').textContent = stats.documentos.total;
+    document.getElementById('admin-stat-receita').textContent = 'R$ ' + stats.financeiro.receita_total.toFixed(2);
+    document.getElementById('admin-stat-repasses').textContent = 'R$ ' + stats.financeiro.repasses_pendentes.toFixed(2);
+}
+
+function renderAdminClientes(clientes) {
+    const container = document.getElementById('admin-clientes-list');
+    if (clientes.length === 0) {
+        container.innerHTML = '<p style="color:var(--muted); text-align:center; padding:20px;">Nenhum cliente cadastrado.</p>';
+        return;
+    }
+    
+    let html = `
+        <table style="width:100%; border-collapse:collapse; font-size:13px;">
+            <thead>
+                <tr style="border-bottom:2px solid var(--edge); color:var(--cyan);">
+                    <th style="text-align:left; padding:8px;">Nome</th>
+                    <th style="text-align:left; padding:8px;">Telefone</th>
+                    <th style="text-align:center; padding:8px;">Pedidos</th>
+                    <th style="text-align:center; padding:8px;">Docs</th>
+                    <th style="text-align:center; padding:8px;">Horários</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+    
+    clientes.forEach(c => {
+        html += `
+            <tr style="border-bottom:1px solid var(--edge);">
+                <td style="padding:8px; font-weight:bold;">${c.nome || 'N/A'}</td>
+                <td style="padding:8px;">${c.telefone || '-'}</td>
+                <td style="padding:8px; text-align:center;">${c.total_pedidos}</td>
+                <td style="padding:8px; text-align:center;">${c.total_documentos}</td>
+                <td style="padding:8px; text-align:center;">${c.tem_horarios ? '✅' : '❌'}</td>
+            </tr>
+        `;
+    });
+    
+    html += '</tbody></table>';
+    container.innerHTML = html;
+}
+
+function renderAdminMotoboys(motoboys) {
+    const container = document.getElementById('admin-motoboys-list');
+    if (motoboys.length === 0) {
+        container.innerHTML = '<p style="color:var(--muted); text-align:center; padding:20px;">Nenhum motoboy cadastrado.</p>';
+        return;
+    }
+    
+    let html = `
+        <table style="width:100%; border-collapse:collapse; font-size:13px;">
+            <thead>
+                <tr style="border-bottom:2px solid var(--edge); color:var(--ok);">
+                    <th style="text-align:left; padding:8px;">Nome</th>
+                    <th style="text-align:left; padding:8px;">Telefone</th>
+                    <th style="text-align:center; padding:8px;">Entregas</th>
+                    <th style="text-align:center; padding:8px;">Docs</th>
+                    <th style="text-align:center; padding:8px;">Escala</th>
+                    <th style="text-align:center; padding:8px;">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+    
+    motoboys.forEach(m => {
+        html += `
+            <tr style="border-bottom:1px solid var(--edge);">
+                <td style="padding:8px; font-weight:bold;">${m.nome || 'N/A'}</td>
+                <td style="padding:8px;">${m.telefone || '-'}</td>
+                <td style="padding:8px; text-align:center;">${m.total_entregas}</td>
+                <td style="padding:8px; text-align:center;">${m.total_documentos}</td>
+                <td style="padding:8px; text-align:center;">${m.tem_escala ? '✅' : '❌'}</td>
+                <td style="padding:8px; text-align:center;">
+                    <span style="color:${m.online ? 'var(--ok)' : 'var(--danger)'};">
+                        ${m.online ? '🟢 ONLINE' : '⚫ OFFLINE'}
+                    </span>
+                </td>
+            </tr>
+        `;
+    });
+    
+    html += '</tbody></table>';
+    container.innerHTML = html;
+}
+
+function renderAdminDocumentos(docs) {
+    const container = document.getElementById('admin-docs-list');
+    const total = docs.total_geral;
+    
+    if (total === 0) {
+        container.innerHTML = '<p style="color:var(--muted); text-align:center; padding:20px;">Nenhum documento enviado.</p>';
+        return;
+    }
+    
+    // Combinar e ordenar documentos
+    const todosDocumentos = [
+        ...docs.documentos_clientes,
+        ...docs.documentos_motoboys
+    ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    
+    let html = `
+        <div style="margin-bottom:15px; display:flex; gap:10px; justify-content:space-between; flex-wrap:wrap;">
+            <div style="background:rgba(0,234,255,0.1); padding:10px; border-radius:8px; flex:1; min-width:150px;">
+                <div style="color:var(--muted); font-size:11px;">📄 CLIENTES</div>
+                <div style="font-size:24px; font-weight:bold; color:var(--cyan);">${docs.total_clientes}</div>
+            </div>
+            <div style="background:rgba(0,255,191,0.1); padding:10px; border-radius:8px; flex:1; min-width:150px;">
+                <div style="color:var(--muted); font-size:11px;">🏍️ MOTOBOYS</div>
+                <div style="font-size:24px; font-weight:bold; color:var(--ok);">${docs.total_motoboys}</div>
+            </div>
+            <div style="background:rgba(178,139,255,0.1); padding:10px; border-radius:8px; flex:1; min-width:150px;">
+                <div style="color:var(--muted); font-size:11px;">📊 TOTAL</div>
+                <div style="font-size:24px; font-weight:bold; color:var(--vio);">${total}</div>
+            </div>
+        </div>
+        <div style="max-height:300px; overflow-y:auto;">
+            <table style="width:100%; border-collapse:collapse; font-size:12px;">
+                <thead style="position:sticky; top:0; background:var(--card);">
+                    <tr style="border-bottom:2px solid var(--edge); color:var(--vio);">
+                        <th style="text-align:left; padding:8px;">Categoria</th>
+                        <th style="text-align:left; padding:8px;">Nome</th>
+                        <th style="text-align:left; padding:8px;">Tipo</th>
+                        <th style="text-align:left; padding:8px;">CPF/CNPJ</th>
+                        <th style="text-align:left; padding:8px;">Data</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    todosDocumentos.forEach(doc => {
+        const categoria = doc.categoria === 'cliente' ? '👤 Cliente' : '🏍️ Motoboy';
+        const cpfCnpj = doc.cpf || doc.cnpj || '-';
+        const data = new Date(doc.created_at).toLocaleDateString('pt-BR');
+        
+        html += `
+            <tr style="border-bottom:1px solid var(--edge);">
+                <td style="padding:8px;">${categoria}</td>
+                <td style="padding:8px; font-weight:bold;">${doc.user_nome}</td>
+                <td style="padding:8px;">${doc.tipo}</td>
+                <td style="padding:8px; font-family:monospace;">${cpfCnpj}</td>
+                <td style="padding:8px;">${data}</td>
+            </tr>
+        `;
+    });
+    
+    html += '</tbody></table></div>';
+    container.innerHTML = html;
+}
+
+// Tabs do painel admin
+function switchAdminTab(tabName) {
+    document.querySelectorAll('.admin-tab').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.admin-tab-content').forEach(content => content.style.display = 'none');
+    
+    document.querySelector(`.admin-tab[data-tab="${tabName}"]`).classList.add('active');
+    document.getElementById(`admin-tab-${tabName}`).style.display = 'block';
+}
+</script>
+
+<!-- MODAL DE ADMINISTRAÇÃO -->
+<div id="admin-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:10000; align-items:center; justify-content:center; padding:20px; overflow-y:auto;">
+    <div style="background:var(--card); border:2px solid var(--fuchsia); border-radius:20px; max-width:1200px; width:100%; max-height:90vh; overflow-y:auto; box-shadow:0 0 50px var(--fuchsia);">
+        <!-- Header -->
+        <div style="padding:20px; border-bottom:2px solid var(--fuchsia); display:flex; justify-content:space-between; align-items:center;">
+            <h2 style="margin:0; color:var(--fuchsia); font-size:24px;">⚙️ PAINEL DE ADMINISTRAÇÃO</h2>
+            <button onclick="closeAdminPanel()" style="background:transparent; border:none; color:var(--ink); font-size:32px; cursor:pointer; padding:0; width:40px; height:40px;">×</button>
+        </div>
+        
+        <!-- Stats Overview -->
+        <div style="padding:20px; border-bottom:1px solid var(--edge);">
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:15px;">
+                <div style="background:rgba(0,234,255,0.1); padding:12px; border-radius:10px; border-left:4px solid var(--cyan);">
+                    <div style="color:var(--muted); font-size:11px;">👥 CLIENTES</div>
+                    <div id="admin-stat-clientes" style="font-size:28px; font-weight:bold; color:var(--cyan);">0</div>
+                </div>
+                <div style="background:rgba(0,255,191,0.1); padding:12px; border-radius:10px; border-left:4px solid var(--ok);">
+                    <div style="color:var(--muted); font-size:11px;">🏍️ MOTOBOYS</div>
+                    <div id="admin-stat-motoboys" style="font-size:28px; font-weight:bold; color:var(--ok);">0</div>
+                    <div style="color:var(--muted); font-size:10px;">
+                        <span id="admin-stat-motoboys-online" style="color:var(--ok);">0</span> online agora
+                    </div>
+                </div>
+                <div style="background:rgba(255,216,77,0.1); padding:12px; border-radius:10px; border-left:4px solid var(--warn);">
+                    <div style="color:var(--muted); font-size:11px;">📦 PEDIDOS</div>
+                    <div id="admin-stat-pedidos-total" style="font-size:28px; font-weight:bold; color:var(--warn);">0</div>
+                    <div style="color:var(--muted); font-size:10px;">
+                        <span id="admin-stat-pedidos-pendentes" style="color:var(--danger);">0</span> pendentes
+                    </div>
+                </div>
+                <div style="background:rgba(178,139,255,0.1); padding:12px; border-radius:10px; border-left:4px solid var(--vio);">
+                    <div style="color:var(--muted); font-size:11px;">📄 DOCUMENTOS</div>
+                    <div id="admin-stat-docs-total" style="font-size:28px; font-weight:bold; color:var(--vio);">0</div>
+                </div>
+                <div style="background:rgba(0,255,100,0.1); padding:12px; border-radius:10px; border-left:4px solid var(--ok);">
+                    <div style="color:var(--muted); font-size:11px;">💰 RECEITA</div>
+                    <div id="admin-stat-receita" style="font-size:20px; font-weight:bold; color:var(--ok);">R$ 0</div>
+                </div>
+                <div style="background:rgba(255,107,107,0.1); padding:12px; border-radius:10px; border-left:4px solid var(--danger);">
+                    <div style="color:var(--muted); font-size:11px;">📊 REPASSES</div>
+                    <div id="admin-stat-repasses" style="font-size:20px; font-weight:bold; color:var(--danger);">R$ 0</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tabs -->
+        <div style="padding:20px 20px 0 20px; border-bottom:2px solid var(--edge); display:flex; gap:10px;">
+            <button class="admin-tab active" data-tab="clientes" onclick="switchAdminTab('clientes')" style="background:transparent; border:none; border-bottom:3px solid transparent; color:var(--cyan); padding:12px 20px; cursor:pointer; font-weight:bold; transition:0.2s;">
+                👥 CLIENTES
+            </button>
+            <button class="admin-tab" data-tab="motoboys" onclick="switchAdminTab('motoboys')" style="background:transparent; border:none; border-bottom:3px solid transparent; color:var(--muted); padding:12px 20px; cursor:pointer; font-weight:bold; transition:0.2s;">
+                🏍️ MOTOBOYS
+            </button>
+            <button class="admin-tab" data-tab="documentos" onclick="switchAdminTab('documentos')" style="background:transparent; border:none; border-bottom:3px solid transparent; color:var(--muted); padding:12px 20px; cursor:pointer; font-weight:bold; transition:0.2s;">
+                📄 DOCUMENTOS
+            </button>
+        </div>
+        
+        <!-- Tab Contents -->
+        <div style="padding:20px;">
+            <!-- Tab Clientes -->
+            <div id="admin-tab-clientes" class="admin-tab-content">
+                <h3 style="color:var(--cyan); margin-top:0;">👥 GESTÃO DE CLIENTES</h3>
+                <div id="admin-clientes-list">
+                    <p style="color:var(--muted); text-align:center; padding:40px;">🔄 Carregando...</p>
+                </div>
+            </div>
+            
+            <!-- Tab Motoboys -->
+            <div id="admin-tab-motoboys" class="admin-tab-content" style="display:none;">
+                <h3 style="color:var(--ok); margin-top:0;">🏍️ GESTÃO DE MOTOBOYS</h3>
+                <div id="admin-motoboys-list">
+                    <p style="color:var(--muted); text-align:center; padding:40px;">🔄 Carregando...</p>
+                </div>
+            </div>
+            
+            <!-- Tab Documentos -->
+            <div id="admin-tab-documentos" class="admin-tab-content" style="display:none;">
+                <h3 style="color:var(--vio); margin-top:0;">📄 DOCUMENTOS DO SISTEMA</h3>
+                <div id="admin-docs-list">
+                    <p style="color:var(--muted); text-align:center; padding:40px;">🔄 Carregando...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.admin-tab.active {
+    color: var(--cyan) !important;
+    border-bottom-color: var(--cyan) !important;
+}
+.admin-tab:hover {
+    color: var(--brand) !important;
+}
+</style>
+
+</body>
+</html>
