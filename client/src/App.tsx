@@ -39,20 +39,12 @@ function ProtectedRoute({ component: Component, role }: { component: React.Compo
 }
 
 function Router() {
-  const { user } = useAuth();
-  
   return (
     <Switch>
       <Route path="/" component={Landing} />
-      <Route path="/central">
-        {() => <ProtectedRoute component={CentralDashboard} role="central" />}
-      </Route>
-      <Route path="/client">
-        {() => <ProtectedRoute component={ClientDashboard} role="client" />}
-      </Route>
-      <Route path="/driver">
-        {() => <ProtectedRoute component={DriverDashboard} role="motoboy" />}
-      </Route>
+      <Route path="/central" component={CentralDashboard} />
+      <Route path="/client" component={ClientDashboard} />
+      <Route path="/driver" component={DriverDashboard} />
       <Route component={NotFound} />
     </Switch>
   );

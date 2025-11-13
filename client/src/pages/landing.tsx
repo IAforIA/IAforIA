@@ -83,46 +83,44 @@ export default function Landing() {
 
           <Card className="max-w-md w-full mx-auto">
             <CardHeader>
-              <CardTitle>Acessar Plataforma</CardTitle>
-              <CardDescription>Entre com seu ID e senha</CardDescription>
+              <CardTitle>Acesse os Dashboards</CardTitle>
+              <CardDescription>Navegue livremente sem autenticação</CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="userId">ID do Usuário</Label>
-                  <Input
-                    id="userId"
-                    placeholder="central, client ou motoboy"
-                    value={userId}
-                    onChange={(e) => setUserId(e.target.value)}
-                    required
-                    data-testid="input-login-id"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Senha</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    data-testid="input-login-password"
-                  />
-                </div>
+              <div className="space-y-3">
                 <Button 
-                  type="submit" 
-                  className="w-full" 
-                  disabled={isLoading}
-                  data-testid="button-login"
+                  variant="default" 
+                  className="w-full justify-between" 
+                  onClick={() => setLocation('/central')}
+                  data-testid="button-go-central"
                 >
-                  {isLoading ? "Entrando..." : "Entrar"}
+                  <span>Dashboard Central</span>
+                  <ArrowRight className="w-4 h-4" />
                 </Button>
-              </form>
+                
+                <Button 
+                  variant="default" 
+                  className="w-full justify-between" 
+                  onClick={() => setLocation('/client')}
+                  data-testid="button-go-client"
+                >
+                  <span>Dashboard Cliente</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+                
+                <Button 
+                  variant="default" 
+                  className="w-full justify-between" 
+                  onClick={() => setLocation('/driver')}
+                  data-testid="button-go-driver"
+                >
+                  <span>Dashboard Motoboy</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </div>
 
               <div className="mt-6 p-4 bg-muted rounded-lg">
-                <p className="text-sm font-medium mb-2">Contas de Teste:</p>
+                <p className="text-sm font-medium mb-2">ℹ️ Autenticação Removida</p>
                 <div className="space-y-1 text-xs text-muted-foreground">
                   <p>• Central: <code className="text-foreground">central</code> / <code className="text-foreground">central123</code></p>
                   <p>• Cliente: <code className="text-foreground">client</code> / <code className="text-foreground">client123</code></p>
