@@ -1,10 +1,59 @@
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { TruckIcon, Users, Package, BarChart3, ArrowRight } from "lucide-react";
-import { Link } from "wouter";
+import { useLocation } from "wouter";
 import ThemeToggle from "@/components/ThemeToggle";
+import { useAuth } from "@/App";
+import { useState, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Landing() {
+  const [, setLocation] = useLocation();
+  const { user, login } = useAuth();
+  const [userId, setUserId] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'central') setLocation('/central');
+      else if (user.role === 'client') setLocation('/client');
+      else if (user.role === 'motoboy') setLocation('/driver');
+    }
+  }, [user, setLocation]);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      const success = await login(userId, password);
+      if (success) {
+        toast({
+          title: "Login bem-sucedido!",
+          description: "Redirecionando...",
+        });
+      } else {
+        toast({
+          title: "Erro ao fazer login",
+          description: "ID ou senha incorretos",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Erro ao fazer login",
+        description: "Tente novamente",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen">
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
@@ -15,47 +64,74 @@ export default function Landing() {
             </div>
             <span className="font-semibold text-lg">Guriri Express</span>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" asChild data-testid="link-central">
-              <Link href="/central">Central</Link>
-            </Button>
-            <Button variant="ghost" asChild data-testid="link-client">
-              <Link href="/client">Cliente</Link>
-            </Button>
-            <Button variant="ghost" asChild data-testid="link-driver">
-              <Link href="/driver">Entregador</Link>
-            </Button>
-            <ThemeToggle />
-          </div>
+          <ThemeToggle />
         </div>
       </header>
 
       <section className="relative h-[600px] flex items-center justify-center overflow-hidden bg-gradient-to-br from-primary via-blue-600 to-blue-800">
         <div className="absolute inset-0 bg-gradient-to-r from-black/50 to-black/30" />
         
-        <div className="relative z-10 container mx-auto px-4 text-center text-white">
-          <h1 className="text-5xl md:text-6xl font-bold mb-6" data-testid="text-hero-title">
-            Conectando Empresas e Entregadores
-          </h1>
-          <p className="text-xl md:text-2xl mb-8 text-white/90 max-w-3xl mx-auto">
-            A plataforma B2B completa para gerenciar suas entregas com eficiência e transparência
-          </p>
-          <div className="flex gap-4 justify-center flex-wrap">
-            <Button size="lg" asChild data-testid="button-get-started">
-              <Link href="/client">
-                Começar Agora
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </Link>
-            </Button>
-            <Button 
-              size="lg" 
-              variant="outline" 
-              className="bg-background/20 backdrop-blur-sm border-white/30 text-white hover:bg-background/30"
-              data-testid="button-learn-more"
-            >
-              Saiba Mais
-            </Button>
+        <div className="relative z-10 container mx-auto px-4 grid md:grid-cols-2 gap-12 items-center">
+          <div className="text-white">
+            <h1 className="text-5xl md:text-6xl font-bold mb-6" data-testid="text-hero-title">
+              Conectando Empresas e Entregadores
+            </h1>
+            <p className="text-xl text-white/90 mb-6">
+              A plataforma B2B completa para gerenciar suas entregas com eficiência e transparência
+            </p>
           </div>
+
+          <Card className="max-w-md w-full mx-auto">
+            <CardHeader>
+              <CardTitle>Acessar Plataforma</CardTitle>
+              <CardDescription>Entre com seu ID e senha</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="userId">ID do Usuário</Label>
+                  <Input
+                    id="userId"
+                    placeholder="central_01, cliente_01 ou motoboy_01"
+                    value={userId}
+                    onChange={(e) => setUserId(e.target.value)}
+                    required
+                    data-testid="input-user-id"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Senha</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    data-testid="input-password"
+                  />
+                </div>
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  disabled={isLoading}
+                  data-testid="button-login"
+                >
+                  {isLoading ? "Entrando..." : "Entrar"}
+                </Button>
+              </form>
+
+              <div className="mt-6 p-4 bg-muted rounded-lg">
+                <p className="text-sm font-medium mb-2">Contas de Teste:</p>
+                <div className="space-y-1 text-xs text-muted-foreground">
+                  <p>• Central: <code className="text-foreground">central_01</code></p>
+                  <p>• Cliente: <code className="text-foreground">cliente_01</code></p>
+                  <p>• Motoboy: <code className="text-foreground">motoboy_01</code></p>
+                  <p className="mt-2">Senha para todos: <code className="text-foreground">123456</code></p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </section>
 
@@ -116,7 +192,7 @@ export default function Landing() {
               <div>
                 <h3 className="font-semibold mb-1">Acompanhamento em Tempo Real</h3>
                 <p className="text-sm text-muted-foreground">
-                  Monitore o status de todas as entregas instantaneamente
+                  Monitore o status de todas as entregas instantaneamente via WebSocket
                 </p>
               </div>
             </div>
@@ -150,9 +226,9 @@ export default function Landing() {
                 <BarChart3 className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <h3 className="font-semibold mb-1">Relatórios Detalhados</h3>
+                <h3 className="font-semibold mb-1">IA Local para Otimização</h3>
                 <p className="text-sm text-muted-foreground">
-                  Análises e métricas para otimizar suas operações
+                  Atribuição automática de pedidos e otimização de rotas
                 </p>
               </div>
             </div>
@@ -163,7 +239,7 @@ export default function Landing() {
       <footer className="border-t py-8 bg-muted/30">
         <div className="container mx-auto px-4 text-center">
           <p className="text-sm text-muted-foreground">
-            © 2024 Guriri Express. Plataforma B2B de Entregas.
+            © 2024 Guriri Express. Plataforma B2B de Entregas com IA Local.
           </p>
         </div>
       </footer>

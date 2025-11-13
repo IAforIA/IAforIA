@@ -2,162 +2,168 @@
 
 ## Design Approach
 
-**Selected Approach:** Design System - Enterprise Dashboard Pattern
-**Primary Reference:** Ant Design / Carbon Design System principles
-**Justification:** B2B logistics platform requiring data-dense displays, operational efficiency, and professional credibility. Standard enterprise UI patterns ensure usability across three distinct user roles.
+**Selected Approach:** Enterprise Dashboard Pattern (Carbon Design System + Ant Design principles)
+**Justification:** B2B logistics platform requiring data-dense displays, real-time operations, and multi-role interfaces. Enterprise patterns ensure scalability and professional credibility.
 
 ---
 
 ## Core Design Elements
 
 ### Typography
-**Font Family:** Inter via Google Fonts CDN (primary), system fallback
-- **Headings:** 
-  - H1: 2.25rem (36px), font-semibold
-  - H2: 1.875rem (30px), font-semibold
-  - H3: 1.5rem (24px), font-medium
-  - H4: 1.25rem (20px), font-medium
-- **Body:** 
-  - Default: 0.875rem (14px), font-normal
-  - Large: 1rem (16px), font-normal
-- **Labels/Captions:** 0.75rem (12px), font-medium, uppercase tracking-wide
-- **Data/Numbers:** font-mono for order IDs, tracking numbers
+**Font Family:** Inter (Google Fonts CDN) with system fallback
+- **Headings:** H1: 2.25rem/semibold, H2: 1.875rem/semibold, H3: 1.5rem/medium, H4: 1.25rem/medium
+- **Body:** Default 0.875rem, Large 1rem (normal weight)
+- **Labels:** 0.75rem, medium weight, uppercase with tracking-wide
+- **Data/Monospace:** font-mono for order IDs, tracking numbers, timestamps
 
 ### Layout System
-**Spacing Primitives:** Tailwind units of 2, 4, 6, 8, 12, 16
+**Spacing Primitives:** Tailwind units of 2, 4, 6, 8, 12
 - Component padding: p-4 or p-6
 - Section spacing: gap-6 or gap-8
-- Card margins: m-4
-- Icon sizes: w-5 h-5 (20px) for UI icons, w-6 h-6 for feature icons
+- Consistent vertical rhythm: py-6 for sections, py-12 for major divisions
 
-**Grid System:**
-- Dashboard: 12-column grid with sidebar (max-w-7xl containers)
-- Sidebar: Fixed 256px (w-64) for navigation
-- Main content: Remaining flex-1 space
-- Cards: Grid with gap-6, responsive columns (grid-cols-1 md:grid-cols-2 lg:grid-cols-3)
+**Grid Architecture:**
+- Sidebar: Fixed w-64 (256px) with collapsible mobile drawer
+- Main content: flex-1 with max-w-7xl containers
+- Dashboard cards: grid-cols-1 md:grid-cols-2 lg:grid-cols-4 with gap-6
+- Data tables: Full-width with responsive stacking on mobile
 
 ---
 
 ## Component Library
 
 ### Navigation
-**Sidebar (Central & Client Dashboards):**
-- Fixed left sidebar with logo at top
-- Vertical navigation menu with icons (Heroicons)
-- Active state: Subtle background with border-l-4 accent
-- Collapsible on mobile (hamburger menu)
-
-**Top Bar (All Views):**
-- User profile dropdown (right)
-- Notification bell icon with badge count
-- Breadcrumb navigation for deep pages
-- Height: h-16 with shadow-sm
-
-### Core UI Elements
-
-**Status Badges:**
-- Pill-shaped with px-3 py-1, rounded-full, text-xs font-medium
-- States: Pendente, Em Rota, Entregue, Cancelado
-- Each with distinct semantic styling (no color specified here)
-
-**Data Tables:**
-- Striped rows for better scanning
-- Sticky header on scroll
-- Sortable columns with arrow indicators
-- Row actions: Icon buttons (eye, edit, trash - from Heroicons)
-- Pagination below table: showing "X-Y of Z results"
-- Responsive: Stack to cards on mobile (< md breakpoint)
-
-**Order Cards:**
-- Compact card layout: rounded-lg, shadow-sm, p-4
-- Header: Order ID + status badge (flex justify-between)
-- Body: Origin → Destination with arrow icon between
-- Footer: Price (right-aligned, font-semibold) + Entregador name
-- Hover state: shadow-md transition
-
-**Forms:**
-- Stacked labels above inputs (text-sm font-medium mb-1)
-- Input fields: h-10, px-3, rounded-md, border, focus:ring-2
-- Required fields: asterisk after label
-- Helper text: text-xs below input
-- Button group: Primary CTA (right), Secondary (left) with gap-3
+**Sidebar:** Logo top, vertical icon menu, active state with border-l-4 accent, collapsible hamburger on mobile
+**Top Bar:** Breadcrumbs (left), notification bell with badge, chat icon, user dropdown (right), h-16 with shadow-sm
 
 ### Dashboard Components
 
-**Stat Cards (Dashboard Overview):**
-- Grid of 4 cards: Total Pedidos, Em Andamento, Concluídos, Entregadores Ativos
-- Each card: p-6, rounded-lg, shadow
-- Large number: text-3xl font-bold
-- Label below: text-sm
-- Small icon top-right: w-8 h-8 in subtle background circle
+**KPI Stat Cards:**
+- 4-card grid: Total Pedidos, Em Andamento, Entregues Hoje, Entregadores Ativos
+- Layout: p-6, rounded-lg, shadow
+- Number: text-3xl font-bold with trend indicator (arrow up/down icon + percentage)
+- Label: text-sm below, icon top-right in w-10 h-10 circle background
 
-**Recent Orders List:**
-- Scrollable container: max-h-96 overflow-y-auto
-- Each order: Border-bottom separator, py-3 px-4
-- Order info: flex layout with status badge right
+**Real-Time Order Feed:**
+- Live-updating list with pulse animation on new entries
+- Each order: flex layout with order ID, route (origin → destination with arrow), status badge, timestamp
+- Auto-scroll to new items with smooth transition
+- Max-height container: max-h-96 with overflow-y-auto
 
-**Map Component (Delivery Tracking):**
-- Full-width container within content area
-- Height: h-96 for embedded map
-- Overlay controls: Absolute positioned top-right with gap-2
+**Activity Timeline:**
+- Vertical timeline with connecting lines between nodes
+- Each event: timestamp (left), icon node, description (right)
+- Real-time updates append to top with slide-in animation
 
-### Delivery Driver Mobile View
+### Data Tables
+- Striped rows, sticky header, sortable columns with Heroicons arrows
+- Row actions: icon buttons (eye, edit, archive)
+- Bulk selection: checkbox column (left) with action bar appearing on selection
+- Pagination: bottom-center with "X-Y of Z results"
+- Mobile: Stack to expandable cards
 
-**Priority:** Mobile-first for driver interface
-- Bottom navigation bar: Fixed with 3-4 main actions
-- Large touch targets: min-h-12
-- Swipe actions for order cards (accept/reject)
-- Floating action button for "Available Orders" (bottom-right, w-14 h-14, rounded-full)
+### Order Management Cards
+- Compact card: rounded-lg, shadow-sm, p-4
+- Header: Order ID + status badge (flex justify-between)
+- Body: Origin/Destination with map-pin icons, entregador avatar + name
+- Footer: Timestamp (left), price (right, font-semibold)
+- Hover: shadow-md with scale-101 transform
 
-### Overlays & Modals
+### Live Tracking Module
+**Map Container:**
+- Full-width, h-96 embedded map (Leaflet/Mapbox placeholder comment)
+- Real-time driver markers with pulse animation
+- Route polyline overlay
+- Info cards: absolute positioned over map (top-left: delivery details, bottom-right: ETA countdown)
 
-**Modal Dialog:**
-- Centered overlay: max-w-lg, rounded-lg, p-6
-- Header with close button (top-right X icon)
-- Footer with action buttons (right-aligned)
-- Backdrop: semi-transparent overlay
+**Driver Location Panel:**
+- Side panel (w-80) showing current location, speed, last update timestamp
+- Battery level indicator, online status dot
+- Refresh button with loading spinner state
 
-**Toast Notifications:**
-- Top-right positioned: fixed top-4 right-4
-- Auto-dismiss after 3s
-- Icon + message + close button
-- Slide-in animation from right
+### Chat Interface
+**Chat Window:**
+- Split layout: contact list sidebar (w-72) + conversation area (flex-1)
+- Message bubbles: rounded-lg, max-w-md, sender (right-aligned), receiver (left-aligned)
+- Input bar: fixed bottom with h-12 input, send button, attachment icon
+- Unread badge on contact avatars
+- Typing indicator: animated dots
+- Timestamp: text-xs below message groups
+
+**Quick Actions Panel:**
+- Floating drawer (right-side) with common templates: "Onde está o pedido?", "Confirmar entrega", etc.
+- Click to insert into chat input
+
+### Document Upload
+**Upload Zone:**
+- Dashed border drag-and-drop area: min-h-32, rounded-lg
+- Upload icon (cloud-upload from Heroicons), "Arraste arquivos ou clique" text
+- File list below: each file with icon, name, size, remove button
+- Progress bar during upload with percentage
+- Accepted formats badge: text-xs showing "PDF, PNG, JPG"
+
+### Forms
+- Stacked labels (text-sm font-medium mb-1) with required asterisks
+- Inputs: h-10, px-3, rounded-md, border with focus:ring-2
+- Multi-step forms: progress stepper at top (circles with connecting lines)
+- Inline validation: check/error icons in input (right-positioned)
+
+### Status System
+**Badges:** Pill-shaped px-3 py-1, rounded-full, text-xs font-medium
+- States: Pendente, Confirmado, Coletado, Em Rota, Entregue, Cancelado
+
+### Modals & Overlays
+- Modal: centered max-w-2xl, rounded-lg, p-6, close button top-right
+- Toast: fixed top-4 right-4, slide-in from right, auto-dismiss 3s
+- Confirmation dialogs: max-w-md with two-button footer (cancel left, confirm right)
+
+### Mobile Driver Interface
+**Priority Layout:**
+- Bottom navigation: fixed bar with 4 icons (home, orders, chat, profile), min-h-14
+- Swipeable order cards for accept/reject actions
+- Floating action button: w-14 h-14 rounded-full (bottom-right) for "Ver Pedidos Disponíveis"
+- Large touch targets: min-h-12 for all interactive elements
 
 ---
 
 ## Animations
-**Minimal Motion:**
-- Hover transitions: transition-all duration-200
-- Modal/drawer entry: slide or fade (duration-300)
-- Loading states: Subtle pulse on skeleton screens
-- NO scroll-triggered animations
-- NO parallax effects
+- Hover transitions: duration-200
+- Modal entry: slide fade duration-300
+- Real-time updates: pulse on new data, slide-in for messages
+- Loading: skeleton screens with subtle pulse
+- NO scroll animations or parallax
 
 ---
 
 ## Icons
-**Library:** Heroicons (outline for navigation, solid for actions) via CDN
-**Common Icons:**
-- truck (delivery), map-pin (location), clock (status), check-circle (complete)
-- user-group (clients), identification (drivers), chart-bar (stats)
+**Heroicons via CDN** (outline for nav, solid for actions)
+Common: truck, map-pin, clock, check-circle, user-group, chart-bar, chat-bubble-left-right, cloud-arrow-up, bell
 
 ---
 
 ## Images
-**Hero Section (Landing/Marketing Page Only):**
-- Full-width hero: Delivery truck/logistics photo
+
+**Landing Page Hero:**
+- Full-width hero with professional logistics photo (modern delivery truck, warehouse operations, or urban delivery scene)
 - Height: h-screen on desktop, h-96 on mobile
-- Overlay gradient for text readability
+- Gradient overlay for text readability
 - CTA buttons with backdrop-blur-sm background
 
-**Dashboard:** No decorative images - focus on data and functionality
-**Empty States:** Simple illustration placeholders (<!-- CUSTOM ICON: empty box illustration -->)
+**Dashboard Empty States:**
+- Minimal line illustrations for "Nenhum pedido ativo", "Sem mensagens"
+- Placeholder comments: <!-- CUSTOM ICON: empty state illustration -->
+
+**User Avatars:**
+- Circular w-10 h-10 for driver/client profile images in lists
+- Fallback: initials in colored circle background
+
+**No decorative imagery in operational dashboards** - maintain data focus
 
 ---
 
 ## Key Principles
-1. **Information Density:** Maximize screen real estate for data without overwhelming
-2. **Role Clarity:** Visual consistency but distinct workflows per user type
-3. **Real-time Feedback:** Prominent status indicators and live updates
-4. **Mobile for Drivers:** Touch-optimized, one-handed operation priority
-5. **Professional Trust:** Clean, organized layouts that inspire B2B confidence
+1. **Real-Time First:** Immediate visual feedback for live data updates
+2. **Information Density:** Maximize operational data visibility without clutter
+3. **Role-Specific Optimization:** Admin (analytics focus), Client (order tracking), Driver (mobile-first)
+4. **Trust Signals:** Professional layouts, clear status communication, reliable performance indicators
+5. **Efficient Workflows:** Minimize clicks for common actions, keyboard shortcuts for power users

@@ -7,43 +7,43 @@ import { Package, TruckIcon, CheckCircle, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-
-//todo: remove mock functionality
-const mockOrders = [
-  {
-    id: "2024-001",
-    origin: "Rua das Flores, 123 - Centro",
-    destination: "Av. Principal, 456 - Bairro Norte",
-    status: "pending" as const,
-    value: "45.00",
-  },
-  {
-    id: "2024-002",
-    origin: "Shopping Center - Loja 201",
-    destination: "Condomínio Residencial, Bloco A",
-    status: "in_progress" as const,
-    value: "78.50",
-    driverName: "João Silva",
-  },
-  {
-    id: "2024-003",
-    origin: "Empresa XYZ Ltda",
-    destination: "Cliente ABC - Escritório 5",
-    status: "delivered" as const,
-    value: "125.00",
-    driverName: "Maria Santos",
-  },
-  {
-    id: "2024-004",
-    origin: "Armazém Central",
-    destination: "Loja Parceira - Unidade 3",
-    status: "in_progress" as const,
-    value: "95.00",
-    driverName: "Pedro Costa",
-  },
-];
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/App";
+import type { Order, Motoboy } from "@shared/schema";
+import { useEffect, useState } from "react";
 
 export default function CentralDashboard() {
+  const { logout } = useAuth();
+  const [ws, setWs] = useState<WebSocket | null>(null);
+
+  const { data: orders = [], refetch: refetchOrders } = useQuery<Order[]>({
+    queryKey: ['/api/orders'],
+  });
+
+  const { data: motoboys = [] } = useQuery<Motoboy[]>({
+    queryKey: ['/api/motoboys'],
+  });
+
+  useEffect(() => {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const websocket = new WebSocket(`${protocol}//${window.location.host}/ws?id=central`);
+    
+    websocket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === 'new_order' || data.type === 'order_accepted' || data.type === 'order_delivered') {
+        refetchOrders();
+      }
+    };
+
+    setWs(websocket);
+    return () => websocket.close();
+  }, [refetchOrders]);
+
+  const totalOrders = orders.length;
+  const inProgress = orders.filter(o => o.status === 'in_progress').length;
+  const delivered = orders.filter(o => o.status === 'delivered').length;
+  const activeDrivers = motoboys.filter(m => m.online).length;
+
   const style = {
     "--sidebar-width": "16rem",
     "--sidebar-width-icon": "4rem",
@@ -59,16 +59,19 @@ export default function CentralDashboard() {
               <SidebarTrigger data-testid="button-sidebar-toggle" />
               <h1 className="text-xl font-semibold" data-testid="text-page-title">Dashboard Central</h1>
             </div>
-            <ThemeToggle />
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <Button variant="outline" onClick={logout} data-testid="button-logout">Sair</Button>
+            </div>
           </header>
 
           <main className="flex-1 overflow-auto p-6">
             <div className="max-w-7xl mx-auto space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard title="Total Pedidos" value="156" icon={Package} />
-                <StatCard title="Em Andamento" value="23" icon={TruckIcon} />
-                <StatCard title="Concluídos" value="128" icon={CheckCircle} />
-                <StatCard title="Entregadores Ativos" value="12" icon={Users} />
+                <StatCard title="Total Pedidos" value={totalOrders} icon={Package} />
+                <StatCard title="Em Andamento" value={inProgress} icon={TruckIcon} />
+                <StatCard title="Concluídos" value={delivered} icon={CheckCircle} />
+                <StatCard title="Entregadores Ativos" value={activeDrivers} icon={Users} />
               </div>
 
               <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -84,39 +87,45 @@ export default function CentralDashboard() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {mockOrders.map((order) => (
+                {orders.slice(0, 9).map((order) => (
                   <OrderCard
                     key={order.id}
-                    {...order}
+                    id={order.id}
+                    origin={`${order.coletaRua}, ${order.coletaNumero} - ${order.coletaBairro}`}
+                    destination={`${order.entregaRua}, ${order.entregaNumero} - ${order.entregaBairro}`}
+                    status={order.status as any}
+                    value={order.valor}
+                    driverName={order.motoboyName || undefined}
                     onView={() => console.log('View order:', order.id)}
                   />
                 ))}
               </div>
 
+              {orders.length === 0 && (
+                <Card className="p-12 text-center">
+                  <Package className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-muted-foreground">Nenhum pedido cadastrado</p>
+                </Card>
+              )}
+
               <Card className="p-6">
                 <h3 className="text-lg font-semibold mb-4">Atividade Recente</h3>
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between py-2 border-b">
-                    <div>
-                      <p className="text-sm font-medium">Novo pedido criado</p>
-                      <p className="text-xs text-muted-foreground">Cliente: Empresa ABC</p>
+                  {orders.slice(0, 5).map((order, idx) => (
+                    <div key={order.id} className="flex items-center justify-between py-2 border-b last:border-b-0">
+                      <div>
+                        <p className="text-sm font-medium">
+                          {order.status === 'pending' && 'Novo pedido criado'}
+                          {order.status === 'in_progress' && 'Pedido em andamento'}
+                          {order.status === 'delivered' && 'Entrega concluída'}
+                        </p>
+                        <p className="text-xs text-muted-foreground">Pedido #{order.id}</p>
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(order.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
                     </div>
-                    <span className="text-xs text-muted-foreground">2 min atrás</span>
-                  </div>
-                  <div className="flex items-center justify-between py-2 border-b">
-                    <div>
-                      <p className="text-sm font-medium">Entrega concluída</p>
-                      <p className="text-xs text-muted-foreground">Pedido #2024-001</p>
-                    </div>
-                    <span className="text-xs text-muted-foreground">15 min atrás</span>
-                  </div>
-                  <div className="flex items-center justify-between py-2">
-                    <div>
-                      <p className="text-sm font-medium">Novo entregador cadastrado</p>
-                      <p className="text-xs text-muted-foreground">Carlos Oliveira</p>
-                    </div>
-                    <span className="text-xs text-muted-foreground">1 hora atrás</span>
-                  </div>
+                  ))}
                 </div>
               </Card>
             </div>
