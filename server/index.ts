@@ -103,8 +103,8 @@ export function broadcast(message: any, excludeId?: string) {
       const user = verifyTokenFromQuery(token); // Usa a função de auth.ts
 
       if (!user) {
-        // Encerra a conexão se não for autorizado
-        ws.close(1008, 'Unauthorized'); 
+        // Encerra a conexão abruptamente se não for autorizado
+        ws.terminate(); 
         return;
       }
 
