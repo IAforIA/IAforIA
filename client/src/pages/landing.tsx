@@ -92,11 +92,11 @@ export default function Landing() {
                   <Label htmlFor="userId">ID do Usuário</Label>
                   <Input
                     id="userId"
-                    placeholder="central_01, cliente_01 ou motoboy_01"
+                    placeholder="central, client ou motoboy"
                     value={userId}
                     onChange={(e) => setUserId(e.target.value)}
                     required
-                    data-testid="input-user-id"
+                    data-testid="input-login-id"
                   />
                 </div>
                 <div className="space-y-2">
@@ -108,7 +108,7 @@ export default function Landing() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    data-testid="input-password"
+                    data-testid="input-login-password"
                   />
                 </div>
                 <Button 
@@ -124,10 +124,9 @@ export default function Landing() {
               <div className="mt-6 p-4 bg-muted rounded-lg">
                 <p className="text-sm font-medium mb-2">Contas de Teste:</p>
                 <div className="space-y-1 text-xs text-muted-foreground">
-                  <p>• Central: <code className="text-foreground">central_01</code></p>
-                  <p>• Cliente: <code className="text-foreground">cliente_01</code></p>
-                  <p>• Motoboy: <code className="text-foreground">motoboy_01</code></p>
-                  <p className="mt-2">Senha para todos: <code className="text-foreground">123456</code></p>
+                  <p>• Central: <code className="text-foreground">central</code> / <code className="text-foreground">central123</code></p>
+                  <p>• Cliente: <code className="text-foreground">client</code> / <code className="text-foreground">client123</code></p>
+                  <p>• Motoboy: <code className="text-foreground">motoboy</code> / <code className="text-foreground">motoboy123</code></p>
                 </div>
               </div>
             </CardContent>

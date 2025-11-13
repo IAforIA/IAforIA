@@ -375,3 +375,38 @@ export class MemStorage implements IStorage {
 }
 
 export const storage = new MemStorage();
+
+// Initialize test users
+(async () => {
+  await storage.createUser({
+    id: 'central',
+    name: 'Admin Central',
+    role: 'central',
+    phone: '27999999999',
+    email: 'central@guriri.com',
+    password: 'central123',
+    status: 'active',
+  });
+
+  await storage.createUser({
+    id: 'client',
+    name: 'Cliente Teste',
+    role: 'client',
+    phone: '27988888888',
+    email: 'client@empresa.com',
+    password: 'client123',
+    status: 'active',
+  });
+
+  await storage.createUser({
+    id: 'motoboy',
+    name: 'Motoboy João',
+    role: 'motoboy',
+    phone: '27977777777',
+    email: 'motoboy@guriri.com',
+    password: 'motoboy123',
+    status: 'active',
+  });
+
+  console.log('✓ Test users initialized');
+})();
