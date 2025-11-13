@@ -64,7 +64,13 @@ class DrizzleStorage implements IStorage {
     
     for (const location of allLocations) {
       if (!latestByMotoboy.has(location.motoboyId)) {
-        latestByMotoboy.set(location.motoboyId, location);
+        // Convert decimal strings to numbers for latitude and longitude
+        const normalizedLocation = {
+          ...location,
+          latitude: typeof location.latitude === 'string' ? parseFloat(location.latitude) : location.latitude,
+          longitude: typeof location.longitude === 'string' ? parseFloat(location.longitude) : location.longitude,
+        } as any;
+        latestByMotoboy.set(location.motoboyId, normalizedLocation);
       }
     }
     

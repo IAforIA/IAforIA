@@ -35,7 +35,7 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const token = localStorage.getItem('guriri_token');
+    const token = typeof window !== 'undefined' ? localStorage.getItem('guriri_token') : null;
     const headers: Record<string, string> = token 
       ? { "Authorization": `Bearer ${token}` } 
       : {};

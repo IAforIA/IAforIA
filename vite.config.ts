@@ -1,27 +1,24 @@
 import { defineConfig } from "vite";
-import reactRefresh from "@vitejs/plugin-react-refresh"; // Importação corrigida
+import react from "@vitejs/plugin-react";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
-// Envolve a configuração em uma função assíncrona
 export default defineConfig(async ({ command, mode }) => {
   const plugins = [
-    reactRefresh(), // Uso corrigido
+    react(),
     runtimeErrorOverlay(),
   ];
 
-  // Adiciona condicionalmente os plugins Replit de forma assíncrona
   if (process.env.NODE_ENV !== "production" && process.env.REPL_ID !== undefined) {
     const cartographer = await import("@replit/vite-plugin-cartographer").then((m) => m.cartographer());
     const devBanner = await import("@replit/vite-plugin-dev-banner").then((m) => m.devBanner());
     plugins.push(cartographer, devBanner);
   }
 
-  return { // Retorna o objeto de configuração final
+  return {
     plugins: plugins,
     resolve: {
       alias: {
-        // Usando __dirname (ou path.resolve(import.meta.dirname))
         "@": path.resolve(__dirname, "client", "src"),
         "@shared": path.resolve(__dirname, "shared"),
         "@assets": path.resolve(__dirname, "attached_assets"),
