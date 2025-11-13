@@ -12,11 +12,19 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/App";
-import type { Order } from "@shared/schema";
+import type { Order, OrderStatus } from "@shared/schema"; // Importando OrderStatus
+
+// Função auxiliar para analisar strings decimais com segurança
+const parseDecimalSafe = (value: string | null | undefined): number => {
+  if (value === null || value === undefined) return 0;
+  const num = parseFloat(value);
+  return isNaN(num) ? 0 : num;
+};
 
 export default function DriverDashboard() {
   const { toast } = useToast();
-  const { user, logout } = useAuth();
+  // Obtem o token junto com user e logout
+  const { user, logout, token } = useAuth(); 
 
   const { data: orders = [], refetch } = useQuery<Order[]>({
     queryKey: ['/api/orders'],
@@ -27,22 +35,29 @@ export default function DriverDashboard() {
   const deliveredToday = orders.filter(o => 
     o.motoboyId === user?.id && 
     o.status === 'delivered' &&
-    new Date(o.deliveredAt!).toDateString() === new Date().toDateString()
+    // Verifica se deliveredAt não é nulo antes de chamar toDateString()
+    o.deliveredAt && new Date(o.deliveredAt).toDateString() === new Date().toDateString()
   );
 
-  const totalEarnings = deliveredToday.reduce((sum, o) => sum + parseFloat(o.valor), 0);
+  // CORRIGIDO: Usando taxaMotoboy para calcular ganhos reais e parseDecimalSafe
+  const totalEarnings = deliveredToday.reduce((sum, o) => sum + parseDecimalSafe(o.taxaMotoboy), 0);
 
   useEffect(() => {
+    // CRÍTICO: Autenticação segura via token no WS
+    if (!user?.id || !token) return;
+
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const websocket = new WebSocket(`${protocol}//${window.location.host}/ws?id=${user?.id}`);
-    
+    // const websocket = new WebSocket(`${protocol}//${window.location.host}/ws?id=${user?.id}`); // OLD (Inseguro)
+    const websocket = new WebSocket(`${protocol}//${window.location.host}/ws?token=${token}`); // NEW (Seguro)
+
     websocket.onmessage = () => refetch();
-    
+
     return () => websocket.close();
-  }, [user?.id, refetch]);
+  }, [user?.id, refetch, token]); // Adicionado token como dependência
 
   const acceptOrderMutation = useMutation({
     mutationFn: async (orderId: string) => {
+      // Endpoint corrigido e dados de usuário garantidos pelo useAuth/AuthContext
       const res = await apiRequest('POST', `/api/orders/${orderId}/accept`, {
         motoboyId: user?.id,
         motoboyName: user?.name,
@@ -100,6 +115,7 @@ export default function DriverDashboard() {
                 <StatCard title="Entregas Hoje" value={deliveredToday.length} icon={Package} />
                 <StatCard title="Em Andamento" value={myOrders.length} icon={TruckIcon} />
                 <StatCard title="Concluídas" value={deliveredToday.length} icon={CheckCircle} />
+                {/* Formatando ganhos totais com segurança */}
                 <StatCard title="Ganhos Hoje" value={`R$ ${totalEarnings.toFixed(2)}`} icon={DollarSign} />
               </div>
 
@@ -118,7 +134,7 @@ export default function DriverDashboard() {
                           id={order.id}
                           origin={`${order.coletaRua}, ${order.coletaNumero} - ${order.coletaBairro}`}
                           destination={`${order.entregaRua}, ${order.entregaNumero} - ${order.entregaBairro}`}
-                          status={order.status as any}
+                          status={order.status as OrderStatus} // CORRIGIDO: Tipagem segura
                           value={order.valor}
                         />
                         <Button 
@@ -150,7 +166,7 @@ export default function DriverDashboard() {
                           id={order.id}
                           origin={`${order.coletaRua}, ${order.coletaNumero} - ${order.coletaBairro}`}
                           destination={`${order.entregaRua}, ${order.entregaNumero} - ${order.entregaBairro}`}
-                          status={order.status as any}
+                          status={order.status as OrderStatus} // CORRIGIDO: Tipagem segura
                           value={order.valor}
                         />
                         <Button 

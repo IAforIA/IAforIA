@@ -1,8 +1,9 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, decimal, integer, boolean, json } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, decimal, integer, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// --- Tabela de Usuários (users) ---
 export const users = pgTable("users", {
   id: varchar("id").primaryKey(),
   name: text("name").notNull(),
@@ -18,6 +19,7 @@ export const insertUserSchema = createInsertSchema(users).omit({ createdAt: true
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
+// --- Tabela de Motoboys (motoboys) ---
 export const motoboys = pgTable("motoboys", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
@@ -27,8 +29,7 @@ export const motoboys = pgTable("motoboys", {
   taxaPadrao: decimal("taxa_padrao", { precision: 10, scale: 2 }).notNull().default("7.00"),
   status: text("status").notNull().default("ativo"),
   online: boolean("online").default(false),
-  currentLat: decimal("current_lat", { precision: 10, scale: 7 }),
-  currentLng: decimal("current_lng", { precision: 10, scale: 7 }),
+  // REMOVIDOS: currentLat e currentLng
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -36,12 +37,28 @@ export const insertMotoboySchema = createInsertSchema(motoboys).omit({
   id: true, 
   createdAt: true, 
   online: true,
-  currentLat: true,
-  currentLng: true,
+  // currentLat e currentLng não estão mais aqui
 });
 export type InsertMotoboy = z.infer<typeof insertMotoboySchema>;
 export type Motoboy = typeof motoboys.$inferSelect;
 
+// --- NOVA TABELA: motoboy_locations (Rastreamento em tempo real/Histórico) ---
+export const motoboyLocations = pgTable("motoboy_locations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  motoboyId: varchar("motoboy_id").notNull(),
+  latitude: decimal("latitude", { precision: 10, scale: 7 }).notNull(), // Usando decimal para precisão GPS
+  longitude: decimal("longitude", { precision: 10, scale: 7 }).notNull(),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+});
+
+export const insertMotoboyLocationSchema = createInsertSchema(motoboyLocations).omit({
+  id: true,
+  timestamp: true,
+});
+export type InsertMotoboyLocation = z.infer<typeof insertMotoboyLocationSchema>;
+export type MotoboyLocation = typeof motoboyLocations.$inferSelect;
+
+// --- Tabela de Clientes (clients) ---
 export const clients = pgTable("clients", {
   id: varchar("id").primaryKey(),
   name: text("name").notNull(),
@@ -55,39 +72,40 @@ export const insertClientSchema = createInsertSchema(clients).omit({ createdAt: 
 export type InsertClient = z.infer<typeof insertClientSchema>;
 export type Client = typeof clients.$inferSelect;
 
+// --- Tabela de Pedidos (orders) ---
 export const orders = pgTable("orders", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   clientId: varchar("client_id").notNull(),
   clientName: text("client_name").notNull(),
   clientPhone: text("client_phone").notNull(),
-  
+
   coletaRua: text("coleta_rua").notNull(),
   coletaNumero: text("coleta_numero").notNull(),
   coletaComplemento: text("coleta_complemento"),
   coletaBairro: text("coleta_bairro").notNull(),
   coletaCep: text("coleta_cep").notNull(),
-  
+
   entregaRua: text("entrega_rua").notNull(),
   entregaNumero: text("entrega_numero").notNull(),
   entregaComplemento: text("entrega_complemento"),
   entregaBairro: text("entrega_bairro").notNull(),
   entregaCep: text("entrega_cep").notNull(),
-  
+
   referencia: text("referencia"),
   observacoes: text("observacoes"),
-  
+
   valor: decimal("valor", { precision: 10, scale: 2 }).notNull(),
   taxaMotoboy: decimal("taxa_motoboy", { precision: 10, scale: 2 }).notNull().default("7.00"),
-  
+
   formaPagamento: text("forma_pagamento").notNull(),
   hasTroco: boolean("has_troco").default(false),
   trocoValor: decimal("troco_valor", { precision: 10, scale: 2 }),
-  
+
   motoboyId: varchar("motoboy_id"),
   motoboyName: text("motoboy_name"),
-  
+
   status: text("status").notNull().default("pending"),
-  
+
   createdAt: timestamp("created_at").defaultNow().notNull(),
   acceptedAt: timestamp("accepted_at"),
   deliveredAt: timestamp("delivered_at"),
@@ -105,6 +123,7 @@ export const insertOrderSchema = createInsertSchema(orders).omit({
 export type InsertOrder = z.infer<typeof insertOrderSchema>;
 export type Order = typeof orders.$inferSelect;
 
+// --- Tabela de Live Docs (live_docs) ---
 export const liveDocs = pgTable("live_docs", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   orderId: varchar("order_id").notNull(),
@@ -124,6 +143,7 @@ export const insertLiveDocSchema = createInsertSchema(liveDocs).omit({
 export type InsertLiveDoc = z.infer<typeof insertLiveDocSchema>;
 export type LiveDoc = typeof liveDocs.$inferSelect;
 
+// --- Tabela de Mensagens de Chat (chat_messages) ---
 export const chatMessages = pgTable("chat_messages", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   fromId: varchar("from_id").notNull(),
@@ -142,6 +162,7 @@ export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({
 export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
 export type ChatMessage = typeof chatMessages.$inferSelect;
 
+// --- Tabela de Agendamentos de Motoboys (motoboy_schedules) ---
 export const motoboySchedules = pgTable("motoboy_schedules", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   motoboyId: varchar("motoboy_id").notNull(),
@@ -155,10 +176,10 @@ export const insertMotoboyScheduleSchema = createInsertSchema(motoboySchedules).
 export type InsertMotoboySchedule = z.infer<typeof insertMotoboyScheduleSchema>;
 export type MotoboySchedule = typeof motoboySchedules.$inferSelect;
 
+// --- Tabela de Agendamentos de Clientes (client_schedules) ---
 export const clientSchedules = pgTable("client_schedules", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   clientId: varchar("client_id").notNull(),
-  diaSemana: integer("dia_semana").notNull(),
   horaAbertura: text("hora_abertura"),
   horaFechamento: text("hora_fechamento"),
   fechado: boolean("fechado").default(false),

@@ -9,11 +9,12 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/App";
-import type { Order, Motoboy } from "@shared/schema";
+// Importamos o tipo OrderStatus para tipagem segura
+import type { Order, Motoboy, OrderStatus } from "@shared/schema"; 
 import { useEffect, useState } from "react";
 
 export default function CentralDashboard() {
-  const { logout } = useAuth();
+  const { logout, token } = useAuth(); // CRÍTICO: Obtém o token do contexto de autenticação
   const [ws, setWs] = useState<WebSocket | null>(null);
 
   const { data: orders = [], refetch: refetchOrders } = useQuery<Order[]>({
@@ -25,9 +26,13 @@ export default function CentralDashboard() {
   });
 
   useEffect(() => {
+    // CRÍTICO: Inclui o token JWT no query parameter para autenticação segura do WS
+    if (!token) return; // Não conecta se não houver token
+
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const websocket = new WebSocket(`${protocol}//${window.location.host}/ws?id=central`);
-    
+    // const websocket = new WebSocket(`${protocol}//${window.location.host}/ws?id=central`); // OLD (Inseguro)
+    const websocket = new WebSocket(`${protocol}//${window.location.host}/ws?token=${token}`); // NEW (Seguro)
+
     websocket.onmessage = (event) => {
       const data = JSON.parse(event.data);
       if (data.type === 'new_order' || data.type === 'order_accepted' || data.type === 'order_delivered') {
@@ -35,9 +40,14 @@ export default function CentralDashboard() {
       }
     };
 
+    websocket.onclose = () => console.log('WebSocket closed');
+    websocket.onerror = (error) => console.error('WebSocket error:', error);
+    websocket.onopen = () => console.log('WebSocket connected');
+
+
     setWs(websocket);
     return () => websocket.close();
-  }, [refetchOrders]);
+  }, [refetchOrders, token]); // Adicionado 'token' como dependência
 
   const totalOrders = orders.length;
   const inProgress = orders.filter(o => o.status === 'in_progress').length;
@@ -90,10 +100,9 @@ export default function CentralDashboard() {
                 {orders.slice(0, 9).map((order) => (
                   <OrderCard
                     key={order.id}
-                    id={order.id}
                     origin={`${order.coletaRua}, ${order.coletaNumero} - ${order.coletaBairro}`}
                     destination={`${order.entregaRua}, ${order.entregaNumero} - ${order.entregaBairro}`}
-                    status={order.status as any}
+                    status={order.status as OrderStatus} // CORRIGIDO: Tipagem segura
                     value={order.valor}
                     driverName={order.motoboyName || undefined}
                     onView={() => console.log('View order:', order.id)}
@@ -115,6 +124,7 @@ export default function CentralDashboard() {
                     <div key={order.id} className="flex items-center justify-between py-2 border-b last:border-b-0">
                       <div>
                         <p className="text-sm font-medium">
+                          {/* Ajuste a lógica de texto para refletir status exatos do OrderStatus */}
                           {order.status === 'pending' && 'Novo pedido criado'}
                           {order.status === 'in_progress' && 'Pedido em andamento'}
                           {order.status === 'delivered' && 'Entrega concluída'}

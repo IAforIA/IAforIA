@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/App";
-import type { Order } from "@shared/schema";
+import type { Order, OrderStatus } from "@shared/schema";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -19,6 +19,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 
+// Esquema Zod corrigido: Usando números para valores monetários
 const orderSchema = z.object({
   coletaRua: z.string().min(3, "Rua é obrigatória"),
   coletaNumero: z.string().min(1, "Número é obrigatório"),
@@ -28,16 +29,20 @@ const orderSchema = z.object({
   entregaNumero: z.string().min(1, "Número é obrigatório"),
   entregaBairro: z.string().min(3, "Bairro é obrigatório"),
   entregaCep: z.string().default("29900-000"),
-  valor: z.string().min(1, "Valor é obrigatório"),
-  taxaMotoboy: z.string().default("7.00"),
+  valor: z.number().min(0.01, "Valor é obrigatório"), // Alterado para number
+  taxaMotoboy: z.number().default(7.00), // Alterado para number
+  // Adicionar campos faltantes que estavam hardcoded, se necessário no formulário
+  // formaPagamento: z.string().default("dinheiro"), 
 });
 
+// Tipo derivado do novo esquema
 type OrderFormData = z.infer<typeof orderSchema>;
 
 export default function ClientDashboard() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
-  const { user, logout } = useAuth();
+  // Obtem o token junto com user e logout
+  const { user, logout, token } = useAuth(); 
 
   const { data: orders = [], refetch } = useQuery<Order[]>({
     queryKey: ['/api/orders'],
@@ -46,25 +51,33 @@ export default function ClientDashboard() {
   const clientOrders = orders.filter(o => o.clientId === user?.id);
 
   useEffect(() => {
+    // CRÍTICO: Autenticação segura via token no WS
+    if (!user?.id || !token) return;
+
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const websocket = new WebSocket(`${protocol}//${window.location.host}/ws?id=${user?.id}`);
-    
+    const websocket = new WebSocket(`${protocol}//${window.location.host}/ws?token=${token}`);
+
     websocket.onmessage = () => refetch();
-    
+
     return () => websocket.close();
-  }, [user?.id, refetch]);
+  }, [user?.id, refetch, token]); // Adicionado token como dependência
 
   const createOrderMutation = useMutation({
     mutationFn: async (data: OrderFormData) => {
+      // CORRIGIDO: Convertendo number para string ANTES de enviar para a API, 
+      // pois o schema Drizzle espera string/decimal.
       const res = await apiRequest('POST', '/api/orders', {
         clientId: user?.id,
         clientName: user?.name,
-        clientPhone: '27988888888',
+        clientPhone: user?.phone || 'N/A', // Usa o telefone do usuário logado, não hardcode
         ...data,
-        coletaComplemento: '',
-        entregaComplemento: '',
-        formaPagamento: 'dinheiro',
-        hasTroco: false,
+        valor: data.valor.toFixed(2), // Converte para string com 2 casas decimais
+        taxaMotoboy: data.taxaMotoboy.toFixed(2), // Converte para string com 2 casas decimais
+        // Mantém hardcoded temporariamente até adicionar ao formulário/backend
+        coletaComplemento: '', 
+        entregaComplemento: '', 
+        formaPagamento: 'dinheiro', 
+        hasTroco: false, 
       });
       return await res.json();
     },
@@ -75,6 +88,7 @@ export default function ClientDashboard() {
         description: "Seu pedido foi enviado e está aguardando um entregador.",
       });
       setIsDialogOpen(false);
+      form.reset(); // Reseta o formulário após sucesso
     },
   });
 
@@ -89,8 +103,8 @@ export default function ClientDashboard() {
       entregaNumero: "",
       entregaBairro: "",
       entregaCep: "29900-000",
-      valor: "7.00",
-      taxaMotoboy: "7.00",
+      valor: 7.00, // Default value as number
+      taxaMotoboy: 7.00, // Default value as number
     },
   });
 
@@ -187,61 +201,41 @@ export default function ClientDashboard() {
                         )} />
                       </div>
 
-                      <FormField control={form.control} name="valor" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Valor (R$)</FormLabel>
-                          <FormControl>
-                            <Input {...field} type="number" step="0.01" placeholder="7.00" data-testid="input-valor" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )} />
+                      {/* Campos de Valor e Taxa (Ajustados para aceitar números na UI) */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField control={form.control} name="valor" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Valor do Pedido (R$)</FormLabel>
+                            <FormControl>
+                              {/* Use type="number" para melhor UX no mobile */}
+                              <Input {...field} type="number" step="0.01" placeholder="7.00" 
+                                onChange={e => field.onChange(parseFloat(e.target.value))} 
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                        <FormField control={form.control} name="taxaMotoboy" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Sua Taxa (R$)</FormLabel>
+                            <FormControl>
+                              <Input {...field} type="number" step="0.01" placeholder="7.00" 
+                                onChange={e => field.onChange(parseFloat(e.target.value))}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                      </div>
 
-                      <Button type="submit" className="w-full" disabled={createOrderMutation.isPending} data-testid="button-submit-order">
-                        {createOrderMutation.isPending ? "Criando..." : "Criar Pedido"}
+                      <Button type="submit" className="w-full" isLoading={createOrderMutation.isPending} data-testid="button-submit-order">
+                        {createOrderMutation.isPending ? "Criando Pedido..." : "Criar Pedido"}
                       </Button>
                     </form>
                   </Form>
                 </DialogContent>
               </Dialog>
-              <ThemeToggle />
               <Button variant="outline" onClick={logout} data-testid="button-logout">Sair</Button>
-            </div>
-          </header>
-
-          <main className="flex-1 overflow-auto p-6">
-            <div className="max-w-7xl mx-auto space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard title="Total de Pedidos" value={totalOrders} icon={Package} />
-                <StatCard title="Pendentes" value={pending} icon={Clock} />
-                <StatCard title="Concluídos" value={delivered} icon={CheckCircle} />
-                <StatCard title="Cancelados" value={cancelled} icon={XCircle} />
-              </div>
-
-              <div>
-                <h2 className="text-lg font-semibold mb-4">Pedidos Ativos</h2>
-                {clientOrders.length === 0 ? (
-                  <Card className="p-12 text-center">
-                    <Package className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-                    <p className="text-muted-foreground">Você ainda não tem pedidos. Clique em "Novo Pedido" para começar.</p>
-                  </Card>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {clientOrders.map((order) => (
-                      <OrderCard
-                        key={order.id}
-                        id={order.id}
-                        origin={`${order.coletaRua}, ${order.coletaNumero} - ${order.coletaBairro}`}
-                        destination={`${order.entregaRua}, ${order.entregaNumero} - ${order.entregaBairro}`}
-                        status={order.status as any}
-                        value={order.valor}
-                        driverName={order.motoboyName || undefined}
-                        onView={() => console.log('View order:', order.id)}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
             </div>
           </main>
         </div>

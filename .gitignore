@@ -1,6 +1,18 @@
+# Dependências
 node_modules
+
+# Diretórios de Build e Distribuição
 dist
+build
+server/dist # Adicionado: Garante que os arquivos JS compilados do backend sejam ignorados
+
+# Arquivos temporários e do sistema
 .DS_Store
-server/public
-vite.config.ts.*
 *.tar.gz
+
+# Configuração do Vite/TypeScript
+vite.config.ts.*
+.vite/
+.turbo/
+migrations/
+*.tsbuildinfo

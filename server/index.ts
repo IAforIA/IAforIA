@@ -1,14 +1,20 @@
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+// Importações com .js para compatibilidade ESM
+import { registerRoutes } from "./routes.js"; 
+import { setupVite, serveStatic, log } from "./vite.js";
+import { createServer } from "http";
+import { WebSocketServer, WebSocket } from "ws"; // Importar módulos WS
+import { verifyTokenFromQuery } from "./middleware/auth.js"; // Importar função de autenticação WS
 
 const app = express();
+let httpServer: ReturnType<typeof createServer> | undefined;
 
 declare module 'http' {
   interface IncomingMessage {
-    rawBody: unknown
+    rawBody: Buffer;
   }
 }
+
 app.use(express.json({
   verify: (req, _res, buf) => {
     req.rawBody = buf;
@@ -34,11 +40,6 @@ app.use((req, res, next) => {
       if (capturedJsonResponse) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
-
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
-
       log(logLine);
     }
   });
@@ -46,36 +47,76 @@ app.use((req, res, next) => {
   next();
 });
 
-(async () => {
-  const server = await registerRoutes(app);
+// Implementação Global de WebSockets e função de broadcast
+const wsClients = new Map<string, WebSocket>();
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
+// Exportado para ser usado em routes.ts
+export function broadcast(message: any, excludeId?: string) {
+  const data = JSON.stringify(message);
+  wsClients.forEach((ws, id) => {
+    if (id !== excludeId && ws.readyState === WebSocket.OPEN) {
+      ws.send(data);
+    }
+  });
+}
+
+(async () => {
+  const apiRouter = await registerRoutes();
+  app.use(apiRouter);
+
+  app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+    console.error(err);
+    const status = (err as any).status || (err as any).statusCode || 500;
     const message = err.message || "Internal Server Error";
 
     res.status(status).json({ message });
-    throw err;
   });
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
+  const port = parseInt(process.env.PORT || '5000', 10);
+  const host = "0.0.0.0";
+
   if (app.get("env") === "development") {
-    await setupVite(app, server);
+    httpServer = createServer(app);
+    await setupVite(app, httpServer);
+
+    httpServer.listen({ port, host }, () => {
+        log(`serving in development on port ${port}`);
+    });
+
   } else {
     serveStatic(app);
+    httpServer = createServer(app);
+
+    httpServer.listen({ port, host }, () => {
+        log(`serving in production on port ${port}`);
+    });
   }
 
-  // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = parseInt(process.env.PORT || '5000', 10);
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
-  });
+  // --- CONFIGURAÇÃO DO WEBSOCKETS ---
+  if (httpServer) {
+    const wss = new WebSocketServer({ server: httpServer });
+
+    wss.on('connection', (ws, req) => {
+      // Extrai e verifica o token JWT do query parameter da URL
+      const urlParams = new URLSearchParams(req.url?.split('?')[1] || '');
+      const token = urlParams.get('token');
+      const user = verifyTokenFromQuery(token); // Usa a função de auth.ts
+
+      if (!user) {
+        // Encerra a conexão se não for autorizado
+        ws.close(1008, 'Unauthorized'); 
+        return;
+      }
+
+      // Usa o ID do usuário como identificador seguro para o cliente WS
+      wsClients.set(user.id, ws);
+      log(`WebSocket connected: ${user.id} (${user.role})`);
+
+      ws.on('close', () => {
+        wsClients.delete(user.id);
+        log(`WebSocket disconnected: ${user.id}`);
+      });
+    });
+  }
+  // --- FIM DA CONFIGURAÇÃO DO WEBSOCKETS ---
 })();
