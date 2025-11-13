@@ -2,7 +2,6 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { TruckIcon, Users, Package, BarChart3, ArrowRight } from "lucide-react";
 import { Link } from "wouter";
-import heroImage from "@assets/generated_images/Hero_logistics_delivery_truck_2a783042.png";
 import ThemeToggle from "@/components/ThemeToggle";
 
 export default function Landing() {
@@ -25,13 +24,8 @@ export default function Landing() {
         </div>
       </header>
 
-      <section className="relative h-[600px] flex items-center justify-center overflow-hidden">
-        <div 
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${heroImage})` }}
-        >
-          <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-black/50" />
-        </div>
+      <section className="relative h-[600px] flex items-center justify-center overflow-hidden bg-gradient-to-br from-primary via-blue-600 to-blue-800">
+        <div className="absolute inset-0 bg-gradient-to-r from-black/50 to-black/30" />
         
         <div className="relative z-10 container mx-auto px-4 text-center text-white">
           <h1 className="text-5xl md:text-6xl font-bold mb-6" data-testid="text-hero-title">
