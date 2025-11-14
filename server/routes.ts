@@ -3,7 +3,7 @@ import { storage } from "./storage.js";
 import { AIEngine } from "./ai-engine.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { insertOrderSchema, insertMotoboySchema, insertChatMessageSchema } from "@shared/schema";
+import { insertOrderSchema, insertChatMessageSchema } from "@shared/schema";
 import { authenticateToken, requireRole, verifyTokenFromQuery } from "./middleware/auth.js";
 // Importa a função broadcast global do index.ts
 import { broadcast } from "./index.js";
@@ -52,7 +52,7 @@ export async function registerRoutes() {
   });
 
   // --- Rotas de Pedidos (AGORA AUTENTICADAS) ---
-  router.get("/api/orders", authenticateToken, async (req, res) => {
+  router.get("/api/orders", authenticateToken, async (_req, res) => {
     try {
       const orders = await storage.getAllOrders();
       res.json(orders);
