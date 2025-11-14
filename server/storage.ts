@@ -1,157 +1,138 @@
-// server/storage.ts
+import { neon } from '@neondatabase/serverless';
+import { drizzle } from 'drizzle-orm/neon-http';
+import { eq, desc } from 'drizzle-orm';
+import {
+  users,
+  motoboys,
+  motoboyLocations,
+  clients,
+  orders,
+  liveDocs,
+  chatMessages,
+  type InsertOrder,
+  type InsertMotoboy,
+  type InsertChatMessage,
+  type Motoboy
+} from '@shared/schema';
 
-import type { 
-  User, InsertUser, Motoboy, InsertMotoboy, Client, InsertClient,
-  Order, InsertOrder, LiveDoc, InsertLiveDoc, ChatMessage, InsertChatMessage,
-  MotoboySchedule, InsertMotoboySchedule, ClientSchedule, InsertClientSchedule,
-  MotoboyLocation, InsertMotoboyLocation 
-} from "@shared/schema";
-import { 
-  users, motoboys, clients, orders, liveDocs, chatMessages, 
-  motoboySchedules, clientSchedules, motoboyLocations 
-} from "@shared/schema";
-import { eq, desc, sql as drizzleSql } from "drizzle-orm";
-import { db } from "./db.js";
+// Importa o schema completo para o Drizzle
+import * as schema from '@shared/schema';
 
-// A interface IStorage reflete a mudança para usar 'number' para lat/lng
-export interface IStorage {
-  getUser(id: string): Promise<User | undefined>;
-  getUserByEmail(email: string): Promise<User | undefined>;
-  // Métodos de motoboys
-  getAllMotoboys(): Promise<Motoboy[]>;
-  getMotoboy(id: string): Promise<Motoboy | undefined>;
-  createMotoboy(motoboy: InsertMotoboy): Promise<Motoboy>;
-  updateMotoboy(id: string, data: Partial<Motoboy>): Promise<void>;
-  updateMotoboyLocation(id: string, lat: number, lng: number): Promise<void>; // Usa number
-  setMotoboyOnline(id: string, online: boolean): Promise<void>;
-  // Novo método para buscar a localização mais recente (para uso no AI Engine)
-  getLatestMotoboyLocations(): Promise<Map<string, MotoboyLocation>>;
-  // Métodos de clientes, pedidos, chat, etc.
-  getAllOrders(): Promise<Order[]>;
-  getOrder(id: string): Promise<Order | undefined>;
-  getPendingOrders(): Promise<Order[]>;
-  createOrder(order: InsertOrder): Promise<Order>;
-  updateOrderStatus(id: string, status: string): Promise<void>;
-  assignOrderToMotoboy(orderId: string, motoboyId: string, motoboyName: string): Promise<void>;
-  getChatMessages(limit?: number): Promise<ChatMessage[]>;
-  createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
+if (!process.env.DATABASE_URL) {
+  throw new Error('DATABASE_URL environment variable is required.');
 }
 
-class DrizzleStorage implements IStorage {
+const db = drizzle(neon(process.env.DATABASE_URL), { schema });
 
-  async getUser(id: string): Promise<User | undefined> {
+// Interface para a classe Storage
+// (Mantida igual ao seu arquivo original, se houver)
+
+class DrizzleStorage /* implements IStorage */ {
+  // --- Métodos de Usuário ---
+  async getUser(id: string) {
     const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
-    return result[0]; // Retorna o primeiro resultado ou undefined
+    return result[0];
   }
 
-  async getUserByEmail(email: string): Promise<User | undefined> {
+  // CORREÇÃO: Adicionada a nova função para buscar por email
+  async getUserByEmail(email: string) {
     const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
     return result[0];
   }
 
-  // --- Implementação da nova função de localização ---
-  async updateMotoboyLocation(id: string, lat: number, lng: number): Promise<void> {
-    const newLocation: InsertMotoboyLocation = {
-        motoboyId: id,
-        latitude: lat.toString(), // Converter number para string para o schema decimal
-        longitude: lng.toString(),
+
+  // --- Métodos de Localização ---
+  async updateMotoboyLocation(id: string, lat: number, lng: number) {
+    const newLocation = {
+      motoboyId: id,
+      latitude: lat.toString(),
+      longitude: lng.toString()
     };
     await db.insert(motoboyLocations).values(newLocation);
-    // Em produção, você também atualizaria um cache (ex: Redis) aqui para acesso rápido.
   }
 
-  async getLatestMotoboyLocations(): Promise<Map<string, MotoboyLocation>> {
-    const allLocations = await db
-      .select()
-      .from(motoboyLocations)
-      .orderBy(desc(motoboyLocations.timestamp));
-    
-    const latestByMotoboy = new Map<string, MotoboyLocation>();
-    
+  async getLatestMotoboyLocations() {
+    const allLocations = await db.select().from(motoboyLocations).orderBy(desc(motoboyLocations.timestamp));
+    const latestByMotoboy = new Map();
     for (const location of allLocations) {
       if (!latestByMotoboy.has(location.motoboyId)) {
-        // Convert decimal strings to numbers for latitude and longitude
         const normalizedLocation = {
           ...location,
-          latitude: typeof location.latitude === 'string' ? parseFloat(location.latitude) : location.latitude,
-          longitude: typeof location.longitude === 'string' ? parseFloat(location.longitude) : location.longitude,
-        } as any;
+          latitude: typeof location.latitude === "string" ? parseFloat(location.latitude) : (location.latitude || 0),
+          longitude: typeof location.longitude === "string" ? parseFloat(location.longitude) : (location.longitude || 0)
+        };
         latestByMotoboy.set(location.motoboyId, normalizedLocation);
       }
     }
-    
     return latestByMotoboy;
   }
 
-  // --- Outros métodos (Exemplos rápidos de como implementar no Drizzle ORM) ---
-
-  async getAllMotoboys(): Promise<Motoboy[]> {
-      return await db.select().from(motoboys);
+  // --- Métodos de Motoboy ---
+  async getAllMotoboys() {
+    return await db.select().from(motoboys);
   }
 
-  async getMotoboy(id: string): Promise<Motoboy | undefined> {
+  async getMotoboy(id: string) {
     const result = await db.select().from(motoboys).where(eq(motoboys.id, id)).limit(1);
     return result[0];
   }
 
-  async createMotoboy(insertMotoboy: InsertMotoboy): Promise<Motoboy> {
-      const result = await db.insert(motoboys).values(insertMotoboy).returning();
-      return result[0];
+  async createMotoboy(insertMotoboy: InsertMotoboy) {
+    const result = await db.insert(motoboys).values(insertMotoboy).returning();
+    return result[0];
   }
 
-  async updateMotoboy(id: string, data: Partial<Motoboy>): Promise<void> {
+  async updateMotoboy(id: string, data: Partial<Motoboy>) {
     await db.update(motoboys).set(data).where(eq(motoboys.id, id));
   }
 
-  async setMotoboyOnline(id: string, online: boolean): Promise<void> {
+  async setMotoboyOnline(id: string, online: boolean) {
     await db.update(motoboys).set({ online }).where(eq(motoboys.id, id));
   }
 
-  // --- Métodos de Pedidos (Apenas exemplos iniciais) ---
-
-  async getAllOrders(): Promise<Order[]> {
+  // --- Métodos de Pedidos ---
+  async getAllOrders() {
     return await db.select().from(orders).orderBy(desc(orders.createdAt));
   }
 
-  async getOrder(id: string): Promise<Order | undefined> {
+  async getOrder(id: string) {
     const result = await db.select().from(orders).where(eq(orders.id, id)).limit(1);
     return result[0];
   }
 
-  async getPendingOrders(): Promise<Order[]> {
-    return await db.select().from(orders).where(eq(orders.status, 'pending'));
+  async getPendingOrders() {
+    return await db.select().from(orders).where(eq(orders.status, "pending"));
   }
 
-  async createOrder(order: InsertOrder): Promise<Order> {
+  async createOrder(order: InsertOrder) {
     const result = await db.insert(orders).values(order).returning();
     return result[0];
   }
 
-  async updateOrderStatus(id: string, status: string): Promise<void> {
+  async updateOrderStatus(id: string, status: "pending" | "in_progress" | "delivered" | "cancelled") {
     await db.update(orders).set({ status, deliveredAt: new Date() }).where(eq(orders.id, id));
   }
 
-  async assignOrderToMotoboy(orderId: string, motoboyId: string, motoboyName: string): Promise<void> {
-    await db.update(orders).set({ 
-      motoboyId, 
-      motoboyName, 
-      status: 'in_progress',
+  async assignOrderToMotoboy(orderId: string, motoboyId: string, motoboyName: string) {
+    await db.update(orders).set({
+      motoboyId,
+      motoboyName,
+      status: "in_progress",
       acceptedAt: new Date()
     }).where(eq(orders.id, orderId));
   }
 
   // --- Métodos de Chat ---
-  async getChatMessages(limit?: number): Promise<ChatMessage[]> {
+  async getChatMessages(limit?: number) {
     const query = db.select().from(chatMessages).orderBy(desc(chatMessages.createdAt));
     if (limit) query.limit(limit);
     return await query;
   }
 
-  async createChatMessage(message: InsertChatMessage): Promise<ChatMessage> {
+  async createChatMessage(message: InsertChatMessage) {
     const result = await db.insert(chatMessages).values(message).returning();
     return result[0];
   }
 }
 
-// Exporta a instância de armazenamento real
 export const storage = new DrizzleStorage();

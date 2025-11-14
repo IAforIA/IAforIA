@@ -116,7 +116,7 @@ export default function Landing() {
                     data-testid="input-password"
                   />
                 </div>
-                <Button type="submit" className="w-full" isLoading={isLoading} data-testid="button-login">
+                <Button type="submit" className="w-full" disabled={isLoading} data-testid="button-login">
                   {isLoading ? "Entrando..." : "Entrar"}
                 </Button>
               </form>

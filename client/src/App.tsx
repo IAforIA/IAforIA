@@ -123,7 +123,12 @@ export default function App() {
       }
 
       const data = await response.json();
-      const userData = { id: data.id, name: data.name, role: data.role };
+      const userData: AuthUser = { 
+        id: data.id, 
+        name: data.name, 
+        role: data.role,
+        phone: data.phone 
+      };
 
       setUser(userData);
       setToken(data.access_token);

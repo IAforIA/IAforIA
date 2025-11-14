@@ -44,7 +44,8 @@ export async function registerRoutes() {
         access_token: token,
         id: user.id,
         name: user.name,
-        role: user.role
+        role: user.role,
+        phone: user.phone
       });
     } catch (error) {
       res.status(500).json({ error: "Erro ao fazer login" });

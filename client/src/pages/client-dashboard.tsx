@@ -1,7 +1,6 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
-// IMPORTANTE: 'useLocation' removido, 'Switch' e 'Route' mantidos
-import { Switch, Route } from "wouter";
+import { Switch, Route, Router as NestedRouter } from "wouter";
 import ThemeToggle from "@/components/ThemeToggle";
 import StatCard from "@/components/StatCard";
 import OrderCard from "@/components/OrderCard";
@@ -269,9 +268,8 @@ export default function ClientDashboard() {
 
           <main className="flex-1 overflow-auto p-6">
             <div className="max-w-7xl mx-auto space-y-6">
-
-              {/* CORREÇÃO FINAL: Os caminhos agora são relativos (sem /client) */}
-              <Switch>
+              <NestedRouter base="/client">
+                <Switch>
                 {/* Rota Principal (path="/") */}
                 <Route path="/">
                   <DashboardContent clientOrders={clientOrders} totalOrders={totalOrders} pending={pending} delivered={delivered} cancelled={cancelled} />
@@ -300,7 +298,8 @@ export default function ClientDashboard() {
                   </Card>
                 </Route>
 
-              </Switch>
+                </Switch>
+              </NestedRouter>
             </div>
           </main>
         </div>
