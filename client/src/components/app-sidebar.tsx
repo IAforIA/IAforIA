@@ -19,25 +19,12 @@ interface AppSidebarProps {
 const menuItems = {
   central: [
     { title: "Dashboard", url: "/central", icon: Home },
-    { title: "Pedidos", url: "/central/orders", icon: Package },
-    { title: "Clientes", url: "/central/clients", icon: Users },
-    { title: "Entregadores", url: "/central/drivers", icon: TruckIcon },
-    { title: "Relatórios", url: "/central/reports", icon: BarChart3 },
-    { title: "Configurações", url: "/central/settings", icon: Settings },
   ],
   client: [
     { title: "Dashboard", url: "/client", icon: Home },
-    { title: "Meus Pedidos", url: "/client/orders", icon: Package },
-    { title: "Novo Pedido", url: "/client/new-order", icon: Package },
-    { title: "Histórico", url: "/client/history", icon: BarChart3 },
-    { title: "Configurações", url: "/client/settings", icon: Settings },
   ],
   driver: [
     { title: "Dashboard", url: "/driver", icon: Home },
-    { title: "Entregas Disponíveis", url: "/driver/available", icon: Package },
-    { title: "Minhas Entregas", url: "/driver/my-deliveries", icon: TruckIcon },
-    { title: "Histórico", url: "/driver/history", icon: BarChart3 },
-    { title: "Configurações", url: "/driver/settings", icon: Settings },
   ],
 };
 

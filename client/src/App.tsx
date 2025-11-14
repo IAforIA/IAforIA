@@ -52,14 +52,14 @@ function Router() {
       <Route path="/" component={Landing} />
       <Route path="/test" component={TestSimple} />
 
-      {/* Rotas principais e todas as subrotas dos dashboards */}
-      <Route path="/central/:rest*">
+      {/* Dashboards - apenas rotas principais */}
+      <Route path="/central">
         <ProtectedRoute component={CentralDashboard} role="central" />
       </Route>
-      <Route path="/client/:rest*">
+      <Route path="/client">
         <ProtectedRoute component={ClientDashboard} role="client" />
       </Route>
-      <Route path="/driver/:rest*">
+      <Route path="/driver">
         <ProtectedRoute component={DriverDashboard} role="motoboy" />
       </Route>
 
