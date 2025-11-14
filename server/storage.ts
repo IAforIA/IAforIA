@@ -16,6 +16,7 @@ import { db } from "./db.js";
 // A interface IStorage reflete a mudança para usar 'number' para lat/lng
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
   // Métodos de motoboys
   getAllMotoboys(): Promise<Motoboy[]>;
   getMotoboy(id: string): Promise<Motoboy | undefined>;
@@ -41,6 +42,11 @@ class DrizzleStorage implements IStorage {
   async getUser(id: string): Promise<User | undefined> {
     const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
     return result[0]; // Retorna o primeiro resultado ou undefined
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
+    return result[0];
   }
 
   // --- Implementação da nova função de localização ---

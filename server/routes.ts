@@ -6,7 +6,7 @@ import jwt from "jsonwebtoken";
 import { insertOrderSchema, insertMotoboySchema, insertChatMessageSchema } from "@shared/schema";
 import { authenticateToken, requireRole, verifyTokenFromQuery } from "./middleware/auth.js";
 // Importa a função broadcast global do index.ts
-import { broadcast } from "./index.js"; 
+import { broadcast } from "./index.js";
 
 // CRÍTICO: Variáveis de ambiente separadas para melhor segurança
 if (!process.env.JWT_SECRET) {
@@ -21,10 +21,14 @@ export async function registerRoutes() {
   // --- Rotas de Autenticação ---
   router.post("/api/auth/login", async (req, res) => {
     try {
-      const { id, password } = req.body;
-      const user = await storage.getUser(id);
+      // CORREÇÃO: Espera 'email' em vez de 'id'
+      const { email, password } = req.body;
+
+      // CORREÇÃO: Usa a nova função 'getUserByEmail' (que adicionaremos no storage.ts)
+      const user = await storage.getUserByEmail(email);
 
       if (!user) {
+        // Agora este erro está correto (Email não encontrado)
         return res.status(401).json({ error: "Usuário não encontrado" });
       }
 
@@ -33,14 +37,14 @@ export async function registerRoutes() {
         return res.status(401).json({ error: "Senha inválida" });
       }
 
+      // O 'id' do usuário (UUID) é usado para criar o token, o que está PERFEITO.
       const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
 
-      // O frontend (App.tsx) agora lida com o armazenamento do token e user no contexto/localstorage
-      res.json({ 
+      res.json({
         access_token: token,
         id: user.id,
         name: user.name,
-        role: user.role 
+        role: user.role
       });
     } catch (error) {
       res.status(500).json({ error: "Erro ao fazer login" });
@@ -68,14 +72,9 @@ export async function registerRoutes() {
 
   router.post("/api/orders", authenticateToken, requireRole('client', 'central'), async (req, res) => {
     try {
-      // Usar userId do token JWT para garantir que o cliente correto crie o pedido
-      // const userId = (req as any).user.id; 
       const validated = insertOrderSchema.parse(req.body);
       const order = await storage.createOrder(validated);
-
-      // Usa a função broadcast importada de app.ts
       broadcast({ type: 'new_order', payload: order });
-
       res.json(order);
     } catch (error: any) {
       res.status(400).json({ error: error.message || "Erro ao criar pedido" });
@@ -84,15 +83,10 @@ export async function registerRoutes() {
 
   router.post("/api/orders/:id/accept", authenticateToken, requireRole('motoboy', 'central'), async (req, res) => {
     try {
-      // Garantir que o motoboy que aceita o pedido é quem ele diz ser
-      // const motoboyIdFromToken = (req as any).user.id; 
       const { motoboyId, motoboyName } = req.body;
       await storage.assignOrderToMotoboy(req.params.id, motoboyId, motoboyName);
       const order = await storage.getOrder(req.params.id);
-
-      // Usa a função broadcast importada de app.ts
       broadcast({ type: 'order_accepted', payload: order });
-
       res.json(order);
     } catch (error) {
       res.status(500).json({ error: "Erro ao aceitar pedido" });
@@ -103,10 +97,7 @@ export async function registerRoutes() {
     try {
       await storage.updateOrderStatus(req.params.id, 'delivered');
       const order = await storage.getOrder(req.params.id);
-
-      // Usa a função broadcast importada de app.ts
       broadcast({ type: 'order_delivered', payload: order });
-
       res.json(order);
     } catch (error) {
       res.status(500).json({ error: "Erro ao entregar pedido" });
@@ -125,8 +116,7 @@ export async function registerRoutes() {
 
   router.post("/api/motoboys/:id/location", authenticateToken, requireRole('motoboy'), async (req, res) => {
     try {
-      // Tipagem corrigida para number (conforme IStorage/AI-Engine)
-      const { lat, lng } = req.body; 
+      const { lat, lng } = req.body;
       await storage.updateMotoboyLocation(req.params.id, Number(lat), Number(lng));
       res.json({ success: true });
     } catch (error) {
@@ -136,34 +126,30 @@ export async function registerRoutes() {
 
   // --- Rotas de Chat e Insights (AGORA AUTENTICADAS) ---
   router.get("/api/chat", authenticateToken, async (req, res) => {
-     try {
-       const messages = await storage.getChatMessages();
-       res.json(messages);
-     } catch (error) {
-       res.status(500).json({ error: "Erro ao buscar mensagens" });
-     }
+    try {
+      const messages = await storage.getChatMessages();
+      res.json(messages);
+    } catch (error) {
+      res.status(500).json({ error: "Erro ao buscar mensagens" });
+    }
   });
 
   router.post("/api/chat", authenticateToken, async (req, res) => {
     try {
       const validated = insertChatMessageSchema.parse(req.body);
       const message = await storage.createChatMessage(validated);
-
-      // Usa a função broadcast importada de app.ts
       broadcast({ type: 'chat_message', payload: message });
-
       res.json(message);
     } catch (error: any) {
       res.status(400).json({ error: error.message || "Erro ao enviar mensagem" });
     }
   });
 
-  router.get("/api/insights", authenticateToken, requireRole('central'), async (req, res) => { 
+  router.get("/api/insights", authenticateToken, requireRole('central'), async (req, res) => {
     try {
       const orders = await storage.getAllOrders();
       const motoboys = await storage.getAllMotoboys();
-      // AI Engine depende de localizações, mas storage não implementa getLatest yet
-      // const insights = AIEngine.generateInsights(orders, motoboys);
+      // ... (Insights logic) ...
       res.json({ message: "Insights functionality paused until storage is updated." });
     } catch (error) {
       res.status(500).json({ error: "Erro ao gerar insights" });
@@ -174,7 +160,5 @@ export async function registerRoutes() {
     res.status(501).json({ message: "Upload functionality not implemented yet." });
   });
 
-  return router; // Retorna apenas o roteador Express
+  return router;
 }
-
-// Remove as definições locais de wsClients e broadcast

@@ -1,6 +1,7 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
-import { useLocation } from "wouter";
+// IMPORTANTE: 'useLocation' removido, 'Switch' e 'Route' mantidos
+import { Switch, Route } from "wouter";
 import ThemeToggle from "@/components/ThemeToggle";
 import StatCard from "@/components/StatCard";
 import OrderCard from "@/components/OrderCard";
@@ -20,7 +21,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 
-// Esquema Zod corrigido: Usando números para valores monetários
 const orderSchema = z.object({
   coletaRua: z.string().min(3, "Rua é obrigatória"),
   coletaNumero: z.string().min(1, "Número é obrigatório"),
@@ -30,20 +30,51 @@ const orderSchema = z.object({
   entregaNumero: z.string().min(1, "Número é obrigatório"),
   entregaBairro: z.string().min(3, "Bairro é obrigatório"),
   entregaCep: z.string().default("29900-000"),
-  valor: z.number().min(0.01, "Valor é obrigatório"), // Alterado para number
-  taxaMotoboy: z.number().default(7.00), // Alterado para number
-  // Adicionar campos faltantes que estavam hardcoded, se necessário no formulário
-  // formaPagamento: z.string().default("dinheiro"), 
+  valor: z.number().min(0.01, "Valor é obrigatório"),
+  taxaMotoboy: z.number().default(7.00),
 });
 
-// Tipo derivado do novo esquema
 type OrderFormData = z.infer<typeof orderSchema>;
+
+// Criamos um componente auxiliar para o conteúdo do dashboard para evitar repetição
+// (Já que /client e /client/orders mostram a mesma coisa)
+const DashboardContent = ({ clientOrders, totalOrders, pending, delivered, cancelled }: any) => (
+  <>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <StatCard title="Total Pedidos" value={totalOrders} icon={Package} />
+      <StatCard title="Aguardando" value={pending} icon={Clock} />
+      <StatCard title="Concluídos" value={delivered} icon={CheckCircle} />
+      <StatCard title="Cancelados" value={cancelled} icon={XCircle} />
+    </div>
+
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {clientOrders.slice(0, 9).map((order: Order) => (
+        <OrderCard
+          key={order.id}
+          id={order.id}
+          origin={`${order.coletaRua}, ${order.coletaNumero} - ${order.coletaBairro}`}
+          destination={`${order.entregaRua}, ${order.entregaNumero} - ${order.entregaBairro}`}
+          status={order.status as OrderStatus}
+          value={order.valor}
+          driverName={order.motoboyName || undefined}
+          onView={() => console.log('View order:', order.id)}
+        />
+      ))}
+    </div>
+
+    {clientOrders.length === 0 && (
+      <Card className="p-12 text-center">
+        <Package className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+        <p className="text-muted-foreground">Nenhum pedido criado ainda</p>
+      </Card>
+    )}
+  </>
+);
 
 export default function ClientDashboard() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [location] = useLocation();
   const { toast } = useToast();
-  const { user, logout, token } = useAuth(); 
+  const { user, logout, token } = useAuth();
 
   const { data: orders = [], refetch } = useQuery<Order[]>({
     queryKey: ['/api/orders'],
@@ -52,7 +83,6 @@ export default function ClientDashboard() {
   const clientOrders = orders.filter(o => o.clientId === user?.id);
 
   useEffect(() => {
-    // CRÍTICO: Autenticação segura via token no WS
     if (!user?.id || !token) return;
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -61,24 +91,21 @@ export default function ClientDashboard() {
     websocket.onmessage = () => refetch();
 
     return () => websocket.close();
-  }, [user?.id, refetch, token]); // Adicionado token como dependência
+  }, [user?.id, refetch, token]);
 
   const createOrderMutation = useMutation({
     mutationFn: async (data: OrderFormData) => {
-      // CORRIGIDO: Convertendo number para string ANTES de enviar para a API, 
-      // pois o schema Drizzle espera string/decimal.
       const res = await apiRequest('POST', '/api/orders', {
         clientId: user?.id,
         clientName: user?.name,
-        clientPhone: user?.phone || 'N/A', // Usa o telefone do usuário logado, não hardcode
+        clientPhone: user?.phone || 'N/A',
         ...data,
-        valor: data.valor.toFixed(2), // Converte para string com 2 casas decimais
-        taxaMotoboy: data.taxaMotoboy.toFixed(2), // Converte para string com 2 casas decimais
-        // Mantém hardcoded temporariamente até adicionar ao formulário/backend
-        coletaComplemento: '', 
-        entregaComplemento: '', 
-        formaPagamento: 'dinheiro', 
-        hasTroco: false, 
+        valor: data.valor.toFixed(2),
+        taxaMotoboy: data.taxaMotoboy.toFixed(2),
+        coletaComplemento: '',
+        entregaComplemento: '',
+        formaPagamento: 'dinheiro',
+        hasTroco: false,
       });
       return await res.json();
     },
@@ -89,7 +116,7 @@ export default function ClientDashboard() {
         description: "Seu pedido foi enviado e está aguardando um entregador.",
       });
       setIsDialogOpen(false);
-      form.reset(); // Reseta o formulário após sucesso
+      form.reset();
     },
   });
 
@@ -104,8 +131,8 @@ export default function ClientDashboard() {
       entregaNumero: "",
       entregaBairro: "",
       entregaCep: "29900-000",
-      valor: 7.00, // Default value as number
-      taxaMotoboy: 7.00, // Default value as number
+      valor: 7.00,
+      taxaMotoboy: 7.00,
     },
   });
 
@@ -140,6 +167,7 @@ export default function ClientDashboard() {
                   </DialogHeader>
                   <Form {...form}>
                     <form onSubmit={form.handleSubmit((data) => createOrderMutation.mutate(data))} className="space-y-4">
+                      {/* ... (Conteúdo do formulário permanece o mesmo) ... */}
                       <div className="space-y-2">
                         <h3 className="font-semibold">Coleta</h3>
                         <FormField control={form.control} name="coletaRua" render={({ field }) => (
@@ -202,15 +230,13 @@ export default function ClientDashboard() {
                         )} />
                       </div>
 
-                      {/* Campos de Valor e Taxa (Ajustados para aceitar números na UI) */}
                       <div className="grid grid-cols-2 gap-4">
                         <FormField control={form.control} name="valor" render={({ field }) => (
                           <FormItem>
                             <FormLabel>Valor do Pedido (R$)</FormLabel>
                             <FormControl>
-                              {/* Use type="number" para melhor UX no mobile */}
-                              <Input {...field} type="number" step="0.01" placeholder="7.00" 
-                                onChange={e => field.onChange(parseFloat(e.target.value))} 
+                              <Input {...field} type="number" step="0.01" placeholder="7.00"
+                                onChange={e => field.onChange(parseFloat(e.target.value))}
                               />
                             </FormControl>
                             <FormMessage />
@@ -220,7 +246,7 @@ export default function ClientDashboard() {
                           <FormItem>
                             <FormLabel>Sua Taxa (R$)</FormLabel>
                             <FormControl>
-                              <Input {...field} type="number" step="0.01" placeholder="7.00" 
+                              <Input {...field} type="number" step="0.01" placeholder="7.00"
                                 onChange={e => field.onChange(parseFloat(e.target.value))}
                               />
                             </FormControl>
@@ -243,54 +269,38 @@ export default function ClientDashboard() {
 
           <main className="flex-1 overflow-auto p-6">
             <div className="max-w-7xl mx-auto space-y-6">
-              {(location === "/client" || location === "/client/orders") && (
-              <>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard title="Total Pedidos" value={totalOrders} icon={Package} />
-                <StatCard title="Aguardando" value={pending} icon={Clock} />
-                <StatCard title="Concluídos" value={delivered} icon={CheckCircle} />
-                <StatCard title="Cancelados" value={cancelled} icon={XCircle} />
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {clientOrders.slice(0, 9).map((order) => (
-                  <OrderCard
-                    key={order.id}
-                    id={order.id}
-                    origin={`${order.coletaRua}, ${order.coletaNumero} - ${order.coletaBairro}`}
-                    destination={`${order.entregaRua}, ${order.entregaNumero} - ${order.entregaBairro}`}
-                    status={order.status as OrderStatus}
-                    value={order.valor}
-                    driverName={order.motoboyName || undefined}
-                    onView={() => console.log('View order:', order.id)}
-                  />
-                ))}
-              </div>
+              {/* CORREÇÃO FINAL: Os caminhos agora são relativos (sem /client) */}
+              <Switch>
+                {/* Rota Principal (path="/") */}
+                <Route path="/">
+                  <DashboardContent clientOrders={clientOrders} totalOrders={totalOrders} pending={pending} delivered={delivered} cancelled={cancelled} />
+                </Route>
 
-              {clientOrders.length === 0 && (
-                <Card className="p-12 text-center">
-                  <Package className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-                  <p className="text-muted-foreground">Nenhum pedido criado ainda</p>
-                </Card>
-              )}
-              </>
-              )}
+                {/* Rota de Pedidos (path="/orders") */}
+                <Route path="/orders">
+                  <DashboardContent clientOrders={clientOrders} totalOrders={totalOrders} pending={pending} delivered={delivered} cancelled={cancelled} />
+                </Route>
 
-              {location === "/client/history" && (
-                <Card className="p-12 text-center">
-                  <Package className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-                  <p className="text-lg font-semibold">Histórico Completo</p>
-                  <p className="text-muted-foreground mt-2">Em breve você verá todo seu histórico de pedidos aqui.</p>
-                </Card>
-              )}
+                {/* Sub-rota de Histórico (path="/history") */}
+                <Route path="/history">
+                  <Card className="p-12 text-center">
+                    <Package className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                    <p className="text-lg font-semibold">Histórico Completo</p>
+                    <p className="text-muted-foreground mt-2">Em breve você verá todo seu histórico de pedidos aqui.</p>
+                  </Card>
+                </Route>
 
-              {location === "/client/settings" && (
-                <Card className="p-12 text-center">
-                  <Package className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-                  <p className="text-lg font-semibold">Configurações</p>
-                  <p className="text-muted-foreground mt-2">Página de configurações em desenvolvimento.</p>
-                </Card>
-              )}
+                {/* Sub-rota de Configurações (path="/settings") */}
+                <Route path="/settings">
+                  <Card className="p-12 text-center">
+                    <Package className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                    <p className="text-lg font-semibold">Configurações</p>
+                    <p className="text-muted-foreground mt-2">Página de configurações em desenvolvimento.</p>
+                  </Card>
+                </Route>
+
+              </Switch>
             </div>
           </main>
         </div>

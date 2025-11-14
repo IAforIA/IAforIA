@@ -12,7 +12,8 @@ import { useToast } from "@/hooks/use-toast";
 export default function Landing() {
   const [, setLocation] = useLocation();
   const { user, login } = useAuth();
-  const [userId, setUserId] = useState("");
+  // CORREÇÃO: Renomeado de 'userId' para 'email'
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -30,7 +31,8 @@ export default function Landing() {
     setIsLoading(true);
 
     try {
-      const success = await login(userId, password);
+      // CORREÇÃO: Passando 'email' para a função login
+      const success = await login(email, password);
       if (success) {
         toast({
           title: "Login bem-sucedido!",
@@ -39,7 +41,8 @@ export default function Landing() {
       } else {
         toast({
           title: "Erro ao fazer login",
-          description: "ID ou senha incorretos",
+          // CORREÇÃO: Mensagem mais clara
+          description: "Email ou senha incorretos",
           variant: "destructive",
         });
       }
@@ -81,7 +84,6 @@ export default function Landing() {
             </p>
           </div>
 
-          {/* CORRIGIDO: Substituindo os botões de navegação direta por um formulário de login */}
           <Card className="max-w-md w-full mx-auto">
             <CardHeader>
               <CardTitle>Acesse sua Conta</CardTitle>
@@ -90,15 +92,16 @@ export default function Landing() {
             <CardContent>
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="userId">ID de Usuário</Label>
+                  {/* CORREÇÃO: Alterado para Email */}
+                  <Label htmlFor="email">Email</Label>
                   <Input
-                    id="userId"
-                    type="text"
-                    placeholder="central, client, or motoboy"
-                    value={userId}
-                    onChange={(e) => setUserId(e.target.value)}
+                    id="email"
+                    type="email"
+                    placeholder="central@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     required
-                    data-testid="input-user-id"
+                    data-testid="input-user-email"
                   />
                 </div>
                 <div className="space-y-2">
@@ -113,18 +116,18 @@ export default function Landing() {
                     data-testid="input-password"
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={isLoading} data-testid="button-login">
+                <Button type="submit" className="w-full" isLoading={isLoading} data-testid="button-login">
                   {isLoading ? "Entrando..." : "Entrar"}
                 </Button>
               </form>
 
               {/* Informações de credenciais de teste para desenvolvimento */}
               <div className="mt-6 p-4 bg-muted rounded-lg">
-                <p className="text-sm font-medium mb-2">ℹ️ Credenciais de Teste</p>
+                <p className="text-sm font-medium mb-2">ℹ️ Credenciais de Teste (Exemplo)</p>
                 <div className="space-y-1 text-xs text-muted-foreground">
-                  <p>• Central: <code className="text-foreground">central</code> / <code className="text-foreground">central123</code></p>
-                  <p>• Cliente: <code className="text-foreground">client</code> / <code className="text-foreground">client123</code></p>
-                  <p>• Motoboy: <code className="text-foreground">motoboy</code> / <code className="text-foreground">motoboy123</code></p>
+                  <p>• Central: <code className="text-foreground">central@email.com</code> / <code className="text-foreground">central123</code></p>
+                  <p>• Cliente: <code className="text-foreground">client@email.com</code> / <code className="text-foreground">client123</code></p>
+                  <p>• Motoboy: <code className="text-foreground">motoboy@email.com</code> / <code className="text-foreground">motoboy123</code></p>
                 </div>
               </div>
             </CardContent>
@@ -132,8 +135,8 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ... (Resto da seção "Como Funciona" e "Recursos Principais" permanece inalterado) ... */}
-      <section className="py-20 bg-muted/30">
+      {/* ... (Resto da sua Landing Page) ... */}
+       <section className="py-20 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Como Funciona</h2>

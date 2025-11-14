@@ -15,8 +15,9 @@ type AuthUser = { id: string; name: string; role: string; phone?: string };
 
 type AuthContextType = {
   user: AuthUser | null;
-  token: string | null; // CORRIGIDO: Adicionado o token ao contexto
-  login: (id: string, password: string) => Promise<boolean>;
+  token: string | null;
+  // CORREÇÃO: A função 'login' agora espera 'email'
+  login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
 };
 
@@ -29,16 +30,13 @@ const AuthContext = createContext<AuthContextType>({
 
 export const useAuth = () => useContext(AuthContext);
 
-// CORRIGIDO: ProtectedRoute agora gerencia o acesso com base no user e token do contexto
 function ProtectedRoute({ component: Component, role }: { component: React.ComponentType; role?: string }) {
   const { user, token } = useAuth();
 
-  // Se não houver usuário ou token, redireciona para login
   if (!user || !token) {
     return <Redirect to="/" />;
   }
 
-  // Se a role não for compatível, redireciona para login
   if (role && user.role !== role) {
     return <Redirect to="/" />;
   }
@@ -68,7 +66,6 @@ function Router() {
   );
 }
 
-// Safe localStorage wrapper para browsers que bloqueiam storage
 const safeStorage = {
   getItem: (key: string): string | null => {
     try {
@@ -95,31 +92,30 @@ const safeStorage = {
 
 export default function App() {
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [token, setToken] = useState<string | null>(null); // Adicionado estado para o token
+  const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
     const storedUser = safeStorage.getItem('guriri_user');
-    const storedToken = safeStorage.getItem('guriri_token'); // Recupera o token
+    const storedToken = safeStorage.getItem('guriri_token');
     if (storedUser && storedToken) {
       try {
         setUser(JSON.parse(storedUser));
         setToken(storedToken);
       } catch (e) {
-        // Invalid JSON/token, clear storage
         safeStorage.removeItem('guriri_user');
         safeStorage.removeItem('guriri_token');
       }
     }
   }, []);
 
-  const login = async (id: string, password: string): Promise<boolean> => {
+  // CORREÇÃO: A função 'login' agora usa 'email'
+  const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      // Nota: Para segurança máxima, esta requisição deveria retornar HttpOnly cookies,
-      // tornando o armazenamento manual no localStorage obsoleto.
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, password }),
+        // CORREÇÃO: Envia 'email' no body, não 'id'
+        body: JSON.stringify({ email, password }),
       });
 
       if (!response.ok) {
@@ -130,9 +126,9 @@ export default function App() {
       const userData = { id: data.id, name: data.name, role: data.role };
 
       setUser(userData);
-      setToken(data.access_token); // Define o token no estado
+      setToken(data.access_token);
       safeStorage.setItem('guriri_user', JSON.stringify(userData));
-      safeStorage.setItem('guriri_token', data.access_token); // Armazena o token (vulnerável a XSS)
+      safeStorage.setItem('guriri_token', data.access_token);
 
       return true;
     } catch (error) {
@@ -142,7 +138,7 @@ export default function App() {
 
   const logout = () => {
     setUser(null);
-    setToken(null); // Limpa o token do estado
+    setToken(null);
     safeStorage.removeItem('guriri_user');
     safeStorage.removeItem('guriri_token');
   };
@@ -150,7 +146,6 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        {/* Fornece user E token ao contexto */}
         <AuthContext.Provider value={{ user, token, login, logout }}>
           <Router />
           <Toaster />
