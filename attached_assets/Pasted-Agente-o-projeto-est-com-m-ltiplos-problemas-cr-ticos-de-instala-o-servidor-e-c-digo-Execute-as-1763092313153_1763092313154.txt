@@ -1,0 +1,240 @@
+Agente, o projeto está com múltiplos problemas críticos de instalação, servidor e código. Execute as seguintes 10 etapas em ordem para uma reconfiguração completa e correção.
+
+**ETAPA 1: CORRIGIR O CONFLITO DE DEPENDÊNCIA**
+1.  Abra o arquivo `package.json`.
+2.  Na seção `devDependencies`, localize a linha:
+    `"@types/node": "20.16.11"`
+3.  Altere-a para a versão correta exigida pelo Vite:
+    `"@types/node": "^20.19.0"`
+4.  Salve o `package.json`.
+
+**ETAPA 2: REINSTALAR O PROJETO DO ZERO**
+1.  Execute no Shell: `rm -rf node_modules`
+2.  Execute no Shell: `rm -f package-lock.json`
+3.  Execute no Shell: `npm install` (Isso agora deve funcionar).
+
+**ETAPA 3: CORRIGIR O 404 DO SERVIDOR (ARQUIVO `index.ts`)**
+1.  Abra o arquivo `server/src/index.ts`.
+2.  Adicione estas importações no topo do arquivo:
+    ```typescript
+    import path from 'path';
+    import fs from 'fs';
+    import { fileURLToPath } from 'url';
+    ```
+3.  Remova esta linha de importação (vamos substituí-la):
+    `import { setupVite, serveStatic, log } from "./vite.js";`
+4.  Adicione uma definição local para `log` e `__dirname`:
+    ```typescript
+    const log = (message: string) => console.log(`[Server] ${message}`);
+    const __dirname = path.dirname(fileURLToPath(import.meta.url));
+    ```
+5.  Localize o bloco `(async () => { ... })();`.
+6.  Dentro desse bloco, encontre a lógica `if (app.get("env") === "development") { ... } else { ... }`.
+7.  **Substitua o bloco `else` inteiro.** Onde está escrito:
+    ```typescript
+    } else {
+        serveStatic(app);
+        httpServer = createServer(app);
+
+        httpServer.listen({ port, host }, () => {
+            log(`serving in production on port ${port}`);
+        });
+      }
+    ```
+8.  **Substitua-o por este código correto que lida com SPA:**
+    ```typescript
+    } else {
+        // Lógica de Produção para servir o build do Vite
+        const distPath = path.resolve(__dirname, '..', '..', 'client', 'dist');
+        
+        if (!fs.existsSync(distPath)) {
+            log(`ERRO: Build directory not found at ${distPath}. Execute 'npm run build'`);
+        } else {
+             log(`Serving static files from ${distPath}`);
+            // 1. Servir todos os assets estáticos (JS, CSS)
+            app.use(express.static(distPath));
+        }
+
+        // 2. SPA Fallback: Qualquer rota que não seja /api deve servir o index.html
+        // Esta rota DEVE vir DEPOIS de app.use(apiRouter);
+        app.get('*', (req, res) => {
+            res.sendFile(path.resolve(distPath, 'index.html'));
+        });
+        
+        httpServer = createServer(app);
+        
+        httpServer.listen({ port, host }, () => {
+            log(`Serving in PRODUCTION on http://${host}:${port}`);
+        });
+    }
+    ```
+9.  **Substitua o bloco `if (app.get("env") === "development")`**. Onde está escrito:
+    ```typescript
+    if (app.get("env") === "development") {
+        httpServer = createServer(app);
+        await setupVite(app, httpServer);
+
+        httpServer.listen({ port, host }, () => {
+            log(`serving in development on port ${port}`);
+        });
+    ```
+10. **Substitua-o por este (removendo `setupVite` que não existe mais):**
+    ```typescript
+    if (app.get("env") === "development") {
+        log("Modo de desenvolvimento detectado. O Vite cuidará de servir.");
+        // Em dev, o Vite (via 'npm run dev') cuida de servir o index.html.
+        // Este servidor Node lida apenas com a API e WebSockets.
+        httpServer = createServer(app);
+        httpServer.listen({ port, host }, () => {
+            log(`API server listening in DEVELOPMENT on http://${host}:${port}`);
+        });
+    ```
+
+**ETAPA 4: CORRIGIR O 401 DO LOGIN (4 ARQUIVOS)**
+
+1.  **Arquivo `server/src/storage.ts`:**
+    * Verifique se a função `getUserByEmail(email: string)` existe e está correta:
+        ```typescript
+        async getUserByEmail(email: string): Promise<User | undefined> {
+          const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
+          return result[0];
+        }
+        ```
+2.  **Arquivo `server/src/routes.ts`:**
+    * Modifique a rota `POST /api/auth/login` para usar `email`:
+        ```typescript
+        router.post("/api/auth/login", async (req, res) => {
+          try {
+            const { email, password } = req.body; // MUDANÇA AQUI
+            const user = await storage.getUserByEmail(email); // MUDANÇA AQUI
+
+            if (!user) {
+              return res.status(401).json({ error: "Usuário não encontrado" });
+            }
+            const validPassword = await bcrypt.compare(password, user.password);
+            if (!validPassword) {
+              return res.status(401).json({ error: "Senha inválida" });
+            }
+            const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
+            res.json({
+              access_token: token,
+              id: user.id,
+              name: user.name,
+              role: user.role,
+              phone: user.phone
+            });
+          } catch (error) {
+            console.error("Erro no login:", error);
+            res.status(500).json({ error: "Erro ao fazer login" });
+          }
+        });
+        ```
+3.  **Arquivo `client/src/App.tsx`:**
+    * Modifique a função `login` para enviar `email` e salvar `phone`:
+        ```typescript
+        const login = async (email: string, password: string): Promise<boolean> => {
+          try {
+            const response = await fetch('/api/auth/login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email, password }), // MUDANÇA AQUI
+            });
+            if (!response.ok) return false;
+            const data = await response.json();
+            const userData: AuthUser = { 
+              id: data.id, 
+              name: data.name, 
+              role: data.role,
+              phone: data.phone // MUDANÇA AQUI
+            };
+            setUser(userData);
+            setToken(data.access_token);
+            safeStorage.setItem('guriri_user', JSON.stringify(userData));
+            safeStorage.setItem('guriri_token', data.access_token);
+            return true;
+          } catch (error) {
+            console.error("Erro na função login:", error);
+            return false;
+          }
+        };
+        ```
+4.  **Arquivo `client/src/pages/Landing.tsx`:**
+    * Modifique o formulário de login para usar `email` em vez de `userId`.
+    * Mude o estado: `const [email, setEmail] = useState("");`
+    * Mude o `handleLogin`: `const success = await login(email, password);`
+    * Mude o `<Input>` do ID para:
+        ```jsx
+        <Label htmlFor="email">Email</Label>
+        <Input
+          id="email"
+          type="email"
+          placeholder="ex: central@email.com"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          data-testid="input-user-email"
+        />
+        ```
+
+**ETAPA 5: CORRIGIR O 404 DA NAVEGAÇÃO INTERNA (3 ARQUIVOS)**
+O roteamento aninhado estava quebrado.
+
+1.  **Arquivo `client/src/pages/central-dashboard.tsx`:**
+    * Adicione a importação: `import { Switch, Route, Router as NestedRouter } from "wouter";`
+    * Envolva o `<Switch>` com `<NestedRouter base="/central">`:
+        ```jsx
+        <main ...>
+          <div ...>
+            <NestedRouter base="/central"> {/* MUDANÇA AQUI */}
+              <Switch>
+                <Route path="/"> {/* Caminho RELATIVO "/" */}
+                  {/* ... conteúdo principal ... */}
+                </Route>
+                <Route path="/orders"> {/* Caminho RELATIVO "/orders" */}
+                  {/* ... conteúdo de pedidos ... */}
+                </Route>
+                {/* ... (etc para /clients, /drivers, /reports, /settings) ... */}
+              </Switch>
+            </NestedRouter> {/* MUDANÇA AQUI */}
+          </div>
+        </main>
+        ```
+2.  **Arquivo `client/src/pages/client-dashboard.tsx`:**
+    * Adicione a importação: `import { Switch, Route, Router as NestedRouter } from "wouter";`
+    * Envolva o `<Switch>` com `<NestedRouter base="/client">`:
+        ```jsx
+        <main ...>
+          <div ...>
+            <NestedRouter base="/client"> {/* MUDANÇA AQUI */}
+              <Switch>
+                <Route path="/" component={DashboardContent} />
+                <Route path="/orders" component={DashboardContent} />
+                <Route path="/history">{/* ... */}</Route>
+                <Route path="/settings">{/* ... */}</Route>
+              </Switch>
+            </NestedRouter> {/* MUDANÇA AQUI */}
+          </div>
+        </main>
+        ```
+3.  **Arquivo `client/src/pages/driver-dashboard.tsx`:**
+    * Adicione a importação: `import { Switch, Route, Router as NestedRouter } from "wouter";`
+    * Envolva o `<Switch>` com `<NestedRouter base="/driver">`:
+        ```jsx
+        <main ...>
+          <div ...>
+            <NestedRouter base="/driver"> {/* MUDANÇA AQUI */}
+              <Switch>
+                <Route path="/" component={DashboardContent} />
+                <Route path="/available" component={AvailableDeliveries} />
+                <Route path="/my-deliveries" component={MyDeliveries} />
+                <Route path="/history">{/* ... */}</Route>
+                <Route path="/settings">{/* ... */}</Route>
+              </Switch>
+            </NestedRouter> {/* MUDANÇA AQUI */}
+          </div>
+        </main>
+        ```
+
+**ETAPA 6: REINICIAR O SERVIDOR**
+1.  Execute `npm run build` para recriar a pasta `dist` que o servidor de produção precisa.
+2.  Execute `npm start` para iniciar o servidor em modo de produção.
