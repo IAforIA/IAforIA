@@ -1,0 +1,78 @@
+🔴 ERROS CRÍTICOS (Impedem funcionamento)
+1. Vite Configuration - Plugin Deprecated (ERRO PRINCIPAL)
+Arquivo: vite.config.ts linha 2
+Problema: Usa @vitejs/plugin-react-refresh que é deprecated e incompatível com Vite 5
+Erros resultantes no browser:
+"The requested module '@vitejs/client' does not provide an export named 'createHotContext'"
+"The requested module '@react-refresh' does not provide an export named 'default'"
+Causa raiz: O Vite 5 não suporta mais as APIs legadas de HMR (Hot Module Replacement) deste plugin
+Impacto: Aplicação não carrega no browser - erro fatal na inicialização
+Solução necessária: Substituir por @vitejs/plugin-react ou @vitejs/plugin-react-swc
+2. JWT_SECRET não definido
+Arquivo: server/routes.ts linha 12
+Problema: Código lança erro se JWT_SECRET não estiver definido nas variáveis de ambiente
+Impacto: Server crasheia ao iniciar se a variável não existir
+Solução necessária: Definir JWT_SECRET no ambiente ou adicionar fallback para desenvolvimento
+3. Token não enviado nas requisições autenticadas
+Arquivo: client/src/lib/queryClient.ts linha 38
+Problema: A função getQueryFn (usada por queries GET) NÃO envia o token no header Authorization
+Impacto: Todas as rotas protegidas retornam 401 - dashboards inacessíveis
+Comparação: apiRequest (linha 15) envia corretamente, mas só é usado em mutations
+Solução necessária: Adicionar token no header da função getQueryFn
+🟡 ERROS GRAVES (Funcionalidade quebrada)
+4. Função de localização não implementada
+Arquivo: server/storage.ts (presumido)
+Problema: storage.getLatestMotoboyLocations é apenas um stub/placeholder
+Impacto: Mapas de rastreamento retornarão vazios, funcionalidade de GPS não funciona
+Solução necessária: Implementar query real ao banco motoboyLocations
+5. Colunas Decimal retornam como string
+Arquivos: shared/schema.ts - várias tabelas usam decimal()
+Problema: PostgreSQL/Drizzle retorna valores decimal como strings, não números
+Colunas afetadas: valor, taxaMotoboy, trocoValor, taxaPadrao, latitude, longitude
+Impacto: Operações matemáticas falharão, formatação de moeda pode quebrar
+Exemplo: order.valor + order.taxaMotoboy resultará em concatenação de strings
+Solução necessária: Converter strings para números onde houver cálculos/formatação
+6. Package.json contém plugin deprecated
+Arquivo: package.json linha 97
+Problema: @vitejs/plugin-react-refresh listado como devDependency
+Impacto: Perpetua o uso do plugin incompatível
+Solução necessária: Remover e substituir por @vitejs/plugin-react
+🟠 ERROS MODERADOS (Problemas de UX/Design)
+7. Variáveis CSS "red" como placeholder (NÃO ENCONTRADO mas mencionado pelo architect)
+Arquivo: client/src/index.css
+Status: Verificação: Ao examinar o arquivo, as cores parecem estar corretas (HSL válidos), MAS o architect mencionou placeholders red
+Impacto potencial: Se existirem, tema visual quebrado/ilegível
+Ação necessária: Revisar se há algum red remanescente no arquivo completo
+🔵 AVISOS E MELHORIAS (Não bloqueiam, mas problemáticos)
+8. Token armazenado no localStorage (Vulnerabilidade XSS)
+Arquivos: client/src/App.tsx linha 102, 135
+Problema: Token JWT armazenado no localStorage é vulnerável a ataques XSS
+Nota: Código já tem comentário reconhecendo isto (linha 117-118)
+Impacto: Se houver vulnerabilidade XSS, token pode ser roubado
+Solução ideal: Usar HttpOnly cookies (requer mudança backend)
+9. PostCSS Warning
+Logs: "A PostCSS plugin did not pass the from option to postcss.parse"
+Impacto: Aviso inofensivo, mas pode indicar configuração subótima
+Causa: Provavelmente relacionado ao Tailwind CSS
+Solução: Verificar postcss.config.js
+10. Múltiplos "Invalid token from query parameter"
+Logs do servidor: 8 ocorrências consecutivas
+Causa: WebSocket tentando conectar sem token válido
+Impacto: Conexões rejeitadas, mas não crítico
+Solução: Garantir que frontend sempre envie token ao conectar WebSocket
+📊 RESUMO EXECUTIVO
+Total de erros encontrados: 10
+
+Prioridade de correção:
+
+🔴 Crítico #1 - Trocar plugin do Vite (bloqueia aplicação)
+🔴 Crítico #2 - Definir JWT_SECRET (bloqueia servidor)
+🔴 Crítico #3 - Adicionar token em queries GET (bloqueia acesso)
+🟡 Grave #5 - Converter decimais para números (bugs de cálculo)
+🟡 Grave #4 - Implementar getLatestMotoboyLocations (GPS não funciona)
+Estado atual da aplicação:
+
+❌ Frontend não carrega (erro de Vite)
+❌ Rotas protegidas inacessíveis (token não enviado)
+⚠️ Backend roda mas pode crashar (JWT_SECRET)
+⚠️ Rastreamento GPS não funcional (stub)

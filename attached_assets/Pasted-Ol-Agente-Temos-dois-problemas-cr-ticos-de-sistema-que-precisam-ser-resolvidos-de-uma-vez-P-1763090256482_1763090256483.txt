@@ -1,0 +1,219 @@
+Olá, Agente. Temos dois problemas críticos de sistema que precisam ser resolvidos de uma vez.
+
+**PROBLEMA 1: Falha no Login (401)**
+O frontend (`Landing.tsx`) está enviando um `userId` (ex: "central"), mas o backend (`storage.ts`) está comparando esse valor com a coluna `id` (chave primária) no banco de dados, em vez da coluna `email`.
+
+**PROBLEMA 2: Falha na Navegação (404/Página em Branco)**
+O roteador principal (`App.tsx`) usa rotas com `:rest*` (ex: `/central/:rest*`). Os dashboards aninhados (`central-dashboard.tsx`, etc.) usam um `<Switch>` com caminhos relativos (ex: `path="/clients"`), mas eles falham porque não estão cientes do seu "caminho base" (ex: `/central`).
+
+**TAREFA: CORREÇÃO COMPLETA (7 ARQUIVOS)**
+Você deve aplicar as seguintes modificações precisas para corrigir ambos os problemas.
+
+---
+**PARTE 1: CORREÇÃO DO FLUXO DE LOGIN (4 ARQUIVOS)**
+
+**1. Arquivo: `server/src/storage.ts`**
+   - **Verifique** se a função `getUserByEmail(email: string)` existe e está correta. O código deve ser:
+     ```typescript
+     async getUserByEmail(email: string) {
+       const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
+       return result[0];
+     }
+     ```
+
+**2. Arquivo: `server/src/routes.ts`**
+   - **Modifique** a rota `POST /api/auth/login`. Ela DEVE usar `email` do `req.body` e chamar `storage.getUserByEmail`.
+   - O bloco `try` deve ficar assim:
+     ```typescript
+     try {
+       const { email, password } = req.body; // MUDANÇA AQUI
+       const user = await storage.getUserByEmail(email); // MUDANÇA AQUI
+
+       if (!user) {
+         return res.status(401).json({ error: "Usuário não encontrado" });
+       }
+       const validPassword = await bcrypt.compare(password, user.password);
+       if (!validPassword) {
+         return res.status(401).json({ error: "Senha inválida" });
+       }
+       const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
+       res.json({
+         access_token: token,
+         id: user.id,
+         name: user.name,
+         role: user.role,
+         phone: user.phone // IMPORTANTE: Adicione o 'phone' para o App.tsx
+       });
+     } catch (error) {
+       console.error("Erro no login:", error);
+       res.status(500).json({ error: "Erro ao fazer login" });
+     }
+     ```
+
+**3. Arquivo: `client/src/App.tsx`**
+   - **Modifique** a função `login` no `AuthContext`. Ela DEVE aceitar `email` e enviar `email` no `body` do fetch.
+   - A função deve ficar assim:
+     ```typescript
+     const login = async (email: string, password: string): Promise<boolean> => {
+       try {
+         const response = await fetch('/api/auth/login', {
+           method: 'POST',
+           headers: { 'Content-Type': 'application/json' },
+           body: JSON.stringify({ email, password }), // MUDANÇA AQUI
+         });
+
+         if (!response.ok) {
+           return false;
+         }
+
+         const data = await response.json();
+         // MUDANÇA AQUI: Captura o 'phone' do backend
+         const userData: AuthUser = { 
+           id: data.id, 
+           name: data.name, 
+           role: data.role,
+           phone: data.phone 
+         };
+
+         setUser(userData);
+         setToken(data.access_token);
+         safeStorage.setItem('guriri_user', JSON.stringify(userData));
+         safeStorage.setItem('guriri_token', data.access_token);
+
+         return true;
+       } catch (error) {
+         console.error("Erro na função login:", error);
+         return false;
+       }
+     };
+     ```
+
+**4. Arquivo: `client/src/pages/Landing.tsx`**
+   - **Modifique** o formulário de login para usar `email` em vez de `userId`.
+   - Mude os estados:
+     `const [userId, setUserId] = useState("");`
+     DEVE VIRAR:
+     `const [email, setEmail] = useState("");`
+   - Mude a chamada `handleLogin`:
+     `const success = await login(userId, password);`
+     DEVE VIRAR:
+     `const success = await login(email, password);`
+   - Mude o componente `<Input>` do ID:
+     ```jsx
+     <Label htmlFor="userId">ID de Usuário</Label>
+     <Input
+       id="userId"
+       type="text"
+       placeholder="central, client, or motoboy"
+       value={userId}
+       onChange={(e) => setUserId(e.target.value)}
+       data-testid="input-user-id"
+     />
+     ```
+     DEVE VIRAR:
+     ```jsx
+     <Label htmlFor="email">Email</Label>
+     <Input
+       id="email"
+       type="email"
+       placeholder="ex: central@email.com"
+       value={email}
+       onChange={(e) => setEmail(e.target.value)}
+       required
+       data-testid="input-user-email"
+     />
+     ```
+
+---
+**PARTE 2: CORREÇÃO DO ROTEAMENTO ANINHADO (3 ARQUIVOS)**
+
+Para os 3 arquivos de dashboard, você DEVE aplicar o roteamento aninhado da seguinte forma:
+
+**5. Arquivo: `client/src/pages/central-dashboard.tsx`**
+   - **Adicione** `Router as NestedRouter` à importação do `wouter`:
+     `import { Switch, Route, Router as NestedRouter } from "wouter";`
+   - **Envolva** o componente `<Switch>` existente com `<NestedRouter base="/central">`.
+   - O `<main>` deve ficar assim:
+     ```jsx
+     <main className="flex-1 overflow-auto p-6">
+       <div className="max-w-7xl mx-auto space-y-6">
+         <NestedRouter base="/central"> {/* MUDANÇA AQUI */}
+           <Switch>
+             <Route path="/"> {/* Caminho RELATIVO "/" */}
+               {/* ... (conteúdo do dashboard principal) ... */}
+             </Route>
+             <Route path="/orders"> {/* Caminho RELATIVO "/orders" */}
+               {/* ... (conteúdo da página de pedidos) ... */}
+             </Route>
+             <Route path="/clients"> {/* Caminho RELATIVO "/clients" */}
+               {/* ... (conteúdo da página de clientes) ... */}
+             </Route>
+             <Route path="/drivers">
+               {/* ... (etc) ... */}
+             </Route>
+             <Route path="/reports">
+               {/* ... (etc) ... */}
+             </Route>
+             <Route path="/settings">
+               {/* ... (etc) ... */}
+             </Route>
+           </Switch>
+         </NestedRouter> {/* MUDANÇA AQUI */}
+       </div>
+     </main>
+     ```
+
+**6. Arquivo: `client/src/pages/client-dashboard.tsx`**
+   - **Adicione** `Router as NestedRouter` à importação do `wouter`:
+     `import { Switch, Route, Router as NestedRouter } from "wouter";`
+   - **Envolva** o componente `<Switch>` existente com `<NestedRouter base="/client">`.
+   - O `<main>` deve ficar assim:
+     ```jsx
+     <main className="flex-1 overflow-auto p-6">
+       <div className="max-w-7xl mx-auto space-y-6">
+         <NestedRouter base="/client"> {/* MUDANÇA AQUI */}
+           <Switch>
+             <Route path="/"> {/* Caminho RELATIVO "/" */}
+               <DashboardContent ... />
+             </Route>
+             <Route path="/orders"> {/* Caminho RELATIVO "/orders" */}
+               <DashboardContent ... />
+             </Route>
+             <Route path="/history">
+               {/* ... (conteúdo da página de histórico) ... */}
+             </Route>
+             <Route path="/settings">
+               {/* ... (conteúdo da página de configurações) ... */}
+             </Route>
+           </Switch>
+         </NestedRouter> {/* MUDANÇA AQUI */}
+       </div>
+     </main>
+     ```
+
+**7. Arquivo: `client/src/pages/driver-dashboard.tsx`**
+   - **Adicione** `Router as NestedRouter` à importação do `wouter`:
+     `import { Switch, Route, Router as NestedRouter } from "wouter";`
+   - **Envolva** o componente `<Switch>` existente com `<NestedRouter base="/driver">`.
+   - O `<main>` deve ficar assim:
+     ```jsx
+     <main className="flex-1 overflow-auto p-6">
+       <div className="max-w-7xl mx-auto space-y-6">
+         <NestedRouter base="/driver"> {/* MUDANÇA AQUI */}
+           <Switch>
+             <Route path="/" component={DashboardContent} /> {/* Caminho RELATIVO "/" */}
+             <Route path="/available" component={AvailableDeliveries} /> {/* Caminho RELATIVO "/available" */}
+             <Route path="/my-deliveries" component={MyDeliveries} />
+             <Route path="/history">
+               {/* ... (conteúdo da página de histórico) ... */}
+             </Route>
+             <Route path="/settings">
+               {/* ... (conteúdo da página de configurações) ... */}
+             </Route>
+           </Switch>
+         </NestedRouter> {/* MUDANÇA AQUI */}
+       </div>
+     </main>
+     ```
+---
+Execute estas 7 correções. Elas resolvem o fluxo de autenticação e o fluxo de navegação aninhada.

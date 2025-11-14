@@ -1,0 +1,683 @@
+<!-- GURIRI EXPRESS | DASHBOARD LXP -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>GURIRI EXPRESS ⚡ Painel Holográfico do Cliente</title>
+<meta name="theme-color" content="#05080d"/>
+<style>
+:root{
+  --bg:#05080d;--panel:#090e13;--ink:#e8fcff;--muted:#a8c8d0;
+  --neon:#00eaff;--bio:#00ffc8;--vio:#b28dff;--warn:#ffd84d;--danger:#ff6b6b;
+}
+*{box-sizing:border-box}
+body{margin:0;padding:20px;background:radial-gradient(1200px 700px at 50% -10%,#08121a,#030609);color:var(--ink);font:16px/1.45 'Inter',system-ui}
+h1,h2{margin:0;text-align:center}
+h1{font-size:2.4rem;font-weight:900;background:linear-gradient(90deg,var(--neon),var(--vio));-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 0 20px #00eaff66,0 0 40px #b28dff33}
+.shell{max-width:900px;margin:0 auto}
+.card{background:rgba(12,18,24,0.8);border:1px solid #0ff4;border-radius:20px;padding:24px;box-shadow:0 0 40px #00f2ff11,0 0 8px #00ffc422 inset}
+label{display:block;margin:10px 0 4px;color:var(--muted)}
+input,textarea{width:100%;background:#0c141a;border:1px solid #1b2c36;border-radius:10px;padding:10px;color:var(--ink)}
+button{cursor:pointer;border:none;border-radius:12px;padding:14px 18px;font-weight:800;transition:.2s}
+.btn-main{background:linear-gradient(90deg,var(--neon),var(--bio));color:#000;box-shadow:0 0 20px #00f2ff77}
+.btn-main:hover{transform:scale(1.02);box-shadow:0 0 30px #00ffc977}
+.timeline{border-left:3px solid var(--neon);margin-top:20px;padding-left:20px;position:relative}
+.timeline::before{content:"";position:absolute;left:-3px;top:0;bottom:0;width:3px;background:linear-gradient(var(--neon),transparent)}
+.t-dot{width:14px;height:14px;border-radius:50%;background:#111;box-shadow:0 0 8px var(--neon);position:absolute;left:-31px;animation:pulse 2s infinite alternate}
+@keyframes pulse{to{box-shadow:0 0 18px var(--neon)}}
+.msg{margin:5px 0;padding:8px 12px;border-radius:14px;max-width:80%}
+.msg.bot{background:#102040;align-self:flex-start}
+.msg.user{background:#103021;align-self:flex-end;margin-left:auto}
+#chatbox{position:fixed;bottom:20px;right:20px;width:320px;height:420px;background:rgba(10,15,20,0.95);border:1px solid var(--vio);border-radius:14px;display:none;flex-direction:column;backdrop-filter:blur(8px)}
+#chathead{background:linear-gradient(90deg,var(--vio),var(--neon));padding:10px;border-radius:13px 13px 0 0;text-align:center;font-weight:700}
+#chatstream{flex:1;overflow-y:auto;display:flex;flex-direction:column;padding:10px}
+#chatinput{display:flex;border-top:1px solid #1b2c36}
+#chatinput input{flex:1;background:transparent;border:none;padding:10px;color:var(--ink)}
+#chatinput button{background:var(--bio);color:#000;border:none;padding:10px;border-radius:10px;margin:5px}
+#chat-toggle{position:fixed;bottom:20px;right:20px;width:60px;height:60px;border-radius:50%;border:none;background:radial-gradient(circle at 30% 30%,var(--neon),var(--vio));box-shadow:0 0 25px #00eaffaa;font-size:26px;color:#000}
+</style>
+</head>
+<body>
+<div class="shell">
+  <h1>GURIRI EXPRESS • Dashboard LXP Ultrassônico ⚡</h1>
+  <div class="card" id="formCard">
+    <h2>Nova Missão de Entrega</h2>
+    <form id="pedidoForm">
+      <label>Cliente / Comércio</label><input id="cli" required>
+      <label>Telefone para Contato</label><input id="phone" type="tel" placeholder="(27) 99999-9999" required>
+      
+      <h3 style="color:var(--bio);margin-top:15px;margin-bottom:10px;font-size:1em;">📍 Endereço de Coleta</h3>
+      <label>Rua/Avenida</label><input id="col_rua" required placeholder="Ex: Rua das Flores">
+      <div style="display:flex;gap:10px;">
+        <div style="flex:1;"><label>Número</label><input id="col_numero" required placeholder="123"></div>
+        <div style="flex:2;"><label>Complemento</label><input id="col_compl" placeholder="Apto 101, Bloco A"></div>
+      </div>
+      <label>Bairro</label><input id="col_bairro" required placeholder="Centro">
+      <label>CEP (ex.: 29000-000)</label><input id="cep" required pattern="[0-9]{5}-?[0-9]{3}" placeholder="00000-000">
+      <label>Referência</label><input id="reference" placeholder="Próximo ao shopping">
+      
+      <h3 style="color:var(--bio);margin-top:15px;margin-bottom:10px;font-size:1em;">📍 Endereço de Entrega</h3>
+      <label>Rua/Avenida</label><input id="ent_rua" required placeholder="Ex: Av. Beira Mar">
+      <div style="display:flex;gap:10px;">
+        <div style="flex:1;"><label>Número</label><input id="ent_numero" required placeholder="456"></div>
+        <div style="flex:2;"><label>Complemento</label><input id="ent_compl" placeholder="Casa 2"></div>
+      </div>
+      <label>Bairro</label><input id="ent_bairro" required placeholder="Praia">
+      <label>CEP de Entrega (ex.: 29000-000)</label><input id="cep_entrega" required pattern="[0-9]{5}-?[0-9]{3}" placeholder="00000-000">
+      
+      <label>Valor (R$)</label><input id="valor" type="number" step="0.01" min="0" value="0">
+      
+      <!-- Taxa do Motoboy (calculada automaticamente) -->
+      <div style="background:var(--bg-card);padding:12px;border-radius:8px;margin:10px 0;border:2px solid var(--bio);">
+        <label style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
+          <span>💰 Taxa do Motoboy</span>
+          <button type="button" id="calcular-taxa-btn" style="padding:4px 10px;font-size:0.85em;background:var(--bio);border:none;border-radius:4px;cursor:pointer;color:#000;">
+            Calcular
+          </button>
+        </label>
+        <div id="taxa-display" style="font-size:1.3em;font-weight:bold;color:var(--bio);margin-top:5px;">
+          R$ 7,00 (padrão)
+        </div>
+        <input type="hidden" id="taxa_motoboy" value="7.0">
+        <small style="color:var(--text-muted);font-size:0.85em;">
+          * Taxa calculada com base na distância entre coleta e entrega
+        </small>
+      </div>
+      
+      <label>Forma de Pagamento</label>
+      <select id="payment_method">
+        <option value="cartao_credito">Cartão de crédito</option>
+        <option value="cartao_debito">Cartão de débito</option>
+        <option value="pix">PIX</option>
+        <option value="dinheiro">Dinheiro</option>
+      </select>
+      <div id="change_box" style="display:none;margin-top:8px">
+        <label><input type="checkbox" id="has_change"> Haverá troco?</label>
+        <input id="change_for" type="number" step="0.01" min="0" value="0" placeholder="Valor do troco (R$)">
+      </div>
+      <label>Detalhes / Observações</label><textarea id="obs" rows="2"></textarea>
+      <button class="btn-main" type="submit">🚀 Lançar via IA Express (TCZ)</button>
+      
+      <button type="button" id="btn-config-horarios" class="btn-main" style="background:linear-gradient(90deg,var(--vio),var(--warn));margin-top:10px;">
+        ⏰ CONFIGURAR HORÁRIOS DE FUNCIONAMENTO
+      </button>
+    </form>
+  </div>
+
+  <div class="card" id="trackCard" style="display:none">
+    <h2>Status Holográfico</h2>
+    <div id="timeline" class="timeline"></div>
+    <button class="btn-main" id="ver-comprovante-btn" style="display:none;background:var(--success);margin-top:10px;">
+      📄 Ver Comprovante de Entrega (Live Docs™)
+    </button>
+  </div>
+</div>
+
+<!-- Modal de Configuração de Horários -->
+<div id="modal-horarios" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.9);z-index:9999;overflow-y:auto;padding:20px;">
+  <div style="max-width:700px;margin:40px auto;background:var(--panel);border-radius:20px;padding:24px;border:2px solid var(--vio);box-shadow:0 0 40px var(--vio);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;border-bottom:2px solid var(--vio);padding-bottom:15px;">
+      <h2 style="margin:0;color:var(--vio);">⏰ HORÁRIOS DE FUNCIONAMENTO</h2>
+      <button id="fechar-modal-horarios" style="background:transparent;border:2px solid var(--danger);color:var(--danger);padding:6px 12px;border-radius:8px;cursor:pointer;font-size:18px;font-weight:bold;">✕</button>
+    </div>
+    
+    <p style="color:var(--muted);font-size:14px;margin-bottom:20px;">
+      Configure os dias e horários em que seu estabelecimento funciona. Isso ajuda a IA a otimizar as rotas dos motoboys.
+    </p>
+
+    <div id="grid-horarios" style="display:grid;gap:15px;">
+      <!-- Será preenchido via JavaScript -->
+    </div>
+
+    <div style="margin-top:25px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.1);">
+      <button id="salvar-horarios" class="btn-main" style="width:100%;background:linear-gradient(90deg,var(--bio),var(--neon));">
+        ✅ SALVAR HORÁRIOS
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para exibir Live Docs -->
+<div id="live-docs-modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.85);z-index:9999;backdrop-filter:blur(5px);">
+  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);max-width:90vw;max-height:90vh;background:var(--bg-card);border-radius:12px;padding:20px;box-shadow:0 10px 40px rgba(0,255,255,0.3);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+      <h3 style="color:var(--bio);margin:0;">� Comprovante de Entrega</h3>
+      <button id="close-modal-btn" style="background:transparent;border:2px solid var(--danger);color:var(--danger);padding:6px 12px;border-radius:6px;cursor:pointer;font-weight:bold;">
+        ✕ Fechar
+      </button>
+    </div>
+    <div id="live-docs-content" style="text-align:center;max-height:70vh;overflow:auto;">
+      <p style="color:var(--text-muted);">Carregando comprovante...</p>
+    </div>
+  </div>
+</div>
+
+<button id="chat-toggle" onclick="toggleChat()">💬</button>
+<div id="chatbox">
+  <div id="chathead">THOR • Suporte Quântico</div>
+  <div id="chatstream"></div>
+  <div id="chatinput">
+    <input id="msg" placeholder="Digite sua mensagem..."/>
+    <button onclick="send()">➤</button>
+  </div>
+</div>
+
+<script>
+/* === CONFIG === */
+let CLIENTE_ID = 'cliente_01';
+const wsProto = location.protocol === 'https:' ? 'wss' : 'ws';
+let ws;
+
+/* === WEBSOCKET & AUTH === */
+async function ensureAuth(defaultId){
+  // simple prompt-based login for development. Stores access/refresh in localStorage.
+  let access = localStorage.getItem('guriri_access');
+  let refresh = localStorage.getItem('guriri_refresh');
+  let uid = localStorage.getItem('guriri_user') || defaultId;
+  if (!access){
+    uid = prompt('Digite seu id (ex: cliente_01):', defaultId) || defaultId;
+    const pwd = prompt('Senha para ' + uid + ':');
+    if (!pwd){ alert('Autenticação necessária'); throw new Error('no password'); }
+    try{
+      const r = await fetch('/api/auth/login', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id:uid,password:pwd})});
+      if(!r.ok){ alert('Falha ao autenticar: '+(await r.text())); throw new Error('auth failed'); }
+      const j = await r.json();
+      access = j.access_token;
+      refresh = j.refresh_token;
+      localStorage.setItem('guriri_access', access);
+      localStorage.setItem('guriri_refresh', refresh);
+      localStorage.setItem('guriri_user', j.id);
+    }catch(e){ console.warn('auth error', e); throw e }
+  }
+  return { access_token: localStorage.getItem('guriri_access'), refresh: localStorage.getItem('guriri_refresh'), id: localStorage.getItem('guriri_user')||defaultId };
+}
+
+async function connectWS(){
+  const auth = await ensureAuth(CLIENTE_ID);
+  CLIENTE_ID = auth.id;
+  const token = encodeURIComponent(auth.access_token || '');
+  ws = new WebSocket(`${wsProto}://${location.host}/ws/${CLIENTE_ID}?token=${token}`);
+  ws.onopen=()=>log("🔗 Conectado ao servidor IA Express",true);
+  ws.onmessage=(ev)=>{
+    const msg=JSON.parse(ev.data);
+    if(msg.type==='order_update'){ log(msg.payload.text||"Atualização recebida"); }
+    if(msg.type==='chat'){ append(`${msg.payload.from||'Central'}: ${msg.payload.text}`,'bot'); }
+    
+    // Detectar quando pedido foi entregue
+    if(msg.type==='pedido_delivered' && msg.payload && msg.payload.id === pedidoAtualId){
+      log("✅ Pedido entregue! Comprovante disponível.");
+      document.getElementById('ver-comprovante-btn').style.display = 'block';
+      mostrarBotaoNovoPedido();
+    }
+    
+    // Detectar upload de Live Doc
+    if(msg.type==='live_doc_uploaded' && msg.payload && msg.payload.order_id === pedidoAtualId){
+      log("📄 Live Document recebido do motoboy!");
+      document.getElementById('ver-comprovante-btn').style.display = 'block';
+      mostrarBotaoNovoPedido();
+    }
+  };
+  ws.onclose=()=>setTimeout(connectWS,3000);
+}
+connectWS();
+
+/* === BOTÃO NOVO PEDIDO === */
+function mostrarBotaoNovoPedido() {
+  let btnNovo = document.getElementById('btn-novo-pedido');
+  
+  if (!btnNovo) {
+    // Criar botão se não existir
+    btnNovo = document.createElement('button');
+    btnNovo.id = 'btn-novo-pedido';
+    btnNovo.textContent = '📦 CRIAR NOVO PEDIDO';
+    btnNovo.style.cssText = `
+      width: 100%;
+      padding: 15px;
+      margin-top: 20px;
+      background: var(--brand);
+      color: var(--ink);
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      animation: pulse 2s infinite;
+    `;
+    
+    btnNovo.onclick = function() {
+      // Resetar formulário
+      document.getElementById('pedidoForm').reset();
+      pedidoAtualId = null;
+      document.getElementById('ver-comprovante-btn').style.display = 'none';
+      btnNovo.style.display = 'none';
+      log('📝 Formulário limpo. Crie um novo pedido!');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+    
+    // Adicionar ao final do container principal
+    const mainContainer = document.querySelector('.container');
+    if (mainContainer) {
+      mainContainer.appendChild(btnNovo);
+    }
+  }
+  
+  btnNovo.style.display = 'block';
+}
+
+/* === FORM === */
+const form=document.getElementById('pedidoForm');
+form.onsubmit=async e=>{
+ e.preventDefault();
+ 
+ // Concatenar endereços completos
+ const coleta_completa = [
+   document.getElementById('col_rua').value,
+   document.getElementById('col_numero').value,
+   document.getElementById('col_compl').value,
+   document.getElementById('col_bairro').value
+ ].filter(v => v.trim()).join(', ');
+ 
+ const entrega_completa = [
+   document.getElementById('ent_rua').value,
+   document.getElementById('ent_numero').value,
+   document.getElementById('ent_compl').value,
+   document.getElementById('ent_bairro').value
+ ].filter(v => v.trim()).join(', ');
+ 
+ const data={
+   cliente: cli.value,
+   phone: document.getElementById('phone').value,
+   coleta: coleta_completa,
+   cep: document.getElementById('cep').value,
+   reference: document.getElementById('reference').value,
+   entrega: entrega_completa,
+   cep_entrega: document.getElementById('cep_entrega').value,
+   obs: obs.value,
+   valor: document.getElementById('valor').value,
+   payment_method: document.getElementById('payment_method').value,
+   change_for: document.getElementById('has_change').checked ? document.getElementById('change_for').value : 0,
+   taxa_motoboy: parseFloat(document.getElementById('taxa_motoboy').value) || 7.0,
+   created_at: new Date().toISOString() // Data e hora precisa
+ };
+ document.getElementById('formCard').style.display='none';
+ document.getElementById('trackCard').style.display='block';
+ log("Pedido lançado • IA Express iniciou missão",true);
+
+ try{
+   const r=await fetch('/api/pedido',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+   const j=await r.json();
+   pedidoAtualId = j.id; // Armazenar ID do pedido
+   log(`📦 Pedido #${j.id} registrado`);
+   log(`💰 Taxa do motoboy: R$ ${data.taxa_motoboy.toFixed(2)}`);
+ }catch(err){
+   log("⚠️ Falha ao enviar pedido. Operação offline, será reenviada.");
+ }
+};
+
+// payment UI: show change field when dinheiro
+document.getElementById('payment_method').addEventListener('change', function(){
+  const v = this.value;
+  if(v === 'dinheiro') document.getElementById('change_box').style.display = 'block';
+  else document.getElementById('change_box').style.display = 'none';
+});
+
+/* === TIMELINE === */
+const t=document.getElementById('timeline');
+function log(txt,first){
+ const e=document.createElement('div');
+ e.innerHTML=`<div class='t-dot'></div><div style='margin-left:10px;'>${txt}</div>`;
+ t.appendChild(e);t.lastChild.scrollIntoView({behavior:'smooth'});
+ if(!first && 'speechSynthesis'in window){speechSynthesis.speak(new SpeechSynthesisUtterance(txt));}
+}
+
+/* === CHAT === */
+const s=document.getElementById('chatstream');
+function toggleChat(){const b=document.getElementById('chatbox');b.style.display=b.style.display==='flex'?'none':'flex';}
+function append(t,who){const p=document.createElement('div');p.className='msg '+(who||'bot');p.textContent=t;s.appendChild(p);s.scrollTop=s.scrollHeight;}
+function send(){
+ const i=document.getElementById('msg').value.trim();
+ if(!i)return;append(i,'user');document.getElementById('msg').value='';
+ const m={type:'chat',payload:{from:CLIENTE_ID,to:'central',text:i}};
+ if(ws&&ws.readyState===WebSocket.OPEN)ws.send(JSON.stringify(m));
+}
+
+/* === CALCULAR TAXA === */
+let taxaMotoboy = 7.0; // Taxa padrão
+
+document.getElementById('calcular-taxa-btn').addEventListener('click', async function() {
+  const col_bairro = document.getElementById('col_bairro').value.trim();
+  const ent_bairro = document.getElementById('ent_bairro').value.trim();
+  
+  if (!col_bairro || !ent_bairro) {
+    alert('⚠️ Preencha os bairros de coleta e entrega primeiro!');
+    return;
+  }
+  
+  try {
+    const res = await fetch(`/api/taxa/calcular?origem=${encodeURIComponent(col_bairro)}&destino=${encodeURIComponent(ent_bairro)}`);
+    const data = await res.json();
+    
+    taxaMotoboy = data.taxa;
+    document.getElementById('taxa_motoboy').value = taxaMotoboy;
+    document.getElementById('taxa-display').textContent = `R$ ${taxaMotoboy.toFixed(2)}`;
+    document.getElementById('taxa-display').style.color = 'var(--success)';
+    
+    log(`💰 Taxa calculada: R$ ${taxaMotoboy.toFixed(2)}`);
+  } catch (err) {
+    console.error('Erro ao calcular taxa:', err);
+    alert('⚠️ Erro ao calcular taxa. Usando valor padrão R$ 7,00');
+  }
+});
+
+/* === LIVE DOCS VIEWER === */
+const verComprovanteBtn = document.getElementById('ver-comprovante-btn');
+const liveDocsModal = document.getElementById('live-docs-modal');
+const liveDocsContent = document.getElementById('live-docs-content');
+const closeModalBtn = document.getElementById('close-modal-btn');
+
+let pedidoAtualId = null;
+
+// Abrir modal
+verComprovanteBtn.addEventListener('click', async function() {
+  if (!pedidoAtualId) {
+    alert('Nenhum pedido ativo para visualizar comprovante.');
+    return;
+  }
+  
+  liveDocsModal.style.display = 'block';
+  liveDocsContent.innerHTML = '<p style="color:var(--text-muted);">🔄 Carregando comprovante...</p>';
+  
+  try {
+    const res = await fetch(`/api/docs/cliente/${CLIENTE_ID}`);
+    
+    if (!res.ok) {
+      throw new Error('Comprovante não encontrado');
+    }
+    
+    const blob = await res.blob();
+    const imageUrl = URL.createObjectURL(blob);
+    
+    liveDocsContent.innerHTML = `
+      <img src="${imageUrl}" style="max-width:100%;max-height:60vh;border-radius:8px;box-shadow:0 5px 20px rgba(0,255,255,0.2);" alt="Comprovante de Entrega">
+      <p style="color:var(--bio);margin-top:15px;font-size:0.9em;">
+        ✅ Comprovante de entrega verificado
+      </p>
+      <button onclick="downloadComprovante()" style="margin-top:10px;padding:10px 20px;background:var(--bio);border:none;border-radius:6px;cursor:pointer;font-weight:bold;color:#000;">
+        💾 Baixar Comprovante
+      </button>
+    `;
+    
+  } catch (err) {
+    console.error('Erro ao carregar comprovante:', err);
+    liveDocsContent.innerHTML = `
+      <p style="color:var(--danger);font-size:1.1em;">❌ Comprovante não disponível</p>
+      <p style="color:var(--text-muted);font-size:0.9em;margin-top:10px;">
+        O comprovante será anexado pelo motoboy após a entrega.
+      </p>
+    `;
+  }
+});
+
+// Fechar modal
+closeModalBtn.addEventListener('click', function() {
+  liveDocsModal.style.display = 'none';
+});
+
+// Clique fora do modal fecha
+liveDocsModal.addEventListener('click', function(e) {
+  if (e.target === liveDocsModal) {
+    liveDocsModal.style.display = 'none';
+  }
+});
+
+// Download function (acessível globalmente)
+function downloadComprovante() {
+  fetch('/api/docs/cliente/' + CLIENTE_ID)
+    .then(r => r.blob())
+    .then(b => {
+      const u = URL.createObjectURL(b);
+      const a = document.createElement('a');
+      a.href = u;
+      a.download = `Comprovante_Pedido_${pedidoAtualId}.jpg`;
+      a.click();
+      URL.revokeObjectURL(u);
+    })
+    .catch(() => alert("Erro ao baixar comprovante."));
+}
+
+/* === GESTÃO DE HORÁRIOS DE FUNCIONAMENTO === */
+const btnConfigHorarios = document.getElementById('btn-config-horarios');
+const modalHorarios = document.getElementById('modal-horarios');
+const fecharModalHorarios = document.getElementById('fechar-modal-horarios');
+const salvarHorariosBtn = document.getElementById('salvar-horarios');
+const gridHorarios = document.getElementById('grid-horarios');
+
+const DIAS_SEMANA = [
+  { num: 0, nome: 'Domingo', emoji: '🌞' },
+  { num: 1, nome: 'Segunda-feira', emoji: '📅' },
+  { num: 2, nome: 'Terça-feira', emoji: '📅' },
+  { num: 3, nome: 'Quarta-feira', emoji: '📅' },
+  { num: 4, nome: 'Quinta-feira', emoji: '📅' },
+  { num: 5, nome: 'Sexta-feira', emoji: '📅' },
+  { num: 6, nome: 'Sábado', emoji: '🎉' }
+];
+
+let horariosAtuais = [];
+
+// Abrir modal de horários
+btnConfigHorarios.addEventListener('click', async function() {
+  modalHorarios.style.display = 'block';
+  await carregarHorarios();
+  renderizarGridHorarios();
+});
+
+// Fechar modal
+fecharModalHorarios.addEventListener('click', function() {
+  modalHorarios.style.display = 'none';
+});
+
+modalHorarios.addEventListener('click', function(e) {
+  if (e.target === modalHorarios) {
+    modalHorarios.style.display = 'none';
+  }
+});
+
+// Carregar horários existentes
+async function carregarHorarios() {
+  try {
+    const res = await fetch(`/api/clientes/${CLIENTE_ID}/horarios`);
+    if (res.ok) {
+      const data = await res.json();
+      horariosAtuais = data.horarios || [];
+      log(`✅ ${horariosAtuais.length} horários carregados`);
+    } else {
+      horariosAtuais = [];
+    }
+  } catch (err) {
+    console.error('Erro ao carregar horários:', err);
+    horariosAtuais = [];
+  }
+}
+
+// Renderizar grid de horários
+function renderizarGridHorarios() {
+  gridHorarios.innerHTML = '';
+  
+  DIAS_SEMANA.forEach(dia => {
+    const horarioDia = horariosAtuais.find(h => h.dia_semana === dia.num);
+    const ativo = horarioDia ? horarioDia.ativo : 0;
+    const abertura = horarioDia ? horarioDia.hora_abertura : '09:00';
+    const fechamento = horarioDia ? horarioDia.hora_fechamento : '18:00';
+    
+    const diaDiv = document.createElement('div');
+    diaDiv.style.cssText = `
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+      padding: 15px;
+      border: 1px solid ${ativo ? 'var(--success)' : 'rgba(255,255,255,0.1)'};
+      transition: all 0.3s;
+    `;
+    
+    diaDiv.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <label style="font-weight:bold;color:${ativo ? 'var(--success)' : 'var(--muted)'};display:flex;align-items:center;gap:8px;cursor:pointer;">
+          <input type="checkbox" 
+                 id="ativo-${dia.num}" 
+                 ${ativo ? 'checked' : ''}
+                 onchange="toggleDiaAtivo(${dia.num})"
+                 style="width:20px;height:20px;cursor:pointer;">
+          <span>${dia.emoji} ${dia.nome}</span>
+        </label>
+      </div>
+      
+      <div id="horarios-${dia.num}" style="display:${ativo ? 'grid' : 'none'};grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
+        <div>
+          <label style="font-size:0.85em;color:var(--muted);display:block;margin-bottom:4px;">🌅 Abertura</label>
+          <input type="time" 
+                 id="abertura-${dia.num}" 
+                 value="${abertura}"
+                 style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--vio);background:rgba(0,0,0,0.3);color:var(--text);font-size:16px;">
+        </div>
+        <div>
+          <label style="font-size:0.85em;color:var(--muted);display:block;margin-bottom:4px;">🌙 Fechamento</label>
+          <input type="time" 
+                 id="fechamento-${dia.num}" 
+                 value="${fechamento}"
+                 style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--vio);background:rgba(0,0,0,0.3);color:var(--text);font-size:16px;">
+        </div>
+      </div>
+    `;
+    
+    gridHorarios.appendChild(diaDiv);
+  });
+  
+  // Adicionar botão de copiar para todos os dias
+  const copiarDiv = document.createElement('div');
+  copiarDiv.style.cssText = `
+    background: linear-gradient(135deg, rgba(138,43,226,0.2), rgba(75,0,130,0.2));
+    border-radius: 12px;
+    padding: 15px;
+    border: 1px dashed var(--vio);
+    text-align: center;
+  `;
+  copiarDiv.innerHTML = `
+    <p style="color:var(--muted);font-size:0.9em;margin-bottom:10px;">
+      ⚡ Configure um dia e copie para todos
+    </p>
+    <select id="dia-origem-copia" style="padding:8px;border-radius:6px;border:1px solid var(--vio);background:rgba(0,0,0,0.5);color:var(--text);margin-right:10px;">
+      ${DIAS_SEMANA.map(d => `<option value="${d.num}">${d.nome}</option>`).join('')}
+    </select>
+    <button onclick="copiarParaTodos()" style="padding:8px 16px;background:var(--vio);border:none;border-radius:6px;cursor:pointer;font-weight:bold;color:#fff;">
+      📋 Copiar para Todos os Dias
+    </button>
+  `;
+  gridHorarios.appendChild(copiarDiv);
+}
+
+// Toggle dia ativo/inativo
+function toggleDiaAtivo(diaSemana) {
+  const checkbox = document.getElementById(`ativo-${diaSemana}`);
+  const horariosDiv = document.getElementById(`horarios-${diaSemana}`);
+  
+  if (checkbox.checked) {
+    horariosDiv.style.display = 'grid';
+    checkbox.parentElement.style.color = 'var(--success)';
+    checkbox.parentElement.parentElement.parentElement.style.borderColor = 'var(--success)';
+  } else {
+    horariosDiv.style.display = 'none';
+    checkbox.parentElement.style.color = 'var(--muted)';
+    checkbox.parentElement.parentElement.parentElement.style.borderColor = 'rgba(255,255,255,0.1)';
+  }
+}
+
+// Copiar horários para todos os dias
+function copiarParaTodos() {
+  const diaOrigem = parseInt(document.getElementById('dia-origem-copia').value);
+  const abertura = document.getElementById(`abertura-${diaOrigem}`).value;
+  const fechamento = document.getElementById(`fechamento-${diaOrigem}`).value;
+  const ativo = document.getElementById(`ativo-${diaOrigem}`).checked;
+  
+  if (!ativo) {
+    alert('⚠️ Ative o dia de origem primeiro!');
+    return;
+  }
+  
+  if (!abertura || !fechamento) {
+    alert('⚠️ Configure os horários do dia de origem primeiro!');
+    return;
+  }
+  
+  DIAS_SEMANA.forEach(dia => {
+    document.getElementById(`ativo-${dia.num}`).checked = true;
+    document.getElementById(`abertura-${dia.num}`).value = abertura;
+    document.getElementById(`fechamento-${dia.num}`).value = fechamento;
+    toggleDiaAtivo(dia.num);
+  });
+  
+  log(`✅ Horários copiados: ${abertura} - ${fechamento}`);
+}
+
+// Salvar horários
+salvarHorariosBtn.addEventListener('click', async function() {
+  const novosHorarios = [];
+  
+  DIAS_SEMANA.forEach(dia => {
+    const ativo = document.getElementById(`ativo-${dia.num}`).checked;
+    
+    if (ativo) {
+      const abertura = document.getElementById(`abertura-${dia.num}`).value;
+      const fechamento = document.getElementById(`fechamento-${dia.num}`).value;
+      
+      if (!abertura || !fechamento) {
+        alert(`⚠️ Configure os horários de ${dia.nome}!`);
+        throw new Error('Horários incompletos');
+      }
+      
+      novosHorarios.push({
+        dia_semana: dia.num,
+        hora_abertura: abertura,
+        hora_fechamento: fechamento,
+        ativo: 1
+      });
+    }
+  });
+  
+  if (novosHorarios.length === 0) {
+    alert('⚠️ Configure ao menos um dia de funcionamento!');
+    return;
+  }
+  
+  salvarHorariosBtn.disabled = true;
+  salvarHorariosBtn.textContent = '⏳ Salvando...';
+  
+  try {
+    // Deletar horários antigos e inserir novos
+    for (const horario of novosHorarios) {
+      const res = await fetch(`/api/clientes/${CLIENTE_ID}/horarios`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(horario)
+      });
+      
+      if (!res.ok) {
+        throw new Error(`Erro ao salvar ${DIAS_SEMANA[horario.dia_semana].nome}`);
+      }
+    }
+    
+    log(`✅ ${novosHorarios.length} horários salvos com sucesso!`);
+    alert('✅ Horários de funcionamento salvos com sucesso!');
+    modalHorarios.style.display = 'none';
+    
+  } catch (err) {
+    console.error('Erro ao salvar horários:', err);
+    alert('❌ Erro ao salvar horários: ' + err.message);
+  } finally {
+    salvarHorariosBtn.disabled = false;
+    salvarHorariosBtn.textContent = '✅ SALVAR HORÁRIOS';
+  }
+});
+
+</script>
+</body>
+</html>

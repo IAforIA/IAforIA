@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Captura de Erros - Guriri Express</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #000; color: #0f0; }
+        .error { background: #300; color: #f00; padding: 10px; margin: 10px 0; border: 1px solid #f00; }
+        .info { background: #030; color: #0f0; padding: 10px; margin: 10px 0; border: 1px solid #0f0; }
+        h1 { color: #0ff; }
+    </style>
+</head>
+<body>
+    <h1>🔍 CAPTURADOR DE ERROS</h1>
+    <div id="output"></div>
+
+    <script>
+        const output = document.getElementById('output');
+        
+        function log(msg, isError = false) {
+            const div = document.createElement('div');
+            div.className = isError ? 'error' : 'info';
+            div.textContent = new Date().toLocaleTimeString() + ' - ' + msg;
+            output.appendChild(div);
+        }
+
+        log('✅ Página HTML carregada');
+        log('✅ JavaScript básico funcionando');
+
+        // Capturar TODOS os erros
+        window.addEventListener('error', function(e) {
+            log('❌ ERRO: ' + e.message + ' em ' + e.filename + ':' + e.lineno, true);
+        });
+
+        window.addEventListener('unhandledrejection', function(e) {
+            log('❌ PROMISE REJEITADA: ' + e.reason, true);
+        });
+
+        log('Tentando carregar o React App...');
+
+        // Tentar carregar o main.tsx
+        const script = document.createElement('script');
+        script.type = 'module';
+        script.src = '/src/main.tsx';
+        script.onload = function() {
+            log('✅ main.tsx carregado com sucesso!');
+        };
+        script.onerror = function(e) {
+            log('❌ ERRO AO CARREGAR main.tsx: ' + e, true);
+        };
+        document.body.appendChild(script);
+
+        log('Script adicionado à página. Aguardando carregamento...');
+        
+        // Após 3 segundos, mostrar diagnóstico final
+        setTimeout(function() {
+            log('------- DIAGNÓSTICO APÓS 3 SEGUNDOS -------');
+            log('Root element exists: ' + (document.getElementById('root') ? 'SIM' : 'NÃO'));
+            log('Root has content: ' + (document.getElementById('root')?.innerHTML ? 'SIM' : 'NÃO'));
+        }, 3000);
+    </script>
+
+    <div id="root"></div>
+</body>
+</html>

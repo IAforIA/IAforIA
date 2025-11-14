@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guriri Express - Plataforma B2B</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-center;
+            color: white;
+        }
+        .container {
+            max-width: 600px;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .dashboards {
+            display: grid;
+            gap: 15px;
+            margin-top: 30px;
+        }
+        .btn {
+            display: block;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            font-size: 1.2em;
+            font-weight: 600;
+            text-align: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .info {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f0f0f0;
+            border-radius: 10px;
+            color: #666;
+        }
+        .info h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .code {
+            background: #fff;
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: #667eea;
+            font-family: monospace;
+        }
+        .status {
+            text-align: center;
+            padding: 10px;
+            background: #d4edda;
+            color: #155724;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="status">
+            ✅ Sistema Funcionando - Servidor Online
+        </div>
+        
+        <h1>🚚 Guriri Express</h1>
+        
+        <div class="dashboards">
+            <a href="/central" class="btn">
+                📊 Dashboard Central
+            </a>
+            <a href="/client" class="btn">
+                📦 Dashboard Cliente
+            </a>
+            <a href="/driver" class="btn">
+                🏍️ Dashboard Motoboy
+            </a>
+        </div>
+
+        <div class="info">
+            <h3>ℹ️ Autenticação Temporariamente Removida</h3>
+            <p style="font-size: 0.9em; line-height: 1.6;">
+                Clique em qualquer dashboard acima para acessar.<br><br>
+                <strong>Credenciais para teste (quando autenticação for restaurada):</strong><br>
+                • Central: <span class="code">central</span> / <span class="code">central123</span><br>
+                • Cliente: <span class="code">client</span> / <span class="code">client123</span><br>
+                • Motoboy: <span class="code">motoboy</span> / <span class="code">motoboy123</span>
+            </p>
+        </div>
+
+        <div style="text-align: center; margin-top: 20px;">
+            <a href="/diagnostico.html" style="color: #667eea; text-decoration: none; font-size: 0.9em;">
+                🔧 Executar Diagnóstico do Sistema
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Log de confirmação
+        console.log('✅ Guriri Express carregado com sucesso!');
+        console.log('📍 Você está em:', window.location.href);
+    </script>
+</body>
+</html>

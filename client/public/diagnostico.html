@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Diagnóstico - Guriri Express</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px; 
+            background: #f0f0f0;
+        }
+        .test { 
+            background: white; 
+            padding: 15px; 
+            margin: 10px 0; 
+            border-radius: 5px;
+            border-left: 4px solid #4CAF50;
+        }
+        .fail { border-left-color: #f44336; }
+        h1 { color: #333; }
+        pre { background: #eee; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Diagnóstico do Sistema</h1>
+    
+    <div class="test">
+        <h3>✅ HTML Básico Carregado</h3>
+        <p>Se você vê esta mensagem, o servidor está funcionando.</p>
+    </div>
+
+    <div class="test" id="js-test">
+        <h3>⏳ Testando JavaScript...</h3>
+    </div>
+
+    <div class="test" id="storage-test">
+        <h3>⏳ Testando LocalStorage...</h3>
+    </div>
+
+    <div class="test" id="fetch-test">
+        <h3>⏳ Testando API...</h3>
+    </div>
+
+    <div class="test">
+        <h3>Informações do Navegador</h3>
+        <pre id="browser-info"></pre>
+    </div>
+
+    <script>
+        // Teste 1: JavaScript
+        document.getElementById('js-test').innerHTML = '<h3>✅ JavaScript Funcionando</h3><p>JavaScript está executando corretamente.</p>';
+
+        // Teste 2: LocalStorage
+        try {
+            localStorage.setItem('test', '123');
+            localStorage.removeItem('test');
+            document.getElementById('storage-test').innerHTML = '<h3>✅ LocalStorage Disponível</h3><p>LocalStorage está funcionando normalmente.</p>';
+        } catch (e) {
+            document.getElementById('storage-test').innerHTML = '<h3>⚠️ LocalStorage Bloqueado</h3><p>Erro: ' + e.message + '</p>';
+            document.getElementById('storage-test').className = 'test fail';
+        }
+
+        // Teste 3: Fetch API
+        fetch('/api/orders')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('fetch-test').innerHTML = '<h3>✅ API Respondendo</h3><p>Backend está funcionando. Pedidos: ' + data.length + '</p>';
+            })
+            .catch(err => {
+                document.getElementById('fetch-test').innerHTML = '<h3>❌ Erro na API</h3><p>' + err.message + '</p>';
+                document.getElementById('fetch-test').className = 'test fail';
+            });
+
+        // Info do navegador
+        document.getElementById('browser-info').textContent = 
+            'User Agent: ' + navigator.userAgent + '\n' +
+            'Largura: ' + window.innerWidth + 'px\n' +
+            'Altura: ' + window.innerHeight + 'px\n' +
+            'Cookies: ' + (navigator.cookieEnabled ? 'Habilitados' : 'Bloqueados');
+    </script>
+
+    <hr>
+    <p><strong>Se todos os testes passarem, clique aqui:</strong></p>
+    <a href="/" style="display: inline-block; background: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+        🚀 Ir para Aplicação Principal
+    </a>
+</body>
+</html>
