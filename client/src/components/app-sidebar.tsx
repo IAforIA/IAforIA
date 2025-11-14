@@ -31,6 +31,8 @@ const menuItems = {
 export function AppSidebar({ role }: AppSidebarProps) {
   const [location] = useLocation();
   const items = menuItems[role];
+  
+  console.log('[SIDEBAR DEBUG] Role:', role, 'Items:', items);
 
   return (
     <Sidebar>
