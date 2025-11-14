@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/App";
+import { useLocation } from "wouter";
 import type { Order, OrderStatus } from "@shared/schema"; // Importando OrderStatus
 
 // Função auxiliar para analisar strings decimais com segurança
@@ -23,7 +24,7 @@ const parseDecimalSafe = (value: string | null | undefined): number => {
 
 export default function DriverDashboard() {
   const { toast } = useToast();
-  // Obtem o token junto com user e logout
+  const [location] = useLocation();
   const { user, logout, token } = useAuth(); 
 
   const { data: orders = [], refetch } = useQuery<Order[]>({
@@ -111,14 +112,16 @@ export default function DriverDashboard() {
 
           <main className="flex-1 overflow-auto p-6">
             <div className="max-w-7xl mx-auto space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard title="Entregas Hoje" value={deliveredToday.length} icon={Package} />
-                <StatCard title="Em Andamento" value={myOrders.length} icon={TruckIcon} />
-                <StatCard title="Concluídas" value={deliveredToday.length} icon={CheckCircle} />
-                {/* Formatando ganhos totais com segurança */}
-                <StatCard title="Ganhos Hoje" value={`R$ ${totalEarnings.toFixed(2)}`} icon={DollarSign} />
-              </div>
+              {location === "/driver" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <StatCard title="Entregas Hoje" value={deliveredToday.length} icon={Package} />
+                  <StatCard title="Em Andamento" value={myOrders.length} icon={TruckIcon} />
+                  <StatCard title="Concluídas" value={deliveredToday.length} icon={CheckCircle} />
+                  <StatCard title="Ganhos Hoje" value={`R$ ${totalEarnings.toFixed(2)}`} icon={DollarSign} />
+                </div>
+              )}
 
+              {(location === "/driver" || location === "/driver/available") && (
               <div>
                 <h2 className="text-lg font-semibold mb-4">Entregas Disponíveis</h2>
                 {availableOrders.length === 0 ? (
@@ -150,7 +153,9 @@ export default function DriverDashboard() {
                   </div>
                 )}
               </div>
+              )}
 
+              {(location === "/driver" || location === "/driver/my-deliveries") && (
               <div>
                 <h2 className="text-lg font-semibold mb-4">Minhas Entregas Ativas</h2>
                 {myOrders.length === 0 ? (
@@ -183,6 +188,23 @@ export default function DriverDashboard() {
                   </div>
                 )}
               </div>
+              )}
+
+              {location === "/driver/history" && (
+                <Card className="p-12 text-center">
+                  <Package className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-lg font-semibold">Histórico de Entregas</p>
+                  <p className="text-muted-foreground mt-2">Em breve você poderá ver todo seu histórico aqui.</p>
+                </Card>
+              )}
+
+              {location === "/driver/settings" && (
+                <Card className="p-12 text-center">
+                  <Package className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-lg font-semibold">Configurações</p>
+                  <p className="text-muted-foreground mt-2">Página de configurações em desenvolvimento.</p>
+                </Card>
+              )}
             </div>
           </main>
         </div>

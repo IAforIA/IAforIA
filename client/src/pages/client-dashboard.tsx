@@ -1,5 +1,6 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
+import { useLocation } from "wouter";
 import ThemeToggle from "@/components/ThemeToggle";
 import StatCard from "@/components/StatCard";
 import OrderCard from "@/components/OrderCard";
@@ -40,8 +41,8 @@ type OrderFormData = z.infer<typeof orderSchema>;
 
 export default function ClientDashboard() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [location] = useLocation();
   const { toast } = useToast();
-  // Obtem o token junto com user e logout
   const { user, logout, token } = useAuth(); 
 
   const { data: orders = [], refetch } = useQuery<Order[]>({
@@ -242,6 +243,8 @@ export default function ClientDashboard() {
 
           <main className="flex-1 overflow-auto p-6">
             <div className="max-w-7xl mx-auto space-y-6">
+              {(location === "/client" || location === "/client/orders") && (
+              <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatCard title="Total Pedidos" value={totalOrders} icon={Package} />
                 <StatCard title="Aguardando" value={pending} icon={Clock} />
@@ -268,6 +271,24 @@ export default function ClientDashboard() {
                 <Card className="p-12 text-center">
                   <Package className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
                   <p className="text-muted-foreground">Nenhum pedido criado ainda</p>
+                </Card>
+              )}
+              </>
+              )}
+
+              {location === "/client/history" && (
+                <Card className="p-12 text-center">
+                  <Package className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-lg font-semibold">Histórico Completo</p>
+                  <p className="text-muted-foreground mt-2">Em breve você verá todo seu histórico de pedidos aqui.</p>
+                </Card>
+              )}
+
+              {location === "/client/settings" && (
+                <Card className="p-12 text-center">
+                  <Package className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-lg font-semibold">Configurações</p>
+                  <p className="text-muted-foreground mt-2">Página de configurações em desenvolvimento.</p>
                 </Card>
               )}
             </div>

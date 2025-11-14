@@ -1,5 +1,6 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
+import { useLocation } from "wouter";
 import ThemeToggle from "@/components/ThemeToggle";
 import StatCard from "@/components/StatCard";
 import OrderCard from "@/components/OrderCard";
@@ -14,7 +15,8 @@ import type { Order, Motoboy, OrderStatus } from "@shared/schema";
 import { useEffect, useState } from "react";
 
 export default function CentralDashboard() {
-  const { logout, token } = useAuth(); // CRÍTICO: Obtém o token do contexto de autenticação
+  const [location] = useLocation();
+  const { logout, token } = useAuth();
   const [ws, setWs] = useState<WebSocket | null>(null);
 
   const { data: orders = [], refetch: refetchOrders } = useQuery<Order[]>({
@@ -77,6 +79,8 @@ export default function CentralDashboard() {
 
           <main className="flex-1 overflow-auto p-6">
             <div className="max-w-7xl mx-auto space-y-6">
+              {location === "/central" && (
+              <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatCard title="Total Pedidos" value={totalOrders} icon={Package} />
                 <StatCard title="Em Andamento" value={inProgress} icon={TruckIcon} />
@@ -139,6 +143,48 @@ export default function CentralDashboard() {
                   ))}
                 </div>
               </Card>
+              </>
+              )}
+
+              {location === "/central/orders" && (
+                <Card className="p-12 text-center">
+                  <Package className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-lg font-semibold">Gestão de Pedidos</p>
+                  <p className="text-muted-foreground mt-2">Funcionalidade de gestão avançada em desenvolvimento.</p>
+                </Card>
+              )}
+
+              {location === "/central/clients" && (
+                <Card className="p-12 text-center">
+                  <Users className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-lg font-semibold">Gestão de Clientes</p>
+                  <p className="text-muted-foreground mt-2">Página de clientes em desenvolvimento.</p>
+                </Card>
+              )}
+
+              {location === "/central/drivers" && (
+                <Card className="p-12 text-center">
+                  <TruckIcon className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-lg font-semibold">Gestão de Entregadores</p>
+                  <p className="text-muted-foreground mt-2">Página de entregadores em desenvolvimento.</p>
+                </Card>
+              )}
+
+              {location === "/central/reports" && (
+                <Card className="p-12 text-center">
+                  <Package className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-lg font-semibold">Relatórios</p>
+                  <p className="text-muted-foreground mt-2">Relatórios e análises em desenvolvimento.</p>
+                </Card>
+              )}
+
+              {location === "/central/settings" && (
+                <Card className="p-12 text-center">
+                  <Package className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-lg font-semibold">Configurações</p>
+                  <p className="text-muted-foreground mt-2">Página de configurações em desenvolvimento.</p>
+                </Card>
+              )}
             </div>
           </main>
         </div>
