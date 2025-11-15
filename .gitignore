@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Application specific
+data/
+logs/
+*.db
+*.sqlite
+uploads/
+.env
+
+# Node (if using frontend)
+node_modules/
+package-lock.json
+
+# Test and temporary files
+.pytest_cache/
+.coverage
+htmlcov/
+/tmp/
