@@ -312,6 +312,13 @@ export default function DriverDashboard() {
                 destination={`${order.entregaRua}, ${order.entregaNumero} - ${order.entregaBairro}`}
                 status={order.status as OrderStatus}
                 value={order.valor}
+                // STEP 3: Pass payment & address info
+                formaPagamento={order.formaPagamento}
+                hasTroco={order.hasTroco}
+                trocoValor={order.trocoValor}
+                complemento={order.coletaComplemento || undefined}
+                referencia={order.referencia || undefined}
+                observacoes={order.observacoes || undefined}
               />
               {/* Botão chama mutation de aceite e respeita loading state */}
               <Button
@@ -348,6 +355,13 @@ export default function DriverDashboard() {
                 destination={`${order.entregaRua}, ${order.entregaNumero} - ${order.entregaBairro}`}
                 status={order.status as OrderStatus}
                 value={order.valor}
+                // STEP 3: Pass payment & address info
+                formaPagamento={order.formaPagamento}
+                hasTroco={order.hasTroco}
+                trocoValor={order.trocoValor}
+                complemento={order.coletaComplemento || undefined}
+                referencia={order.referencia || undefined}
+                observacoes={order.observacoes || undefined}
               />
               <DeliverDialog 
                 order={order} 

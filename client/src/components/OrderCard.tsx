@@ -5,7 +5,8 @@
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, MapPin, User, Eye } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { ArrowRight, MapPin, User, Eye, CreditCard, Banknote, Smartphone } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 
 type OrderStatus = "pending" | "in_progress" | "delivered" | "cancelled";
@@ -18,6 +19,14 @@ interface OrderCardProps {
   value: string | number;
   driverName?: string;
   onView?: () => void;
+  // STEP 3: Payment info
+  formaPagamento?: string;
+  hasTroco?: boolean;
+  trocoValor?: string | number | null;
+  // STEP 3: Address details
+  complemento?: string;
+  referencia?: string;
+  observacoes?: string;
 }
 
 export default function OrderCard({ 
@@ -27,8 +36,29 @@ export default function OrderCard({
   status, 
   value, 
   driverName,
-  onView 
+  onView,
+  // STEP 3: Payment & Address
+  formaPagamento,
+  hasTroco,
+  trocoValor,
+  complemento,
+  referencia,
+  observacoes,
 }: OrderCardProps) {
+  // Helper to get payment icon
+  const getPaymentIcon = () => {
+    if (formaPagamento === 'cartao') return <CreditCard className="w-3 h-3" />;
+    if (formaPagamento === 'pix') return <Smartphone className="w-3 h-3" />;
+    return <Banknote className="w-3 h-3" />;
+  };
+
+  // Helper to get payment label
+  const getPaymentLabel = () => {
+    if (formaPagamento === 'cartao') return 'Cartão';
+    if (formaPagamento === 'pix') return 'Pix';
+    return 'Dinheiro';
+  };
+
   return (
     <Card className="p-4 hover-elevate" data-testid={`card-order-${id}`}>
       {/* Cabeçalho: ID do pedido + badge de status */}
@@ -43,6 +73,14 @@ export default function OrderCard({
           <MapPin className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium truncate" data-testid="text-origin">{origin}</p>
+            {/* STEP 3: Show pickup complemento/referencia */}
+            {(complemento || referencia) && (
+              <p className="text-xs text-muted-foreground mt-1">
+                {complemento && <span>{complemento}</span>}
+                {complemento && referencia && <span> • </span>}
+                {referencia && <span>{referencia}</span>}
+              </p>
+            )}
           </div>
         </div>
         
@@ -56,7 +94,30 @@ export default function OrderCard({
             <p className="text-sm font-medium truncate" data-testid="text-destination">{destination}</p>
           </div>
         </div>
+
+        {/* STEP 3: Show observations if present */}
+        {observacoes && (
+          <div className="text-xs text-muted-foreground italic pl-6 pt-1">
+            "{observacoes}"
+          </div>
+        )}
       </div>
+
+      {/* STEP 3: Payment Method Badge */}
+      {formaPagamento && (
+        <div className="mb-3 flex gap-2 flex-wrap">
+          <Badge variant="secondary" className="flex items-center gap-1">
+            {getPaymentIcon()}
+            <span>{getPaymentLabel()}</span>
+          </Badge>
+          {hasTroco && trocoValor && (
+            <Badge variant="outline" className="flex items-center gap-1">
+              <Banknote className="w-3 h-3" />
+              <span>Troco p/ R$ {typeof trocoValor === 'string' ? parseFloat(trocoValor).toFixed(2) : trocoValor.toFixed(2)}</span>
+            </Badge>
+          )}
+        </div>
+      )}
       
       <div className="flex items-center justify-between pt-3 border-t">
         <div className="flex items-center gap-2">
