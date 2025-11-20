@@ -1,3 +1,8 @@
+/**
+ * ARQUIVO: client/src/components/app-sidebar.tsx
+ * PROPÓSITO: Sidebar reutilizável que muda o menu conforme o papel do usuário
+ */
+
 import { Home, Package, Users, TruckIcon, Settings, BarChart3 } from "lucide-react";
 import {
   Sidebar,
@@ -16,6 +21,7 @@ interface AppSidebarProps {
   role: "central" | "client" | "driver";
 }
 
+// Lookup table separa configuração de rotas do JSX
 const menuItems = {
   central: [
     { title: "Dashboard", url: "/central", icon: Home },
@@ -47,6 +53,7 @@ export function AppSidebar({ role }: AppSidebarProps) {
   return (
     <Sidebar>
       <SidebarHeader className="p-4 border-b">
+        {/* Logo/atalho leva sempre para a landing independente do role */}
         <Link href="/" data-testid="link-home">
           <div className="flex items-center gap-2 hover-elevate active-elevate-2 rounded-md p-2 -m-2">
             <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center">
@@ -66,6 +73,7 @@ export function AppSidebar({ role }: AppSidebarProps) {
             <SidebarMenu>
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
+                  {/* SidebarMenuButton usa isActive para destacar rota atual */}
                   <SidebarMenuButton asChild isActive={location === item.url}>
                     <Link href={item.url} data-testid={`link-${item.title.toLowerCase().replace(/\s+/g, '-')}`}>
                       <item.icon className="w-4 h-4" />

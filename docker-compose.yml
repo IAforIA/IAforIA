@@ -1,0 +1,50 @@
+## ARQUIVO: docker-compose.yml
+## PROPÓSITO: Subir Postgres + app Node em produção local com um único comando
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: guriri-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-guriri}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-this-password}
+      POSTGRES_DB: ${POSTGRES_DB:-guriri_express}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U guriri"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: guriri-app
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-guriri}:${POSTGRES_PASSWORD:-change-this-password}@postgres:5432/${POSTGRES_DB:-guriri_express}
+      JWT_SECRET: ${JWT_SECRET:-change-this-secret-key-min-32-characters-for-production}
+      SESSION_SECRET: ${SESSION_SECRET:-change-this-session-secret-min-32-characters}
+      PORT: ${PORT:-5000}
+      NODE_ENV: ${NODE_ENV:-production}
+    ports:
+      - "5000:5000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      # Opcional: monte um arquivo .env.local para injetar segredos no container
+      - ./.env.local:/app/.env.local:ro
+
+volumes:
+  postgres_data:
+    driver: local

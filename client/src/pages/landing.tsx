@@ -1,13 +1,57 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { TruckIcon, Users, Package, BarChart3, ArrowRight } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { TruckIcon, Users, Package, BarChart3 } from "lucide-react";
 import { useLocation } from "wouter";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useAuth } from "@/App";
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ChangeEvent, type FormEvent } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { clientOnboardingSchema } from "@shared/contracts";
+
+const onboardingExtraSchema = z.object({
+  confirmPassword: z.string().min(8, "Confirme sua senha"),
+});
+
+const onboardingFormSchema = z
+  .intersection(clientOnboardingSchema, onboardingExtraSchema)
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "As senhas precisam ser iguais",
+    path: ["confirmPassword"],
+  });
+
+type OnboardingFormValues = z.infer<typeof onboardingFormSchema>;
+
+const onboardingDefaultValues: OnboardingFormValues = {
+  name: "",
+  email: "",
+  phone: "",
+  password: "",
+  confirmPassword: "",
+  documentType: "PF",
+  documentNumber: "",
+  ie: "",
+  address: {
+    cep: "",
+    rua: "",
+    numero: "",
+    bairro: "",
+    complemento: "",
+    referencia: "",
+  },
+  acceptFixedAddress: false,
+};
 
 export default function Landing() {
   const [, setLocation] = useLocation();
@@ -17,6 +61,65 @@ export default function Landing() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState<"login" | "register">("login");
+  const [isRegisterModalOpen, setRegisterModalOpen] = useState(false);
+
+  const registerForm = useForm<OnboardingFormValues>({
+    resolver: zodResolver(onboardingFormSchema),
+    defaultValues: onboardingDefaultValues,
+  });
+
+  const watchDocumentType = registerForm.watch("documentType");
+
+  const registerMutation = useMutation({
+    mutationFn: async (values: OnboardingFormValues) => {
+      const { confirmPassword, ...rest } = values;
+      const sanitizedPayload = {
+        ...rest,
+        documentNumber: rest.documentNumber.replace(/\D/g, ""),
+        ie: rest.documentType === "PJ" ? rest.ie : undefined,
+        address: {
+          ...rest.address,
+          cep: rest.address.cep.replace(/\D/g, ""),
+        },
+      };
+      const response = await apiRequest("POST", "/api/auth/register", sanitizedPayload);
+      return response.json();
+    },
+    onSuccess: async (_data, variables) => {
+      await login(variables.email, variables.password);
+      toast({
+        title: "Cadastro concluído",
+        description: "Bem-vindo(a)! Redirecionando...",
+      });
+      registerForm.reset(onboardingDefaultValues);
+      setRegisterModalOpen(false);
+      setActiveTab("login");
+    },
+    onError: (error) => {
+      toast({
+        title: "Não foi possível concluir o cadastro",
+        description: error instanceof Error ? error.message : "Tente novamente em instantes.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleEmailChange = (event: ChangeEvent<HTMLInputElement>) => setEmail(event.target.value);
+  const handlePasswordChange = (event: ChangeEvent<HTMLInputElement>) => setPassword(event.target.value);
+  const handleTabChange = (value: string) => {
+    setActiveTab(value as "login" | "register");
+    if (value === "register") {
+      setRegisterModalOpen(true);
+    }
+  };
+
+  const handleRegisterModalChange = (open: boolean) => {
+    setRegisterModalOpen(open);
+    if (!open) {
+      setActiveTab("login");
+    }
+  };
 
   useEffect(() => {
     if (user) {
@@ -26,7 +129,7 @@ export default function Landing() {
     }
   }, [user, setLocation]);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
 
@@ -71,7 +174,7 @@ export default function Landing() {
         </div>
       </header>
 
-      <section className="relative h-[600px] flex items-center justify-center overflow-hidden bg-gradient-to-br from-primary via-blue-600 to-blue-800">
+      <section className="relative min-h-[700px] md:min-h-[760px] flex items-center justify-center overflow-hidden bg-gradient-to-br from-primary via-blue-600 to-blue-800 pb-16 md:pb-24">
         <div className="absolute inset-0 bg-gradient-to-r from-black/50 to-black/30" />
 
         <div className="relative z-10 container mx-auto px-4 grid md:grid-cols-2 gap-12 items-center">
@@ -84,56 +187,329 @@ export default function Landing() {
             </p>
           </div>
 
-          <Card className="max-w-md w-full mx-auto">
+          <Card className="max-w-md w-full mx-auto relative z-20 shadow-2xl">
             <CardHeader>
-              <CardTitle>Acesse sua Conta</CardTitle>
-              <CardDescription>Insira suas credenciais para acessar o painel</CardDescription>
+              <CardTitle>Acesse ou Cadastre</CardTitle>
+              <CardDescription>
+                Login imediato para equipes existentes ou onboarding PF/PJ com endereço fixo aprovado.
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div className="space-y-2">
-                  {/* CORREÇÃO: Alterado para Email */}
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="central@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    data-testid="input-user-email"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Senha</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="Sua senha"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    data-testid="input-password"
-                  />
-                </div>
-                <Button type="submit" className="w-full" disabled={isLoading} data-testid="button-login">
-                  {isLoading ? "Entrando..." : "Entrar"}
-                </Button>
-              </form>
+              <Tabs value={activeTab} onValueChange={handleTabChange}>
+                <TabsList className="grid grid-cols-2 mb-4">
+                  <TabsTrigger value="login">Entrar</TabsTrigger>
+                  <TabsTrigger value="register">Cadastrar</TabsTrigger>
+                </TabsList>
 
-              {/* Informações de credenciais de teste para desenvolvimento */}
-              <div className="mt-6 p-4 bg-muted rounded-lg">
-                <p className="text-sm font-medium mb-2">ℹ️ Credenciais de Teste (Exemplo)</p>
-                <div className="space-y-1 text-xs text-muted-foreground">
-                  <p>• Central: <code className="text-foreground">central@email.com</code> / <code className="text-foreground">central123</code></p>
-                  <p>• Cliente: <code className="text-foreground">client@email.com</code> / <code className="text-foreground">client123</code></p>
-                  <p>• Motoboy: <code className="text-foreground">motoboy@email.com</code> / <code className="text-foreground">motoboy123</code></p>
-                </div>
-              </div>
+                <TabsContent value="login">
+                  <form onSubmit={handleLogin} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="central@email.com"
+                        value={email}
+                        onChange={handleEmailChange}
+                        required
+                        data-testid="input-user-email"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="password">Senha</Label>
+                      <Input
+                        id="password"
+                        type="password"
+                        placeholder="Sua senha"
+                        value={password}
+                        onChange={handlePasswordChange}
+                        required
+                        data-testid="input-password"
+                      />
+                    </div>
+                    <Button type="submit" className="w-full" disabled={isLoading} data-testid="button-login">
+                      {isLoading ? "Entrando..." : "Entrar"}
+                    </Button>
+                  </form>
+                </TabsContent>
+
+                <TabsContent value="register">
+                  <div className="space-y-3 text-sm text-muted-foreground">
+                    <p>
+                      O formulário completo abre em uma janela dedicada para manter o layout da landing intacto
+                      enquanto você fornece todos os dados necessários.
+                    </p>
+                    <Button variant="outline" className="w-full" onClick={() => setRegisterModalOpen(true)}>
+                      Abrir formulário de cadastro
+                    </Button>
+                  </div>
+                </TabsContent>
+              </Tabs>
             </CardContent>
           </Card>
         </div>
       </section>
+
+      <Dialog open={isRegisterModalOpen} onOpenChange={handleRegisterModalChange}>
+        <DialogContent className="max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Cadastro Guriri Express</DialogTitle>
+            <DialogDescription>
+              Preencha os dados da sua operação para liberar o acesso completo à plataforma.
+            </DialogDescription>
+          </DialogHeader>
+          {/*
+            O formulário é extenso, então limitamos a altura e habilitamos rolagem independente
+            para que o usuário complete o onboarding sem deformar o layout principal.
+          */}
+          <div className="max-h-[70vh] overflow-y-auto pr-1">
+            <Form {...registerForm}>
+              <form
+                onSubmit={registerForm.handleSubmit((values) => registerMutation.mutate(values))}
+                className="space-y-4 text-left pb-2"
+              >
+                <div className="grid gap-3">
+                  <FormField
+                    control={registerForm.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Razão social ou nome</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Restaurante Atlântico" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={registerForm.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email corporativo</FormLabel>
+                        <FormControl>
+                          <Input type="email" placeholder="empresa@cliente.com" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={registerForm.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Telefone / WhatsApp</FormLabel>
+                        <FormControl>
+                          <Input type="tel" placeholder="(27) 99999-0000" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <FormField
+                    control={registerForm.control}
+                    name="documentType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tipo de documento</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="PF">Pessoa Física (CPF)</SelectItem>
+                            <SelectItem value="PJ">Pessoa Jurídica (CNPJ)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={registerForm.control}
+                    name="documentNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{watchDocumentType === 'PJ' ? 'CNPJ' : 'CPF'}</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder={watchDocumentType === 'PJ' ? '00.000.000/0000-00' : '000.000.000-00'}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {watchDocumentType === 'PJ' && (
+                  <FormField
+                    control={registerForm.control}
+                    name="ie"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Inscrição Estadual (opcional)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="ISENTO / 123456" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                <div className="space-y-3">
+                  <p className="text-sm font-semibold">Endereço fixo para coleta</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <FormField
+                      control={registerForm.control}
+                      name="address.cep"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>CEP</FormLabel>
+                          <FormControl>
+                            <Input inputMode="numeric" placeholder="29900-000" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={registerForm.control}
+                      name="address.numero"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Número</FormLabel>
+                          <FormControl>
+                            <Input placeholder="123" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <FormField
+                    control={registerForm.control}
+                    name="address.rua"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Rua / Avenida</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Av. Guriri" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={registerForm.control}
+                    name="address.bairro"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Bairro</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Centro" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <FormField
+                      control={registerForm.control}
+                      name="address.complemento"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Complemento</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Sala 2 / Galpão" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={registerForm.control}
+                      name="address.referencia"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Referência</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Ao lado da praça" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <FormField
+                    control={registerForm.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Senha</FormLabel>
+                        <FormControl>
+                          <Input type="password" placeholder="Mínimo 8 caracteres" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={registerForm.control}
+                    name="confirmPassword"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Confirme a senha</FormLabel>
+                        <FormControl>
+                          <Input type="password" placeholder="Repita a senha" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={registerForm.control}
+                  name="acceptFixedAddress"
+                  render={({ field }) => (
+                    <FormItem className="flex items-start gap-3 rounded-md border p-3">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={(checked) => field.onChange(checked === true)}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 text-sm">
+                        <FormLabel>
+                          Autorizo reutilizar este endereço em todos os pedidos para evitar erros operacionais.
+                        </FormLabel>
+                        <FormMessage />
+                      </div>
+                    </FormItem>
+                  )}
+                />
+
+                <Button type="submit" className="w-full" disabled={registerMutation.isPending}>
+                  {registerMutation.isPending ? "Cadastrando..." : "Cadastrar e acessar"}
+                </Button>
+              </form>
+            </Form>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* ... (Resto da sua Landing Page) ... */}
        <section className="py-20 bg-muted/30">

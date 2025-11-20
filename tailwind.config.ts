@@ -1,7 +1,14 @@
+/**
+ * ARQUIVO: tailwind.config.ts
+ * PROPÓSITO: Centralizar tokens de design (cores CSS vars + raios customizados)
+ */
+
 import type { Config } from "tailwindcss";
 
 export default {
+  // Usa classe .dark controlada pelo ThemeToggle
   darkMode: ["class"],
+  // Limita o scan aos arquivos do cliente para manter build rápido
   content: ["./client/index.html", "./client/src/**/*.{js,jsx,ts,tsx}"],
   theme: {
     extend: {
@@ -11,7 +18,7 @@ export default {
         sm: ".1875rem", /* 3px */
       },
       colors: {
-        // Flat / base colors (regular buttons)
+        // Tokens leem CSS vars vindas do tema (ver globals.css)
         background: "hsl(var(--background) / <alpha-value>)",
         foreground: "hsl(var(--foreground) / <alpha-value>)",
         border: "hsl(var(--border) / <alpha-value>)",
@@ -88,6 +95,7 @@ export default {
         mono: ["var(--font-mono)"],
       },
       keyframes: {
+        // Mantém compatibilidade com componentes shadcn/ui
         "accordion-down": {
           from: { height: "0" },
           to: { height: "var(--radix-accordion-content-height)" },
@@ -103,5 +111,6 @@ export default {
       },
     },
   },
+  // Plugins extras habilitam animações e tipografia sem escrever utilitários custom
   plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],
 } satisfies Config;

@@ -19,12 +19,20 @@ export function log(message: string, source = "express") {
 export async function setupVite(app: Express, server: Server) {
   const serverOptions = {
     middlewareMode: true as const,
-    hmr: { server },
+    hmr: { server }, // Reabilita HMR
     allowedHosts: true as const,
   };
 
+  // __dirname alternativo para ES Modules no Windows
+  const __filename = new URL(import.meta.url).pathname;
+  const __dirname = path.dirname(__filename);
+  // Remover barra inicial extra no Windows (converte /C:/Users para C:/Users)
+  const normalizedDirname = __dirname.startsWith('/') && __dirname.charAt(2) === ':' 
+    ? __dirname.substring(1) 
+    : __dirname;
+  
   const vite = await createViteServer({
-    configFile: path.resolve(import.meta.dirname, '..', 'vite.config.ts'),
+    configFile: path.resolve(normalizedDirname, '..', 'vite.config.ts'),
     customLogger: {
       ...viteLogger,
     },
@@ -38,7 +46,7 @@ export async function setupVite(app: Express, server: Server) {
 
     try {
       const clientTemplatePath = path.resolve(
-        import.meta.dirname,
+        normalizedDirname,
         "..",
         "client",
         "index.html",
@@ -56,7 +64,12 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  const distPath = path.resolve(import.meta.dirname, "..", "dist", "public");
+  const __filename = new URL(import.meta.url).pathname;
+  const __dirname = path.dirname(__filename);
+  const normalizedDirname = __dirname.startsWith('/') && __dirname.charAt(2) === ':' 
+    ? __dirname.substring(1) 
+    : __dirname;
+  const distPath = path.resolve(normalizedDirname, "..", "dist", "public");
 
   if (!fs.existsSync(distPath)) {
     throw new Error(

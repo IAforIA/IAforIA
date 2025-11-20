@@ -1,6 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes.js"; // Adicionado .js para compatibilidade ES Modules
-import { setupVite, serveStatic, log } from "./vite.js"; // Adicionado .js para compatibilidade ES Modules
+import { registerRoutes } from "./routes.ts"; // Usa extensão explícita para evitar carregar build antigo
+import { setupVite, serveStatic, log } from "./vite.ts";
 
 const app = express();
 

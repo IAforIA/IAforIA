@@ -6,6 +6,12 @@ dist
 build
 server/dist # Adicionado: Garante que os arquivos JS compilados do backend sejam ignorados
 
+# Environment Variables
+.env
+.env.local
+.env.production
+!.env.example
+
 # Arquivos temporários e do sistema
 .DS_Store
 *.tar.gz
@@ -16,3 +22,6 @@ vite.config.ts.*
 .turbo/
 migrations/
 *.tsbuildinfo
+
+# Relatorios e credenciais gerados dinamicamente
+.output/

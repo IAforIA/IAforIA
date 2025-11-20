@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug - Guriri Express</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test {
+            background: white;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .success { border-left: 4px solid #4CAF50; }
+        .error { border-left: 4px solid #f44336; }
+        .info { border-left: 4px solid #2196F3; }
+        h1 { color: #333; }
+        h2 { color: #666; margin-top: 0; }
+        pre {
+            background: #f9f9f9;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        a {
+            color: #2196F3;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Diagnóstico do Sistema</h1>
+    
+    <div class="test success">
+        <h2>✅ HTML Carregou</h2>
+        <p>Se você está vendo esta mensagem, o servidor está funcionando e servindo arquivos HTML.</p>
+    </div>
+
+    <div class="test" id="js-test">
+        <h2>⏳ JavaScript...</h2>
+        <p>Testando JavaScript...</p>
+    </div>
+
+    <div class="test" id="fetch-test">
+        <h2>⏳ API...</h2>
+        <p>Testando conexão com a API...</p>
+    </div>
+
+    <div class="test info">
+        <h2>📋 Informações</h2>
+        <p><strong>User Agent:</strong> <span id="user-agent"></span></p>
+        <p><strong>URL Atual:</strong> <span id="current-url"></span></p>
+        <p><strong>Timestamp:</strong> <span id="timestamp"></span></p>
+    </div>
+
+    <div class="test info">
+        <h2>🔗 Links Úteis</h2>
+        <p>
+            <a href="/">Página Principal</a> | 
+            <a href="/test">Teste React</a> | 
+            <a href="/api/orders">API Orders (requer auth)</a>
+        </p>
+    </div>
+
+    <script>
+        // Teste de JavaScript
+        try {
+            const jsTest = document.getElementById('js-test');
+            jsTest.className = 'test success';
+            jsTest.innerHTML = '<h2>✅ JavaScript Funcionando</h2><p>O JavaScript está sendo executado corretamente.</p>';
+            
+            // Informações do sistema
+            document.getElementById('user-agent').textContent = navigator.userAgent;
+            document.getElementById('current-url').textContent = window.location.href;
+            document.getElementById('timestamp').textContent = new Date().toLocaleString('pt-BR');
+            
+            // Teste de fetch para a API
+            fetch('/api/orders')
+                .then(response => {
+                    const fetchTest = document.getElementById('fetch-test');
+                    if (response.status === 401) {
+                        fetchTest.className = 'test info';
+                        fetchTest.innerHTML = '<h2>🔒 API Respondendo (Autenticação Requerida)</h2><p>A API está funcionando, mas requer autenticação.</p><pre>Status: 401 Unauthorized</pre>';
+                    } else if (response.ok) {
+                        fetchTest.className = 'test success';
+                        fetchTest.innerHTML = '<h2>✅ API Funcionando</h2><p>A API respondeu com sucesso.</p>';
+                    } else {
+                        fetchTest.className = 'test error';
+                        fetchTest.innerHTML = `<h2>⚠️ API com Problema</h2><p>Status: ${response.status}</p>`;
+                    }
+                })
+                .catch(error => {
+                    const fetchTest = document.getElementById('fetch-test');
+                    fetchTest.className = 'test error';
+                    fetchTest.innerHTML = `<h2>❌ Erro na API</h2><pre>${error.message}</pre>`;
+                });
+                
+        } catch (error) {
+            const jsTest = document.getElementById('js-test');
+            jsTest.className = 'test error';
+            jsTest.innerHTML = `<h2>❌ Erro no JavaScript</h2><pre>${error.message}</pre>`;
+        }
+
+        // Capturar erros não tratados
+        window.addEventListener('error', function(e) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'test error';
+            errorDiv.innerHTML = `<h2>❌ Erro Não Tratado</h2><pre>${e.message}\n${e.filename}:${e.lineno}:${e.colno}</pre>`;
+            document.body.appendChild(errorDiv);
+        });
+
+        // Capturar promessas rejeitadas
+        window.addEventListener('unhandledrejection', function(e) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'test error';
+            errorDiv.innerHTML = `<h2>❌ Promise Rejeitada</h2><pre>${e.reason}</pre>`;
+            document.body.appendChild(errorDiv);
+        });
+    </script>
+</body>
+</html>

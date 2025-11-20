@@ -1,20 +1,32 @@
+/**
+ * ARQUIVO: client/src/pages/driver-dashboard.tsx
+ * PROPÓSITO: Área do motoboy para aceitar entregas, acompanhar progresso e ganhos
+ * DESTAQUES: Divisão em rotas internas, WebSocket para atualizações e mutations de aceitar/entregar
+ */
+
+// Layout com sidebar responsiva compartilhada
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
+// Roteamento interno do dashboard do motorista
 import { Switch, Route, Router as NestedRouter } from "wouter";
 import ThemeToggle from "@/components/ThemeToggle";
+// Cartões reutilizáveis de estatística e pedido
 import StatCard from "@/components/StatCard";
 import OrderCard from "@/components/OrderCard";
 import { TruckIcon, Package, CheckCircle, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+// Hooks utilitários
 import { useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/App";
 import type { Order, OrderStatus } from "@shared/schema";
+import { resolveWebSocketUrl } from "@/lib/utils";
 
+// Ajuda a converter valores armazenados como string (vindo do banco) sem quebrar a soma
 const parseDecimalSafe = (value: string | null | undefined): number => {
   if (value === null || value === undefined) return 0;
   const num = parseFloat(value);
@@ -22,13 +34,16 @@ const parseDecimalSafe = (value: string | null | undefined): number => {
 };
 
 export default function DriverDashboard() {
+  // UI feedback e contexto global autenticado
   const { toast } = useToast();
   const { user, logout, token } = useAuth();
 
+  // Consulta centralizada reutilizada por todos os blocos
   const { data: orders = [], refetch } = useQuery<Order[]>({
     queryKey: ['/api/orders'],
   });
 
+  // Derivações locais reduzem custo no servidor e deixam o componente declarativo
   const availableOrders = orders.filter(o => o.status === 'pending');
   const myOrders = orders.filter(o => o.motoboyId === user?.id && o.status === 'in_progress');
   const deliveredToday = orders.filter(o =>
@@ -37,19 +52,21 @@ export default function DriverDashboard() {
     o.deliveredAt && new Date(o.deliveredAt).toDateString() === new Date().toDateString()
   );
 
+  // Soma taxas das entregas concluídas no dia (valida strings numéricas)
   const totalEarnings = deliveredToday.reduce((sum, o) => sum + parseDecimalSafe(o.taxaMotoboy), 0);
 
+  // WebSocket autenticado garante atualização imediata sem polling
   useEffect(() => {
     if (!user?.id || !token) return;
 
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const websocket = new WebSocket(`${protocol}//${window.location.host}/ws?token=${token}`);
+    const websocket = new WebSocket(resolveWebSocketUrl(token));
 
     websocket.onmessage = () => refetch();
 
     return () => websocket.close();
   }, [user?.id, refetch, token]);
 
+  // Mutation: motoboy aceita entrega pendente
   const acceptOrderMutation = useMutation({
     mutationFn: async (orderId: string) => {
       const res = await apiRequest('POST', `/api/orders/${orderId}/accept`, {
@@ -67,6 +84,7 @@ export default function DriverDashboard() {
     },
   });
 
+  // Mutation: marca entrega como concluída
   const deliverOrderMutation = useMutation({
     mutationFn: async (orderId: string) => {
       const res = await apiRequest('POST', `/api/orders/${orderId}/deliver`);
@@ -81,6 +99,7 @@ export default function DriverDashboard() {
     },
   });
 
+  // Custom properties mantêm largura consistente do sidebar
   const style = {
     "--sidebar-width": "16rem",
     "--sidebar-width-icon": "4rem",
@@ -89,17 +108,20 @@ export default function DriverDashboard() {
   // Criamos componentes para o conteúdo das rotas para organizar o <Switch>
   const DashboardContent = () => (
     <>
+      {/* KPIs principais: entregas, andamento e ganhos do dia */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard title="Entregas Hoje" value={deliveredToday.length} icon={Package} />
         <StatCard title="Em Andamento" value={myOrders.length} icon={TruckIcon} />
         <StatCard title="Concluídas" value={deliveredToday.length} icon={CheckCircle} />
         <StatCard title="Ganhos Hoje" value={`R$ ${totalEarnings.toFixed(2)}`} icon={DollarSign} />
       </div>
+      {/* Seções abaixo reaproveitam arrays filtrados acima */}
       <AvailableDeliveries />
       <MyDeliveries />
     </>
   );
 
+  // Lista pedidos pendentes que qualquer motoboy pode aceitar
   const AvailableDeliveries = () => (
     <div>
       <h2 className="text-lg font-semibold mb-4">Entregas Disponíveis</h2>
@@ -119,6 +141,7 @@ export default function DriverDashboard() {
                 status={order.status as OrderStatus}
                 value={order.valor}
               />
+              {/* Botão chama mutation de aceite e respeita loading state */}
               <Button
                 className="w-full mt-4"
                 onClick={() => acceptOrderMutation.mutate(order.id)}
@@ -134,6 +157,7 @@ export default function DriverDashboard() {
     </div>
   );
 
+  // Mostra apenas pedidos do motoboy atual em andamento
   const MyDeliveries = () => (
     <div>
       <h2 className="text-lg font-semibold mb-4">Minhas Entregas Ativas</h2>
@@ -153,6 +177,7 @@ export default function DriverDashboard() {
                 status={order.status as OrderStatus}
                 value={order.valor}
               />
+              {/* Mutation de conclusão altera status para delivered */}
               <Button
                 variant="outline"
                 className="w-full mt-4"
@@ -173,6 +198,7 @@ export default function DriverDashboard() {
   return (
     <SidebarProvider style={style as React.CSSProperties}>
       <div className="flex h-screen w-full">
+        {/* Sidebar assume role="driver" para montar menu adequado */}
         <AppSidebar role="driver" />
         <div className="flex flex-col flex-1">
           <header className="flex items-center justify-between p-4 border-b bg-background">
@@ -181,6 +207,7 @@ export default function DriverDashboard() {
               <h1 className="text-xl font-semibold" data-testid="text-page-title">Dashboard do Entregador</h1>
             </div>
             <div className="flex items-center gap-3">
+              {/* Badge indica disponibilidade atual (futuro: leitura do status real) */}
               <Badge className="bg-green-500 text-white" data-testid="badge-status">Disponível</Badge>
               <ThemeToggle />
               <Button variant="outline" onClick={logout} data-testid="button-logout">Sair</Button>
@@ -189,9 +216,10 @@ export default function DriverDashboard() {
 
           <main className="flex-1 overflow-auto p-6">
             <div className="max-w-7xl mx-auto space-y-6">
+              {/* Router interno limita rotas ao /driver */}
               <NestedRouter base="/driver">
                 <Switch>
-                {/* Rota Principal (path="/") */}
+                {/* Rota Principal (path="/") resume estatísticas e seções principais */}
                 <Route path="/" component={DashboardContent} />
 
                 {/* Sub-rota de Entregas Disponíveis (path="/available") */}
@@ -200,7 +228,7 @@ export default function DriverDashboard() {
                 {/* Sub-rota de Minhas Entregas (path="/my-deliveries") */}
                 <Route path="/my-deliveries" component={MyDeliveries} />
 
-                {/* Sub-rota de Histórico (path="/history") */}
+                {/* Sub-rota de Histórico (path="/history") placeholder até API de logs */}
                 <Route path="/history">
                   <Card className="p-12 text-center">
                     <Package className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
@@ -209,7 +237,7 @@ export default function DriverDashboard() {
                   </Card>
                 </Route>
 
-                {/* Sub-rota de Configurações (path="/settings") */}
+                {/* Sub-rota de Configurações (path="/settings") reserva layout futuro */}
                 <Route path="/settings">
                   <Card className="p-12 text-center">
                     <Package className="w-12 h-12 text-muted-foreground mx-auto mb-3" />

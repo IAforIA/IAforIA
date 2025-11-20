@@ -1,6 +1,15 @@
+/**
+ * ARQUIVO: client/src/pages/central-dashboard.tsx
+ * PROPÓSITO: Painel administrativo da Central para monitorar pedidos, motoboys e estatísticas em tempo real
+ * CONTEXTO: Usa WebSockets e React Query para dados atualizados sem recarregar a página
+ */
+
+// Layout principal com sidebar e gatilho de abertura
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
+// Wouter fornece roteamento leve para subpáginas internas do dashboard
 import { Switch, Route, Router as NestedRouter } from "wouter";
+// Componentes reutilizáveis da UI
 import ThemeToggle from "@/components/ThemeToggle";
 import StatCard from "@/components/StatCard";
 import OrderCard from "@/components/OrderCard";
@@ -8,29 +17,38 @@ import { Package, TruckIcon, CheckCircle, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+// useQuery coordena chamadas REST com cache automático
 import { useQuery } from "@tanstack/react-query";
+// useAuth expõe token/logoff para proteger o painel
 import { useAuth } from "@/App";
+// Tipos compartilhados com o backend (Drizzle schema)
 import type { Order, Motoboy, OrderStatus } from "@shared/schema";
 import { useEffect, useState } from "react";
+import { resolveWebSocketUrl } from "@/lib/utils";
 
 export default function CentralDashboard() {
+  // CONTEXTO GLOBAL: useAuth provê token JWT e função de logout
   const { logout, token } = useAuth();
+  // ESTADO LOCAL: Guarda instância WebSocket para fechar ao desmontar
   const [ws, setWs] = useState<WebSocket | null>(null);
 
+  // QUERY PRINCIPAL: Busca lista completa de pedidos (cacheado por React Query)
   const { data: orders = [], refetch: refetchOrders } = useQuery<Order[]>({
     queryKey: ['/api/orders'],
   });
 
+  // QUERY SECUNDÁRIA: Busca status online dos motoboys para indicadores
   const { data: motoboys = [] } = useQuery<Motoboy[]>({
     queryKey: ['/api/motoboys'],
   });
 
+  // EFEITO: Abre conexão WebSocket autenticada para receber eventos em tempo real
   useEffect(() => {
-    if (!token) return;
+    if (!token) return; // Sem token não conectamos
 
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const websocket = new WebSocket(`${protocol}//${window.location.host}/ws?token=${token}`);
+    const websocket = new WebSocket(resolveWebSocketUrl(token));
 
+    // Quando chegar mensagem relevante, revalida cache de pedidos
     websocket.onmessage = (event) => {
       const data = JSON.parse(event.data);
       if (data.type === 'new_order' || data.type === 'order_accepted' || data.type === 'order_delivered') {
@@ -42,24 +60,28 @@ export default function CentralDashboard() {
     websocket.onerror = (error) => console.error('WebSocket error:', error);
     websocket.onopen = () => console.log('WebSocket connected');
 
-
+    // Guarda referência para eventual debug e encerra na limpeza do efeito
     setWs(websocket);
     return () => websocket.close();
   }, [refetchOrders, token]);
 
+  // KPIs exibidos nos StatCards
   const totalOrders = orders.length;
   const inProgress = orders.filter(o => o.status === 'in_progress').length;
   const delivered = orders.filter(o => o.status === 'delivered').length;
   const activeDrivers = motoboys.filter(m => m.online).length;
 
+  // CSS custom properties: controlam largura do sidebar responsivo
   const style = {
     "--sidebar-width": "16rem",
     "--sidebar-width-icon": "4rem",
   };
 
   return (
+    // SidebarProvider aplica contextos (atalhos, largura customizada)
     <SidebarProvider style={style as React.CSSProperties}>
       <div className="flex h-screen w-full">
+        {/* Sidebar fixa com navegação específica do papel "central" */}
         <AppSidebar role="central" />
         <div className="flex flex-col flex-1">
           <header className="flex items-center justify-between p-4 border-b bg-background">
@@ -80,6 +102,7 @@ export default function CentralDashboard() {
                 {/* Rota Principal do Dashboard (path="/") */}
                 <Route path="/">
                   <>
+                    {/* Grid de KPIs principais */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                       <StatCard title="Total Pedidos" value={totalOrders} icon={Package} />
                       <StatCard title="Em Andamento" value={inProgress} icon={TruckIcon} />
@@ -87,6 +110,7 @@ export default function CentralDashboard() {
                       <StatCard title="Entregadores Ativos" value={activeDrivers} icon={Users} />
                     </div>
 
+                    {/* Barra de busca local (futuro filtro de pedidos) */}
                     <div className="flex items-center justify-between gap-4 flex-wrap">
                       <h2 className="text-lg font-semibold">Pedidos Recentes</h2>
                       <div className="flex gap-2 flex-1 max-w-md">
@@ -99,6 +123,7 @@ export default function CentralDashboard() {
                       </div>
                     </div>
 
+                    {/* Cards resumidos dos pedidos mais recentes */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {orders.slice(0, 9).map((order) => (
                         <OrderCard
@@ -114,6 +139,7 @@ export default function CentralDashboard() {
                       ))}
                     </div>
 
+                    {/* Placeholder amigável quando não há pedidos */}
                     {orders.length === 0 && (
                       <Card className="p-12 text-center">
                         <Package className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
@@ -121,6 +147,7 @@ export default function CentralDashboard() {
                       </Card>
                     )}
 
+                    {/* Linha do tempo simples mostrando últimos eventos */}
                     <Card className="p-6">
                       <h3 className="text-lg font-semibold mb-4">Atividade Recente</h3>
                       <div className="space-y-3">
