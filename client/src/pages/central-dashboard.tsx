@@ -660,7 +660,7 @@ export default function CentralDashboard() {
                                     </div>
                                   </TableCell>
                                   <TableCell>
-                                    {userData.status === 'ativo' ? (
+                                    {userData.status === 'active' ? (
                                       <Badge variant="default" className="bg-green-500">
                                         <ShieldCheck className="h-3 w-3 mr-1" />
                                         Ativo
@@ -677,14 +677,14 @@ export default function CentralDashboard() {
                                       <span className="text-xs text-muted-foreground">Não pode editar próprio status</span>
                                     ) : (
                                       <Button
-                                        variant={userData.status === 'ativo' ? 'destructive' : 'default'}
+                                        variant={userData.status === 'active' ? 'destructive' : 'default'}
                                         size="sm"
                                         onClick={() => {
-                                          const newStatus = userData.status === 'ativo' ? 'inativo' : 'ativo';
+                                          const newStatus = userData.status === 'active' ? 'inactive' : 'active';
                                           toggleUserStatusMutation.mutate({ userId: userData.id, status: newStatus });
                                         }}
                                       >
-                                        {userData.status === 'ativo' ? (
+                                        {userData.status === 'active' ? (
                                           <>
                                             <Ban className="h-3 w-3 mr-1" />
                                             Desativar
