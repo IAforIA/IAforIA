@@ -13,13 +13,17 @@ import { Switch, Route, Router as NestedRouter } from "wouter";
 import ThemeToggle from "@/components/ThemeToggle";
 import StatCard from "@/components/StatCard";
 import OrderCard from "@/components/OrderCard";
-import { Package, TruckIcon, CheckCircle, Users, ExternalLink } from "lucide-react";
+import { Package, TruckIcon, CheckCircle, Users, ExternalLink, UserCog, Shield, Ban, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 // useQuery coordena chamadas REST com cache automático
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 // useAuth expõe token/logoff para proteger o painel
 import { useAuth } from "@/hooks/use-auth";
 // Tipos compartilhados com o backend (Drizzle schema)
@@ -29,7 +33,8 @@ import { resolveWebSocketUrl } from "@/lib/utils";
 
 export default function CentralDashboard() {
   // CONTEXTO GLOBAL: useAuth provê token JWT e função de logout
-  const { logout, token } = useAuth();
+  const { logout, token, user } = useAuth();
+  const { toast } = useToast();
   // ESTADO LOCAL: Guarda instância WebSocket para fechar ao desmontar
   const [ws, setWs] = useState<WebSocket | null>(null);
 
@@ -47,6 +52,50 @@ export default function CentralDashboard() {
   const { data: clients = [] } = useQuery<Client[]>({
     queryKey: ['/api/clients'],
     enabled: !!token, // Só faz a query se tiver token
+  });
+
+  // STEP 4: Query de usuários
+  const { data: usersData = [] } = useQuery<any[]>({
+    queryKey: ['/api/users'],
+    enabled: !!token,
+  });
+
+  // STEP 4: Mutation para alterar status de usuário
+  const toggleUserStatusMutation = useMutation({
+    mutationFn: async ({ userId, status }: { userId: string, status: string }) => {
+      const res = await apiRequest('PATCH', `/api/users/${userId}/status`, { status });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      toast({ title: "Status atualizado com sucesso" });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Erro ao atualizar status", 
+        description: error.message,
+        variant: "destructive" 
+      });
+    },
+  });
+
+  // STEP 4: Mutation para alterar role de usuário
+  const changeUserRoleMutation = useMutation({
+    mutationFn: async ({ userId, role }: { userId: string, role: string }) => {
+      const res = await apiRequest('PATCH', `/api/users/${userId}/role`, { role });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      toast({ title: "Função alterada com sucesso" });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Erro ao alterar função", 
+        description: error.message,
+        variant: "destructive" 
+      });
+    },
   });
 
   // EFEITO: Abre conexão WebSocket autenticada para receber eventos em tempo real
@@ -539,6 +588,122 @@ export default function CentralDashboard() {
                           </p>
                         </div>
                       </div>
+                    </Card>
+                  </>
+                </Route>
+
+                {/* Sub-rota de Usuários (path="/users") - STEP 4 */}
+                <Route path="/users">
+                  <>
+                    <div className="flex items-center justify-between mb-6">
+                      <h2 className="text-2xl font-bold flex items-center gap-2">
+                        <UserCog className="h-6 w-6" />
+                        Gestão de Usuários
+                      </h2>
+                    </div>
+
+                    <Card>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Nome</TableHead>
+                            <TableHead>Email</TableHead>
+                            <TableHead>Função</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead className="text-right">Ações</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {usersData.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={5} className="text-center text-muted-foreground">
+                                Nenhum usuário encontrado
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            usersData.map((userData: any) => {
+                              const isCurrentUser = userData.id === user?.id;
+                              const roleIcon = 
+                                userData.role === 'central' ? <Shield className="h-4 w-4 text-blue-500" /> :
+                                userData.role === 'motoboy' ? <UserCog className="h-4 w-4 text-green-500" /> :
+                                <UserCog className="h-4 w-4 text-gray-500" />;
+
+                              return (
+                                <TableRow key={userData.id}>
+                                  <TableCell className="font-medium">
+                                    {userData.nome}
+                                    {isCurrentUser && <span className="ml-2 text-xs text-muted-foreground">(você)</span>}
+                                  </TableCell>
+                                  <TableCell>{userData.email}</TableCell>
+                                  <TableCell>
+                                    <div className="flex items-center gap-2">
+                                      {roleIcon}
+                                      {isCurrentUser ? (
+                                        <span className="capitalize">{userData.role}</span>
+                                      ) : (
+                                        <Select
+                                          value={userData.role}
+                                          onValueChange={(newRole) => {
+                                            changeUserRoleMutation.mutate({ userId: userData.id, role: newRole });
+                                          }}
+                                        >
+                                          <SelectTrigger className="w-32">
+                                            <SelectValue />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="client">Cliente</SelectItem>
+                                            <SelectItem value="motoboy">Motoboy</SelectItem>
+                                            <SelectItem value="central">Central</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    {userData.status === 'ativo' ? (
+                                      <Badge variant="default" className="bg-green-500">
+                                        <ShieldCheck className="h-3 w-3 mr-1" />
+                                        Ativo
+                                      </Badge>
+                                    ) : (
+                                      <Badge variant="destructive">
+                                        <Ban className="h-3 w-3 mr-1" />
+                                        Inativo
+                                      </Badge>
+                                    )}
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    {isCurrentUser ? (
+                                      <span className="text-xs text-muted-foreground">Não pode editar próprio status</span>
+                                    ) : (
+                                      <Button
+                                        variant={userData.status === 'ativo' ? 'destructive' : 'default'}
+                                        size="sm"
+                                        onClick={() => {
+                                          const newStatus = userData.status === 'ativo' ? 'inativo' : 'ativo';
+                                          toggleUserStatusMutation.mutate({ userId: userData.id, status: newStatus });
+                                        }}
+                                      >
+                                        {userData.status === 'ativo' ? (
+                                          <>
+                                            <Ban className="h-3 w-3 mr-1" />
+                                            Desativar
+                                          </>
+                                        ) : (
+                                          <>
+                                            <ShieldCheck className="h-3 w-3 mr-1" />
+                                            Ativar
+                                          </>
+                                        )}
+                                      </Button>
+                                    )}
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })
+                          )}
+                        </TableBody>
+                      </Table>
                     </Card>
                   </>
                 </Route>

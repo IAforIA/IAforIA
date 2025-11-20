@@ -144,6 +144,15 @@ class DrizzleStorage /* implements IStorage */ {
   }
 
   /**
+   * MÉTODO: getAllUsers() - STEP 4
+   * PROPÓSITO: Lista todos os usuários do sistema
+   * USADO EM: GET /api/users (central dashboard)
+   */
+  async getAllUsers() {
+    return await db.select().from(users);
+  }
+
+  /**
    * MÉTODO: createClientWithUser(payload, passwordHash)
    * PROPÓSITO: Cadastra cliente completo (user + client) em transação atômica (Etapa 05)
    * PARÂMETROS:

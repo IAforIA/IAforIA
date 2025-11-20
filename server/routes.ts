@@ -866,6 +866,79 @@ export async function registerRoutes() {
   // ========================================
 
   /**
+   * ENDPOINT: GET /api/users
+   * PROPÓSITO: Lista todos os usuários (STEP 4)
+   * ACESSO: Apenas central
+   */
+  router.get("/api/users", authenticateToken, requireRole('central'), async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      // Remove senhas antes de enviar
+      const usersWithoutPasswords = users.map(({ password, ...user }) => user);
+      res.json(usersWithoutPasswords);
+    } catch (error: any) {
+      console.error('💥 Erro ao buscar usuários:', error);
+      res.status(500).json({ error: "Erro ao buscar usuários" });
+    }
+  });
+
+  /**
+   * ENDPOINT: PATCH /api/users/:id/status
+   * PROPÓSITO: Ativa ou desativa um usuário (STEP 4)
+   * ACESSO: Apenas central
+   */
+  router.patch("/api/users/:id/status", authenticateToken, requireRole('central'), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+
+      // SEGURANÇA: Não pode desativar a si mesmo
+      if (req.user?.id === id) {
+        return res.status(403).json({ error: "Você não pode desativar sua própria conta" });
+      }
+
+      if (!status || !['active', 'inactive'].includes(status)) {
+        return res.status(400).json({ error: "Status deve ser 'active' ou 'inactive'" });
+      }
+
+      const updated = await storage.updateUser(id, { status });
+      const { password, ...userWithoutPassword } = updated;
+      res.json(userWithoutPassword);
+    } catch (error: any) {
+      console.error('💥 Erro ao atualizar status do usuário:', error);
+      res.status(500).json({ error: "Erro ao atualizar status do usuário" });
+    }
+  });
+
+  /**
+   * ENDPOINT: PATCH /api/users/:id/role
+   * PROPÓSITO: Altera a role de um usuário (STEP 4)
+   * ACESSO: Apenas central
+   */
+  router.patch("/api/users/:id/role", authenticateToken, requireRole('central'), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { role } = req.body;
+
+      // SEGURANÇA: Não pode alterar sua própria role
+      if (req.user?.id === id) {
+        return res.status(403).json({ error: "Você não pode alterar sua própria função" });
+      }
+
+      if (!role || !['client', 'motoboy', 'central'].includes(role)) {
+        return res.status(400).json({ error: "Role deve ser 'client', 'motoboy' ou 'central'" });
+      }
+
+      const updated = await storage.updateUser(id, { role });
+      const { password, ...userWithoutPassword } = updated;
+      res.json(userWithoutPassword);
+    } catch (error: any) {
+      console.error('💥 Erro ao atualizar role do usuário:', error);
+      res.status(500).json({ error: "Erro ao atualizar role do usuário" });
+    }
+  });
+
+  /**
    * ENDPOINT: PATCH /api/users/:id
    * PROPÓSITO: Atualiza dados de usuário (nome, telefone, senha)
    * ACESSO: Usuário autenticado (pode atualizar apenas próprio perfil)
