@@ -892,12 +892,15 @@ export async function registerRoutes() {
       const { id } = req.params;
       const { status } = req.body;
 
+      console.log('🔧 PATCH /api/users/:id/status recebido:', { id, status, type: typeof status });
+
       // SEGURANÇA: Não pode desativar a si mesmo
       if (req.user?.id === id) {
         return res.status(403).json({ error: "Você não pode desativar sua própria conta" });
       }
 
       if (!status || !['active', 'inactive'].includes(status)) {
+        console.log('❌ Status inválido:', status);
         return res.status(400).json({ error: "Status deve ser 'active' ou 'inactive'" });
       }
 

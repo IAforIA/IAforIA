@@ -63,8 +63,16 @@ export default function CentralDashboard() {
   // STEP 4: Mutation para alterar status de usuário
   const toggleUserStatusMutation = useMutation({
     mutationFn: async ({ userId, status }: { userId: string, status: string }) => {
-      const res = await apiRequest('PATCH', `/api/users/${userId}/status`, { status });
-      return res.json();
+      console.log('🔵 Frontend enviando para /api/users/:id/status:', { userId, status });
+      try {
+        const res = await apiRequest('PATCH', `/api/users/${userId}/status`, { status });
+        const result = await res.json();
+        console.log('✅ Resposta recebida:', result);
+        return result;
+      } catch (error) {
+        console.error('❌ Erro na requisição:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
