@@ -239,17 +239,27 @@ export async function registerRoutes() {
       const { email, password } = req.body;
       
       // DEBUG: Log de tentativa de login (remover em produção)
-      console.log('🔐 Tentativa de login:', { email, passwordLength: password?.length });
+      console.log('🔐 Tentativa de login:', { 
+        emailReceived: email, 
+        emailType: typeof email,
+        passwordLength: password?.length 
+      });
 
       // CONSTANTE: Busca usuário no banco usando email
       // CONEXÃO: storage.getUserByEmail() definida em storage.ts
       const user = await storage.getUserByEmail(email);
       
       // DEBUG: Log se usuário foi encontrado
-      console.log('👤 Usuário encontrado:', user ? `Sim (${user.id})` : 'Não');
-      
-      // DEBUG: Log se usuário foi encontrado
-      console.log('👤 Usuário encontrado:', user ? `Sim (${user.id})` : 'Não');
+      if (user) {
+        console.log('👤 Usuário encontrado:', {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          passwordHashStart: user.password.substring(0, 10) + '...'
+        });
+      } else {
+        console.log('👤 Usuário NÃO encontrado para o email:', email);
+      }
 
       // VALIDAÇÃO: Se usuário não existe, retorna 401 Unauthorized
       if (!user) {
@@ -264,14 +274,17 @@ export async function registerRoutes() {
       
       if (!validPassword) {
         console.log('❌ Login falhou: senha inválida');
+        // DEBUG: Tentar comparar com hash gerado na hora para ver se o input está ok
+        const testHash = await bcrypt.hash(password, 10);
+        console.log('🔍 Teste de hash:', { inputPassword: password, generatedHash: testHash });
         return res.status(401).json({ error: "Email ou senha incorretos" });
       }
 
       // CONSTANTE: Cria token JWT assinado com o segredo global JWT_SECRET
-      // PAYLOAD: { id: UUID, role: 'client'|'motoboy'|'central' }
+      // PAYLOAD: { id: UUID, role: 'client'|'motoboy'|'central', name: string }
       // EXPIRAÇÃO: 24 horas (86400 segundos)
       // NOTA: Este token será validado pelo middleware authenticateToken em auth.ts
-      const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
+      const token = jwt.sign({ id: user.id, role: user.role, name: user.name }, JWT_SECRET, { expiresIn: '24h' });
 
       console.log('✅ Login bem-sucedido:', { userId: user.id, role: user.role });
 
@@ -725,6 +738,154 @@ export async function registerRoutes() {
     } catch (error: any) {
       console.error('💥 Erro no upload:', error);
       res.status(500).json({ error: error.message || "Erro ao fazer upload" });
+    }
+  });
+
+  // ========================================
+  // ROTAS: GESTÃO DE CLIENTES (CENTRAL)
+  // ========================================
+
+  /**
+   * ENDPOINT: GET /api/clients
+   * PROPÓSITO: Lista todos os clientes cadastrados
+   * ACESSO: Apenas central
+   */
+  router.get("/api/clients", authenticateToken, requireRole('central'), async (req, res) => {
+    try {
+      const clients = await storage.getAllClients();
+      res.json(clients);
+    } catch (error: any) {
+      console.error('💥 Erro ao buscar clientes:', error);
+      res.status(500).json({ error: "Erro ao buscar clientes" });
+    }
+  });
+
+  /**
+   * ENDPOINT: POST /api/clients
+   * PROPÓSITO: Cria novo cliente (usado pela Central)
+   * ACESSO: Apenas central
+   */
+  router.post("/api/clients", authenticateToken, requireRole('central'), async (req, res) => {
+    try {
+      const { password, ...payload } = req.body;
+      
+      if (!password || password.length < 8) {
+        return res.status(400).json({ error: "Senha deve ter no mínimo 8 caracteres" });
+      }
+
+      const passwordHash = await bcrypt.hash(password, 10);
+      const profile = await storage.createClientWithUser(payload, passwordHash);
+      
+      res.status(201).json(profile);
+    } catch (error: any) {
+      console.error('💥 Erro ao criar cliente:', error);
+      if (error.message === 'EMAIL_IN_USE') {
+        return res.status(409).json({ error: 'Email já cadastrado' });
+      }
+      if (error.message === 'DOCUMENT_IN_USE') {
+        return res.status(409).json({ error: 'Documento já cadastrado' });
+      }
+      res.status(500).json({ error: error.message || "Erro ao criar cliente" });
+    }
+  });
+
+  /**
+   * ENDPOINT: PATCH /api/clients/:id
+   * PROPÓSITO: Atualiza informações de um cliente
+   * ACESSO: Apenas central
+   */
+  router.patch("/api/clients/:id", authenticateToken, requireRole('central'), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updated = await storage.updateClient(id, req.body);
+      res.json(updated);
+    } catch (error: any) {
+      console.error('💥 Erro ao atualizar cliente:', error);
+      res.status(500).json({ error: "Erro ao atualizar cliente" });
+    }
+  });
+
+  // ========================================
+  // ROTAS: GESTÃO DE MOTOBOYS (CENTRAL)
+  // ========================================
+
+  /**
+   * ENDPOINT: POST /api/motoboys
+   * PROPÓSITO: Cadastra novo motoboy
+   * ACESSO: Apenas central
+   */
+  router.post("/api/motoboys", authenticateToken, requireRole('central'), async (req, res) => {
+    try {
+      const motoboy = await storage.createMotoboy(req.body);
+      res.status(201).json(motoboy);
+    } catch (error: any) {
+      console.error('💥 Erro ao criar motoboy:', error);
+      res.status(500).json({ error: "Erro ao criar motoboy" });
+    }
+  });
+
+  /**
+   * ENDPOINT: PATCH /api/motoboys/:id
+   * PROPÓSITO: Atualiza informações de um motoboy
+   * ACESSO: Apenas central
+   */
+  router.patch("/api/motoboys/:id", authenticateToken, requireRole('central'), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updated = await storage.updateMotoboy(id, req.body);
+      res.json(updated);
+    } catch (error: any) {
+      console.error('💥 Erro ao atualizar motoboy:', error);
+      res.status(500).json({ error: "Erro ao atualizar motoboy" });
+    }
+  });
+
+  // ========================================
+  // ROTAS: GESTÃO DE USUÁRIOS
+  // ========================================
+
+  /**
+   * ENDPOINT: PATCH /api/users/:id
+   * PROPÓSITO: Atualiza dados de usuário (nome, telefone, senha)
+   * ACESSO: Usuário autenticado (pode atualizar apenas próprio perfil)
+   */
+  router.patch("/api/users/:id", authenticateToken, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // SEGURANÇA: Apenas o próprio usuário pode atualizar seu perfil
+      if (req.user?.id !== id) {
+        return res.status(403).json({ error: "Você não tem permissão para atualizar este usuário" });
+      }
+
+      const updateData: any = {};
+      
+      // Atualiza nome se fornecido
+      if (req.body.name) {
+        updateData.name = req.body.name;
+      }
+      
+      // Atualiza telefone se fornecido
+      if (req.body.phone) {
+        updateData.phone = req.body.phone;
+      }
+      
+      // Atualiza senha se fornecida (com hash)
+      if (req.body.password) {
+        if (req.body.password.length < 8) {
+          return res.status(400).json({ error: "Senha deve ter no mínimo 8 caracteres" });
+        }
+        updateData.password = await bcrypt.hash(req.body.password, 10);
+      }
+
+      const updated = await storage.updateUser(id, updateData);
+      
+      // Remove senha da resposta
+      const { password, ...userWithoutPassword } = updated;
+      res.json(userWithoutPassword);
+    } catch (error: any) {
+      console.error('💥 Erro ao atualizar usuário:', error);
+      res.status(500).json({ error: "Erro ao atualizar usuário" });
     }
   });
 

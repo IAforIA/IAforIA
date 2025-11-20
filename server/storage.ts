@@ -517,6 +517,43 @@ class DrizzleStorage /* implements IStorage */ {
     const result = await db.select().from(clientSchedules).where(eq(clientSchedules.clientId, clientId)).limit(1);
     return result[0];
   }
+
+  // ========================================
+  // MÉTODOS: GESTÃO DE CLIENTES (CENTRAL)
+  // ========================================
+
+  /**
+   * MÉTODO: getAllClients()
+   * PROPÓSITO: Lista todos os clientes cadastrados (para painel Central)
+   * USADO EM: GET /api/clients
+   */
+  async getAllClients() {
+    return await db.select().from(clients).orderBy(desc(clients.createdAt));
+  }
+
+  /**
+   * MÉTODO: updateClient(clientId, data)
+   * PROPÓSITO: Atualiza informações de um cliente
+   * USADO EM: PATCH /api/clients/:id
+   */
+  async updateClient(clientId: string, data: Partial<Client>) {
+    const result = await db.update(clients).set(data).where(eq(clients.id, clientId)).returning();
+    return result[0];
+  }
+
+  // ========================================
+  // MÉTODOS: GESTÃO DE USUÁRIOS
+  // ========================================
+
+  /**
+   * MÉTODO: updateUser(userId, data)
+   * PROPÓSITO: Atualiza dados de usuário (nome, telefone, senha)
+   * USADO EM: PATCH /api/users/:id
+   */
+  async updateUser(userId: string, data: Partial<typeof users.$inferSelect>) {
+    const result = await db.update(users).set(data).where(eq(users.id, userId)).returning();
+    return result[0];
+  }
 }
 
 // ========================================

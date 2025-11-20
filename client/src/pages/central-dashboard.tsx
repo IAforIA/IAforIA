@@ -20,9 +20,9 @@ import { Card } from "@/components/ui/card";
 // useQuery coordena chamadas REST com cache automático
 import { useQuery } from "@tanstack/react-query";
 // useAuth expõe token/logoff para proteger o painel
-import { useAuth } from "@/App";
+import { useAuth } from "@/hooks/use-auth";
 // Tipos compartilhados com o backend (Drizzle schema)
-import type { Order, Motoboy, OrderStatus } from "@shared/schema";
+import type { Order, Motoboy, OrderStatus, Client } from "@shared/schema";
 import { useEffect, useState } from "react";
 import { resolveWebSocketUrl } from "@/lib/utils";
 
@@ -40,6 +40,12 @@ export default function CentralDashboard() {
   // QUERY SECUNDÁRIA: Busca status online dos motoboys para indicadores
   const { data: motoboys = [] } = useQuery<Motoboy[]>({
     queryKey: ['/api/motoboys'],
+  });
+
+  // QUERY TERCIÁRIA: Busca lista de clientes para gestão
+  const { data: clients = [] } = useQuery<Client[]>({
+    queryKey: ['/api/clients'],
+    enabled: !!token, // Só faz a query se tiver token
   });
 
   // EFEITO: Abre conexão WebSocket autenticada para receber eventos em tempo real
@@ -173,47 +179,360 @@ export default function CentralDashboard() {
 
                 {/* Sub-rota de Pedidos (path="/orders") */}
                 <Route path="/orders">
-                  <Card className="p-12 text-center">
-                    <Package className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-                    <p className="text-lg font-semibold">Gestão de Pedidos</p>
-                    <p className="text-muted-foreground mt-2">Funcionalidade de gestão avançada em desenvolvimento.</p>
-                  </Card>
+                  <>
+                    <div className="flex items-center justify-between mb-6">
+                      <h2 className="text-2xl font-bold">Gestão de Pedidos</h2>
+                      <Button>
+                        <Package className="w-4 h-4 mr-2" />
+                        Novo Pedido
+                      </Button>
+                    </div>
+
+                    {/* Filters */}
+                    <Card className="p-4 mb-6">
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <Input placeholder="Buscar por ID ou cliente..." />
+                        <select 
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                          aria-label="Filtrar por status"
+                        >
+                          <option value="">Todos os status</option>
+                          <option value="pending">Pendente</option>
+                          <option value="in_progress">Em Andamento</option>
+                          <option value="delivered">Entregue</option>
+                        </select>
+                        <select 
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                          aria-label="Filtrar por motoboy"
+                        >
+                          <option value="">Todos os motoboys</option>
+                          {motoboys.map(m => (
+                            <option key={m.id} value={m.id}>{m.name}</option>
+                          ))}
+                        </select>
+                        <Button variant="outline">Limpar Filtros</Button>
+                      </div>
+                    </Card>
+
+                    {/* Orders Table */}
+                    <Card>
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead className="border-b">
+                            <tr>
+                              <th className="text-left p-4 font-semibold">ID</th>
+                              <th className="text-left p-4 font-semibold">Cliente</th>
+                              <th className="text-left p-4 font-semibold">Origem</th>
+                              <th className="text-left p-4 font-semibold">Destino</th>
+                              <th className="text-left p-4 font-semibold">Motoboy</th>
+                              <th className="text-left p-4 font-semibold">Valor</th>
+                              <th className="text-left p-4 font-semibold">Status</th>
+                              <th className="text-left p-4 font-semibold">Data</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {orders.map(order => (
+                              <tr key={order.id} className="border-b hover:bg-muted/50">
+                                <td className="p-4 font-mono text-sm">#{order.id.slice(0, 8)}</td>
+                                <td className="p-4">{order.clientName}</td>
+                                <td className="p-4 text-sm">{order.coletaBairro}</td>
+                                <td className="p-4 text-sm">{order.entregaBairro}</td>
+                                <td className="p-4">{order.motoboyName || '-'}</td>
+                                <td className="p-4">R$ {parseFloat(order.valor).toFixed(2)}</td>
+                                <td className="p-4">
+                                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                    order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                    order.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                                    'bg-green-100 text-green-800'
+                                  }`}>
+                                    {order.status === 'pending' && 'Pendente'}
+                                    {order.status === 'in_progress' && 'Em Andamento'}
+                                    {order.status === 'delivered' && 'Entregue'}
+                                  </span>
+                                </td>
+                                <td className="p-4 text-sm">
+                                  {new Date(order.createdAt).toLocaleDateString('pt-BR')}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </Card>
+                  </>
                 </Route>
 
                 {/* Sub-rota de Clientes (path="/clients") */}
                 <Route path="/clients">
-                  <Card className="p-12 text-center">
-                    <Users className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-                    <p className="text-lg font-semibold">Gestão de Clientes</p>
-                    <p className="text-muted-foreground mt-2">Página de clientes em desenvolvimento.</p>
-                  </Card>
+                  <>
+                    <div className="flex items-center justify-between mb-6">
+                      <h2 className="text-2xl font-bold">Gestão de Clientes</h2>
+                      <Button>
+                        <Users className="w-4 h-4 mr-2" />
+                        Novo Cliente
+                      </Button>
+                    </div>
+
+                    {/* Search */}
+                    <Card className="p-4 mb-6">
+                      <Input placeholder="Buscar por nome, telefone ou email..." />
+                    </Card>
+
+                    {/* Clients Table */}
+                    <Card>
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead className="border-b">
+                            <tr>
+                              <th className="text-left p-4 font-semibold">Nome</th>
+                              <th className="text-left p-4 font-semibold">Telefone</th>
+                              <th className="text-left p-4 font-semibold">Email</th>
+                              <th className="text-left p-4 font-semibold">Pedidos</th>
+                              <th className="text-left p-4 font-semibold">Cadastro</th>
+                              <th className="text-left p-4 font-semibold">Ações</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {clients.length === 0 ? (
+                              <tr className="border-b">
+                                <td className="p-4 text-muted-foreground text-center" colSpan={6}>
+                                  Nenhum cliente cadastrado
+                                </td>
+                              </tr>
+                            ) : (
+                              clients.map(client => (
+                                <tr key={client.id} className="border-b hover:bg-muted/50">
+                                  <td className="p-4 font-medium">{client.name}</td>
+                                  <td className="p-4">{client.phone}</td>
+                                  <td className="p-4">{client.email}</td>
+                                  <td className="p-4">
+                                    {orders.filter(o => o.clientId === client.id).length}
+                                  </td>
+                                  <td className="p-4 text-sm">
+                                    {new Date(client.createdAt).toLocaleDateString('pt-BR')}
+                                  </td>
+                                  <td className="p-4">
+                                    <Button variant="ghost" size="sm">Ver Pedidos</Button>
+                                  </td>
+                                </tr>
+                              ))
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </Card>
+                  </>
                 </Route>
 
                 {/* Sub-rota de Entregadores (path="/drivers") */}
                 <Route path="/drivers">
-                  <Card className="p-12 text-center">
-                    <TruckIcon className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-                    <p className="text-lg font-semibold">Gestão de Entregadores</p>
-                    <p className="text-muted-foreground mt-2">Página de entregadores em desenvolvimento.</p>
-                  </Card>
+                  <>
+                    <div className="flex items-center justify-between mb-6">
+                      <h2 className="text-2xl font-bold">Gestão de Motoboys</h2>
+                      <Button>
+                        <TruckIcon className="w-4 h-4 mr-2" />
+                        Novo Motoboy
+                      </Button>
+                    </div>
+
+                    {/* Search */}
+                    <Card className="p-4 mb-6">
+                      <div className="flex gap-4">
+                        <Input placeholder="Buscar por nome ou telefone..." className="flex-1" />
+                        <select 
+                          className="flex h-10 w-48 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                          aria-label="Filtrar por disponibilidade"
+                        >
+                          <option value="">Todos</option>
+                          <option value="available">Disponíveis</option>
+                          <option value="busy">Ocupados</option>
+                        </select>
+                      </div>
+                    </Card>
+
+                    {/* Drivers Table */}
+                    <Card>
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead className="border-b">
+                            <tr>
+                              <th className="text-left p-4 font-semibold">Nome</th>
+                              <th className="text-left p-4 font-semibold">Telefone</th>
+                              <th className="text-left p-4 font-semibold">Placa</th>
+                              <th className="text-left p-4 font-semibold">Situação</th>
+                              <th className="text-left p-4 font-semibold">Pedidos Ativos</th>
+                              <th className="text-left p-4 font-semibold">Última Atualização</th>
+                              <th className="text-left p-4 font-semibold">Ações</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {motoboys.map(motoboy => (
+                              <tr key={motoboy.id} className="border-b hover:bg-muted/50">
+                                <td className="p-4 font-medium">{motoboy.name}</td>
+                                <td className="p-4">{motoboy.phone}</td>
+                                <td className="p-4 font-mono">{motoboy.placa}</td>
+                                <td className="p-4">
+                                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                    motoboy.available ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                                  }`}>
+                                    {motoboy.available ? 'Disponível' : 'Ocupado'}
+                                  </span>
+                                </td>
+                                <td className="p-4">
+                                  {orders.filter(o => o.motoboyId === motoboy.id && o.status === 'in_progress').length}
+                                </td>
+                                <td className="p-4 text-sm">
+                                  {motoboy.updatedAt ? new Date(motoboy.updatedAt).toLocaleString('pt-BR') : '-'}
+                                </td>
+                                <td className="p-4">
+                                  <Button variant="ghost" size="sm">Editar</Button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </Card>
+                  </>
                 </Route>
 
                 {/* Sub-rota de Relatórios (path="/reports") */}
                 <Route path="/reports">
-                  <Card className="p-12 text-center">
-                    <Package className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-                    <p className="text-lg font-semibold">Relatórios</p>
-                    <p className="text-muted-foreground mt-2">Relatórios e análises em desenvolvimento.</p>
-                  </Card>
+                  <>
+                    <h2 className="text-2xl font-bold mb-6">Relatórios e Análises</h2>
+
+                    {/* KPIs */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                      <Card className="p-4">
+                        <p className="text-sm text-muted-foreground">Total de Pedidos</p>
+                        <p className="text-3xl font-bold mt-2">{orders.length}</p>
+                      </Card>
+                      <Card className="p-4">
+                        <p className="text-sm text-muted-foreground">Pedidos Entregues</p>
+                        <p className="text-3xl font-bold mt-2">
+                          {orders.filter(o => o.status === 'delivered').length}
+                        </p>
+                      </Card>
+                      <Card className="p-4">
+                        <p className="text-sm text-muted-foreground">Em Andamento</p>
+                        <p className="text-3xl font-bold mt-2">
+                          {orders.filter(o => o.status === 'in_progress').length}
+                        </p>
+                      </Card>
+                      <Card className="p-4">
+                        <p className="text-sm text-muted-foreground">Receita Total</p>
+                        <p className="text-3xl font-bold mt-2">
+                          R$ {orders.reduce((sum, o) => sum + parseFloat(o.valor), 0).toFixed(2)}
+                        </p>
+                      </Card>
+                    </div>
+
+                    {/* Performance por Motoboy */}
+                    <Card className="p-6 mb-6">
+                      <h3 className="text-lg font-semibold mb-4">Performance dos Motoboys</h3>
+                      <div className="space-y-4">
+                        {motoboys.map(motoboy => {
+                          const motoboyOrders = orders.filter(o => o.motoboyId === motoboy.id);
+                          const delivered = motoboyOrders.filter(o => o.status === 'delivered').length;
+                          const inProgress = motoboyOrders.filter(o => o.status === 'in_progress').length;
+                          
+                          return (
+                            <div key={motoboy.id} className="flex items-center justify-between p-4 border rounded-lg">
+                              <div>
+                                <p className="font-medium">{motoboy.name}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {motoboyOrders.length} pedidos no total
+                                </p>
+                              </div>
+                              <div className="flex gap-6 text-sm">
+                                <div>
+                                  <span className="text-muted-foreground">Entregues:</span>{' '}
+                                  <span className="font-semibold text-green-600">{delivered}</span>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">Em andamento:</span>{' '}
+                                  <span className="font-semibold text-blue-600">{inProgress}</span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </Card>
+
+                    {/* Pedidos por Status */}
+                    <Card className="p-6">
+                      <h3 className="text-lg font-semibold mb-4">Distribuição por Status</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="p-4 bg-yellow-50 dark:bg-yellow-950 rounded-lg">
+                          <p className="text-sm text-yellow-800 dark:text-yellow-200">Pendentes</p>
+                          <p className="text-2xl font-bold text-yellow-900 dark:text-yellow-100 mt-2">
+                            {orders.filter(o => o.status === 'pending').length}
+                          </p>
+                        </div>
+                        <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg">
+                          <p className="text-sm text-blue-800 dark:text-blue-200">Em Andamento</p>
+                          <p className="text-2xl font-bold text-blue-900 dark:text-blue-100 mt-2">
+                            {orders.filter(o => o.status === 'in_progress').length}
+                          </p>
+                        </div>
+                        <div className="p-4 bg-green-50 dark:bg-green-950 rounded-lg">
+                          <p className="text-sm text-green-800 dark:text-green-200">Entregues</p>
+                          <p className="text-2xl font-bold text-green-900 dark:text-green-100 mt-2">
+                            {orders.filter(o => o.status === 'delivered').length}
+                          </p>
+                        </div>
+                      </div>
+                    </Card>
+                  </>
                 </Route>
 
                 {/* Sub-rota de Configurações (path="/settings") */}
                 <Route path="/settings">
-                  <Card className="p-12 text-center">
-                    <Package className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-                    <p className="text-lg font-semibold">Configurações</p>
-                    <p className="text-muted-foreground mt-2">Página de configurações em desenvolvimento.</p>
-                  </Card>
+                  <>
+                    <h2 className="text-2xl font-bold mb-6">Configurações da Conta</h2>
+
+                    <Card className="p-6 max-w-2xl">
+                      <h3 className="text-lg font-semibold mb-4">Informações Pessoais</h3>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Nome</label>
+                          <Input placeholder="Seu nome completo" />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Email</label>
+                          <Input type="email" placeholder="seu@email.com" />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Telefone</label>
+                          <Input placeholder="(00) 00000-0000" />
+                        </div>
+                      </div>
+
+                      <div className="border-t mt-6 pt-6">
+                        <h3 className="text-lg font-semibold mb-4">Segurança</h3>
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium mb-2">Senha Atual</label>
+                            <Input type="password" placeholder="••••••••" />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2">Nova Senha</label>
+                            <Input type="password" placeholder="••••••••" />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2">Confirmar Nova Senha</label>
+                            <Input type="password" placeholder="••••••••" />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-3 mt-6">
+                        <Button>Salvar Alterações</Button>
+                        <Button variant="outline">Cancelar</Button>
+                      </div>
+                    </Card>
+                  </>
                 </Route>
 
                 </Switch>

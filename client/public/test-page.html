@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .container {
+            text-align: center;
+            padding: 2rem;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+        h1 { margin: 0 0 1rem 0; }
+        button {
+            margin: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background: white;
+            color: #667eea;
+            font-weight: bold;
+        }
+        button:hover {
+            transform: scale(1.05);
+        }
+        #output {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: rgba(0,0,0,0.3);
+            border-radius: 5px;
+            min-height: 100px;
+            text-align: left;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Server Test Page</h1>
+        <p>If you can see this, the server is working!</p>
+        <div>
+            <button onclick="testAPI()">Test API</button>
+            <button onclick="testLogin()">Test Login</button>
+            <button onclick="window.location.href='/'">Go to App</button>
+        </div>
+        <div id="output"></div>
+    </div>
+
+    <script>
+        const output = document.getElementById('output');
+        
+        async function testAPI() {
+            output.innerHTML = 'Testing /health endpoint...';
+            try {
+                const res = await fetch('/health');
+                const data = await res.json();
+                output.innerHTML = 'SUCCESS:\\n' + JSON.stringify(data, null, 2);
+            } catch (err) {
+                output.innerHTML = 'ERROR:\\n' + err.message;
+            }
+        }
+
+        async function testLogin() {
+            output.innerHTML = 'Testing login with central user...';
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'central.dev@guriri.local',
+                        password: 'cent-l7V3ZRdIsobx'
+                    })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    output.innerHTML = 'LOGIN SUCCESS:\\n' + JSON.stringify(data, null, 2);
+                } else {
+                    output.innerHTML = 'LOGIN FAILED:\\n' + JSON.stringify(data, null, 2);
+                }
+            } catch (err) {
+                output.innerHTML = 'ERROR:\\n' + err.message;
+            }
+        }
+    </script>
+</body>
+</html>

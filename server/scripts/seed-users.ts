@@ -3,7 +3,7 @@ import { db } from '../db.ts';
 import { users } from '@shared/schema';
 import bcrypt from 'bcryptjs';
 import { generateSecurePassword, CredentialRecorder } from './utils/credential-helper';
-// import { sql } from 'drizzle-orm'; // <-- REMOVIDO: Importação não utilizada
+import { eq, inArray } from 'drizzle-orm';
 
 async function seedUsers() {
   try {
@@ -19,6 +19,11 @@ async function seedUsers() {
     // Mapeia e gera os hashes das senhas em paralelo para melhor performance
     const credentialRecorder = new CredentialRecorder('seed-users');
     const credentials: { id: string; role: string; password: string }[] = [];
+    
+    // REMOVE usuários antigos para garantir que a senha nova seja aplicada
+    console.log('🧹 Removendo usuários de teste antigos...');
+    await db.delete(users).where(inArray(users.id, testUsers.map(u => u.id)));
+
     const hashedUsers = await Promise.all(testUsers.map(async (user) => {
       const tempPassword = generateSecurePassword(user.id);
       credentials.push({ id: user.id, role: user.role, password: tempPassword });
@@ -35,17 +40,18 @@ async function seedUsers() {
       };
     }));
 
-    // Tenta inserir todos de uma vez, usando onConflictDoNothing para evitar duplicatas
+    // Tenta inserir todos de uma vez
     await db.insert(users)
-      .values(hashedUsers)
-      .onConflictDoNothing();
+      .values(hashedUsers as any); // Cast to any to avoid strict enum type check in seed script
 
-    console.log(`✓ Usuários criados ou já existentes: ${hashedUsers.map(u => u.id).join(', ')}`);
+    console.log(`✓ Usuários criados: ${hashedUsers.map(u => u.id).join(', ')}`);
 
     console.log('\n✅ Seed concluído!');
     console.log('\n📋 Credenciais de acesso (ambiente de desenvolvimento):');
     credentials.forEach((cred) => {
-      console.log(`   ${cred.role.padEnd(8)} → ${cred.id} / ${cred.password}`);
+      // Encontra o email correspondente ao ID
+      const userEmail = testUsers.find(u => u.id === cred.id)?.email || 'N/A';
+      console.log(`   ${cred.role.padEnd(8)} → ${userEmail} / ${cred.password}`);
     });
 
     const csvPath = credentialRecorder.finalize();

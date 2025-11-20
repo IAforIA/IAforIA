@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { TruckIcon, Users, Package, BarChart3 } from "lucide-react";
 import { useLocation } from "wouter";
 import ThemeToggle from "@/components/ThemeToggle";
-import { useAuth } from "@/App";
+import { useAuth } from "@/hooks/use-auth";
 import { useState, useEffect, type ChangeEvent, type FormEvent } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";

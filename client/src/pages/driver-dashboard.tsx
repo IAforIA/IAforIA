@@ -17,12 +17,13 @@ import { TruckIcon, Package, CheckCircle, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 // Hooks utilitários
 import { useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { useAuth } from "@/App";
+import { useAuth } from "@/hooks/use-auth";
 import type { Order, OrderStatus } from "@shared/schema";
 import { resolveWebSocketUrl } from "@/lib/utils";
 
@@ -34,6 +35,7 @@ const parseDecimalSafe = (value: string | null | undefined): number => {
 };
 
 export default function DriverDashboard() {
+  console.log("🚀 DriverDashboard mounting...");
   // UI feedback e contexto global autenticado
   const { toast } = useToast();
   const { user, logout, token } = useAuth();
@@ -239,11 +241,50 @@ export default function DriverDashboard() {
 
                 {/* Sub-rota de Configurações (path="/settings") reserva layout futuro */}
                 <Route path="/settings">
-                  <Card className="p-12 text-center">
-                    <Package className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-                    <p className="text-lg font-semibold">Configurações</p>
-                    <p className="text-muted-foreground mt-2">Página de configurações em desenvolvimento.</p>
-                  </Card>
+                  <>
+                    <h2 className="text-2xl font-bold mb-6">Configurações da Conta</h2>
+
+                    <Card className="p-6 max-w-2xl">
+                      <h3 className="text-lg font-semibold mb-4">Informações Pessoais</h3>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Nome</label>
+                          <Input placeholder="Seu nome completo" />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Email</label>
+                          <Input type="email" placeholder="seu@email.com" />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Telefone</label>
+                          <Input placeholder="(00) 00000-0000" />
+                        </div>
+                      </div>
+
+                      <div className="border-t mt-6 pt-6">
+                        <h3 className="text-lg font-semibold mb-4">Segurança</h3>
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium mb-2">Senha Atual</label>
+                            <Input type="password" placeholder="••••••••" />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2">Nova Senha</label>
+                            <Input type="password" placeholder="••••••••" />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2">Confirmar Nova Senha</label>
+                            <Input type="password" placeholder="••••••••" />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-3 mt-6">
+                        <Button>Salvar Alterações</Button>
+                        <Button variant="outline">Cancelar</Button>
+                      </div>
+                    </Card>
+                  </>
                 </Route>
 
                 </Switch>

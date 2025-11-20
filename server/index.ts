@@ -212,7 +212,11 @@ function startWebSocketServer(host: string) {
   const port = parseInt(process.env.PORT || '5000', 10);
   const host = "0.0.0.0";
 
+  console.log(`🔧 Environment: ${process.env.NODE_ENV}`);
+  console.log(`🔧 Port: ${port}, Host: ${host}`);
+
   if (process.env.NODE_ENV === "development") {
+    console.log(`🔧 Creating HTTP server for development...`);
     httpServer = createServer(app);
     
     log(`Starting Vite setup...`);
@@ -220,8 +224,14 @@ function startWebSocketServer(host: string) {
     log(`Vite setup complete!`);
     startWebSocketServer(host);
 
+    console.log(`🔧 Attempting to listen on ${host}:${port}...`);
     httpServer.listen({ port, host }, () => {
+        console.log(`✅ HTTP server actually listening!`);
         log(`serving in development on port ${port}`);
+    });
+
+    httpServer.on('error', (err) => {
+      console.error(`💥 HTTP server error:`, err);
     });
 
   } else {

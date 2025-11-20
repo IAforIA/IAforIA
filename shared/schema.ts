@@ -93,13 +93,16 @@ export const motoboys = pgTable("motoboys", {
   cpf: text("cpf"),                   // CPF para compliance
   taxaPadrao: decimal("taxa_padrao", { precision: 10, scale: 2 }).notNull().default("7.00"),
   status: text("status").notNull().default("ativo"),
+  available: boolean("available").default(true), // Disponível para aceitar pedidos
   online: boolean("online").default(false), // Atualizado por WebSocket
+  updatedAt: timestamp("updated_at").defaultNow(), // Última atualização
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const insertMotoboySchema = createInsertSchema(motoboys).omit({ 
   id: true,        // Gerado pelo banco
   createdAt: true, // Gerado pelo banco
+  updatedAt: true, // Gerenciado automaticamente
   online: true,    // Controlado pelo WebSocket
 });
 export type InsertMotoboy = z.infer<typeof insertMotoboySchema>;

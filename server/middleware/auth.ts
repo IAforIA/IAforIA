@@ -44,6 +44,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
 export interface AuthUser {
   id: string;   // UUID do usuário autenticado
   role: string; // Papel para controle de acesso baseado em função (RBAC)
+  name: string; // Nome do usuário para exibição
 }
 
 // ========================================
