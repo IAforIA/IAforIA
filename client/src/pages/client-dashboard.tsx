@@ -47,6 +47,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -88,10 +89,15 @@ const orderSchema = z.object({
   coletaBairro: z.string().min(3, "Bairro é obrigatória"),
   coletaCep: z.string().default("29900-000"),
   coletaOverride: z.boolean().default(false), // Etapa 06: toggle auto-fill
+  // STEP 2: Address Details
+  coletaComplemento: z.string().optional(),
+  referencia: z.string().optional(),
   entregaRua: z.string().min(3, "Rua é obrigatória"),
   entregaNumero: z.string().min(1, "Número é obrigatório"),
   entregaBairro: z.string().min(3, "Bairro é obrigatório"),
   entregaCep: z.string().default("29900-000"),
+  entregaComplemento: z.string().optional(),
+  observacoes: z.string().optional(),
   valor: z.number().min(0.01, "Valor é obrigatório"),
   taxaMotoboy: z.number().default(7.00),
   // STEP 1: Payment & Change fields
@@ -204,9 +210,13 @@ export default function ClientDashboard() {
         ...data,
         coletaCep: data.coletaCep,
         coletaOverride: data.coletaOverride,
+        // STEP 2: Send address details
+        coletaComplemento: data.coletaComplemento || '',
+        referencia: data.referencia || '',
+        entregaComplemento: data.entregaComplemento || '',
+        observacoes: data.observacoes || '',
         valor: data.valor.toFixed(2),
         taxaMotoboy: data.taxaMotoboy.toFixed(2),
-        entregaComplemento: '',
         // STEP 1: Send payment data instead of hardcoding
         formaPagamento: data.formaPagamento,
         hasTroco: data.hasTroco,
@@ -228,10 +238,15 @@ export default function ClientDashboard() {
         coletaBairro: profile?.address.bairro ?? '',
         coletaCep: profile?.address.cep ?? '29900-000',
         coletaOverride: false,
+        // STEP 2: Reset address details
+        coletaComplemento: '',
+        referencia: '',
         entregaRua: '',
         entregaNumero: '',
         entregaBairro: '',
         entregaCep: '29900-000',
+        entregaComplemento: '',
+        observacoes: '',
         valor: 7.00,
         taxaMotoboy: 7.00,
         // STEP 1: Reset payment fields
@@ -251,10 +266,15 @@ export default function ClientDashboard() {
       coletaBairro: "",
       coletaCep: "29900-000",
       coletaOverride: false,
+      // STEP 2: Default address details
+      coletaComplemento: "",
+      referencia: "",
       entregaRua: "",
       entregaNumero: "",
       entregaBairro: "",
       entregaCep: "29900-000",
+      entregaComplemento: "",
+      observacoes: "",
       valor: 7.00,
       taxaMotoboy: 7.00,
       // STEP 1: Default payment values
@@ -482,6 +502,39 @@ export default function ClientDashboard() {
                             <FormMessage />
                           </FormItem>
                         )} />
+                        {/* STEP 2: Complemento and Referencia fields */}
+                        <FormField control={form.control} name="coletaComplemento" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Complemento (Opcional)</FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                placeholder="Ex: Apto 302, Sala 10"
+                                data-testid="input-coleta-complemento"
+                                readOnly={isColetaLocked}
+                                aria-readonly={isColetaLocked}
+                                className={isColetaLocked ? "bg-muted" : undefined}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                        <FormField control={form.control} name="referencia" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Referência (Opcional)</FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                placeholder="Ex: Próximo ao banco, Em frente à padaria"
+                                data-testid="input-referencia"
+                                readOnly={isColetaLocked}
+                                aria-readonly={isColetaLocked}
+                                className={isColetaLocked ? "bg-muted" : undefined}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
                       </div>
 
                       {/* Bloco 2: endereço de entrega */}
@@ -514,7 +567,33 @@ export default function ClientDashboard() {
                             <FormMessage />
                           </FormItem>
                         )} />
+                        {/* STEP 2: Delivery Complemento field */}
+                        <FormField control={form.control} name="entregaComplemento" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Complemento (Opcional)</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="Ex: Apto 101, Casa 2" data-testid="input-entrega-complemento" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
                       </div>
+
+                      {/* STEP 2: General Observations */}
+                      <FormField control={form.control} name="observacoes" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Observações Gerais (Opcional)</FormLabel>
+                          <FormControl>
+                            <textarea
+                              {...field}
+                              placeholder="Ex: Ligar ao chegar, Não tocar campainha"
+                              className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                              data-testid="textarea-observacoes"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
 
                       {/* Bloco 3: valores financeiros (convertem string -> number) */}
                       <div className="grid grid-cols-2 gap-4">
