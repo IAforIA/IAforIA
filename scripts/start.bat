@@ -1,7 +1,7 @@
 @echo off
 setlocal EnableDelayedExpansion
 REM ARQUIVO: start.bat – start de desenvolvimento com envs neon + npm run dev:stable
-cd /d "%~dp0"
+cd /d "%~dp0.."
 echo.
 echo ========================================
 echo   Guriri Express - Servidor Dev
@@ -12,7 +12,7 @@ echo Porta: 5000
 echo.
 
 REM Carrega variaveis de um arquivo .env.local (nao versionado)
-set ENV_FILE=%~dp0.env.local
+set ENV_FILE=%~dp0..\.env.local
 if exist "%ENV_FILE%" (
 	for /f "usebackq tokens=* delims=" %%A in ("%ENV_FILE%") do (
 		set "line=%%A"

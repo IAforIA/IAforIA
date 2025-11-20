@@ -1,7 +1,7 @@
 # Script PowerShell para iniciar o servidor Guriri Express
 # Etapas: (1) ir para o diretório certo, (2) carregar .env.local, (3) derrubar nodes presos e rodar npm run dev:stable
-# Define o diretório de trabalho
-Set-Location -Path "C:\Users\JEAN\GuririExpressReplit\GuririExpress"
+# Define o diretório de trabalho (Raiz do projeto, um nível acima de scripts/)
+Set-Location -Path "$PSScriptRoot\.."
 
 # Carrega variáveis do arquivo .env.local (sem versionamento)
 $envFile = Join-Path (Get-Location) ".env.local"

@@ -92,6 +92,8 @@ GuririExpress/
 │   └── scripts/          # seed-users, import-*, credential-helper
 ├── shared/
 │   └── schema.ts         # Tabelas Drizzle + tipos TypeScript
+├── docs/                 # Documentação do projeto (manuais, relatórios)
+├── scripts/              # Scripts de automação e manutenção (start, audit, tests)
 ├── .env.example          # Template de variáveis
 ├── drizzle.config.ts     # Configuração Drizzle
 ├── vite.config.ts        # Configuração Vite

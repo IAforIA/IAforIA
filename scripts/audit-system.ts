@@ -4,7 +4,7 @@ import 'dotenv/config';
 // Script completo de auditoria do sistema
 import { neon } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-http';
-import * as schema from './shared/schema.js';
+import * as schema from '../shared/schema';
 
 interface AuditResult {
   component: string;

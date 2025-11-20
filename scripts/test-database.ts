@@ -4,7 +4,7 @@ import 'dotenv/config';
 // Script de teste de conexão e validação do banco de dados
 import { neon } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-http';
-import * as schema from './shared/schema';
+import * as schema from '../shared/schema';
 
 async function testDatabase() {
   console.log('🔍 INICIANDO AUDITORIA DO BANCO DE DADOS\n');

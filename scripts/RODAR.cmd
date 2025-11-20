@@ -1,6 +1,6 @@
 @echo off
 REM ARQUIVO: RODAR.cmd – atalho simples para subir backend localmente
-cd /d "%~dp0"
+cd /d "%~dp0.."
 REM Mata processos node que possam segurar a porta
 taskkill /F /IM node.exe >nul 2>&1
 echo.
