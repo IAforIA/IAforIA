@@ -13,10 +13,11 @@ import { Switch, Route, Router as NestedRouter } from "wouter";
 import ThemeToggle from "@/components/ThemeToggle";
 import StatCard from "@/components/StatCard";
 import OrderCard from "@/components/OrderCard";
-import { Package, TruckIcon, CheckCircle, Users } from "lucide-react";
+import { Package, TruckIcon, CheckCircle, Users, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 // useQuery coordena chamadas REST com cache automático
 import { useQuery } from "@tanstack/react-query";
 // useAuth expõe token/logoff para proteger o painel
@@ -82,6 +83,46 @@ export default function CentralDashboard() {
     "--sidebar-width": "16rem",
     "--sidebar-width-icon": "4rem",
   };
+
+  const LiveDocs = () => (
+    <Card className="p-6">
+      <h2 className="text-xl font-semibold mb-4">Live Docs - Comprovantes em Tempo Real</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {orders.filter(o => o.status === 'delivered' && o.proofUrl).map(order => (
+          <Card key={order.id} className="p-4">
+            <div className="aspect-video relative mb-4 bg-muted rounded-md overflow-hidden">
+              <img 
+                src={order.proofUrl || ''} 
+                alt={`Comprovante Pedido #${order.id}`}
+                className="object-cover w-full h-full"
+              />
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="font-semibold">Pedido #{order.id.slice(0, 8)}</span>
+                <Badge variant="outline">{order.deliveredAt ? new Date(order.deliveredAt).toLocaleTimeString() : '-'}</Badge>
+              </div>
+              <div className="text-sm text-muted-foreground">
+                <p>Motoboy: {order.motoboyName || 'N/A'}</p>
+                <p>Cliente: {order.clientName || 'N/A'}</p>
+              </div>
+              <Button variant="outline" className="w-full" asChild>
+                <a href={order.proofUrl || '#'} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Ver Original
+                </a>
+              </Button>
+            </div>
+          </Card>
+        ))}
+        {orders.filter(o => o.status === 'delivered' && o.proofUrl).length === 0 && (
+          <div className="col-span-full text-center py-12 text-muted-foreground">
+            <p>Nenhum comprovante disponível ainda.</p>
+          </div>
+        )}
+      </div>
+    </Card>
+  );
 
   return (
     // SidebarProvider aplica contextos (atalhos, largura customizada)
@@ -177,6 +218,11 @@ export default function CentralDashboard() {
                   </>
                 </Route>
 
+                {/* Sub-rota de Live Docs (path="/live-docs") */}
+                <Route path="/live-docs">
+                  <LiveDocs />
+                </Route>
+
                 {/* Sub-rota de Pedidos (path="/orders") */}
                 <Route path="/orders">
                   <>
@@ -227,6 +273,7 @@ export default function CentralDashboard() {
                               <th className="text-left p-4 font-semibold">Motoboy</th>
                               <th className="text-left p-4 font-semibold">Valor</th>
                               <th className="text-left p-4 font-semibold">Status</th>
+                              <th className="text-left p-4 font-semibold">Comprovante</th>
                               <th className="text-left p-4 font-semibold">Data</th>
                             </tr>
                           </thead>
@@ -249,6 +296,15 @@ export default function CentralDashboard() {
                                     {order.status === 'in_progress' && 'Em Andamento'}
                                     {order.status === 'delivered' && 'Entregue'}
                                   </span>
+                                </td>
+                                <td className="p-4">
+                                  {order.proofUrl ? (
+                                    <a href={order.proofUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-500 hover:underline">
+                                      Ver <ExternalLink className="w-3 h-3" />
+                                    </a>
+                                  ) : (
+                                    <span className="text-muted-foreground text-sm">-</span>
+                                  )}
                                 </td>
                                 <td className="p-4 text-sm">
                                   {new Date(order.createdAt).toLocaleDateString('pt-BR')}

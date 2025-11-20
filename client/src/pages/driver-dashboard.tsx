@@ -13,11 +13,30 @@ import ThemeToggle from "@/components/ThemeToggle";
 // Cartões reutilizáveis de estatística e pedido
 import StatCard from "@/components/StatCard";
 import OrderCard from "@/components/OrderCard";
-import { TruckIcon, Package, CheckCircle, DollarSign } from "lucide-react";
+import { TruckIcon, Package, CheckCircle, DollarSign, Camera, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { useState } from "react";
 // Hooks utilitários
 import { useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -32,6 +51,144 @@ const parseDecimalSafe = (value: string | null | undefined): number => {
   if (value === null || value === undefined) return 0;
   const num = parseFloat(value);
   return isNaN(num) ? 0 : num;
+};
+
+// Componente extraído para evitar recriação e perda de estado
+const DeliverDialog = ({ order, token, onDeliver }: { order: Order, token: string | null, onDeliver: (data: { orderId: string, proofUrl?: string }) => void }) => {
+  const [proofUrl, setProofUrl] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('orderId', order.id);
+    formData.append('tipo', 'Comprovante');
+    
+    // Tenta capturar GPS
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          formData.append('gpsLat', position.coords.latitude.toString());
+          formData.append('gpsLng', position.coords.longitude.toString());
+          uploadFile(formData);
+        },
+        (err) => {
+          console.warn("GPS Error:", err);
+          uploadFile(formData);
+        }
+      );
+    } else {
+      uploadFile(formData);
+    }
+  };
+
+  const uploadFile = async (formData: FormData) => {
+    try {
+      const res = await fetch('/api/upload/live-doc', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+      
+      if (!res.ok) throw new Error('Upload failed');
+      
+      const data = await res.json();
+      if (data.fileUrl) {
+        setProofUrl(data.fileUrl);
+        // toast não está disponível aqui fora, mas o usuário verá o ícone de sucesso
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleDeliver = () => {
+    onDeliver({ orderId: order.id, proofUrl });
+    setIsOpen(false);
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button
+          variant="outline"
+          className="w-full mt-4"
+          data-testid={`button-complete-${order.id}`}
+        >
+          Marcar como Entregue
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Finalizar Entrega</DialogTitle>
+          <DialogDescription>
+            Tire uma foto do comprovante da maquininha.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label htmlFor={`proof-upload-${order.id}`} className="cursor-pointer block">
+              <div className="border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center gap-2 hover:bg-muted/50 transition-colors">
+                {proofUrl ? (
+                  <>
+                    <CheckCircle className="w-8 h-8 text-green-500" />
+                    <span className="text-sm font-medium text-green-600">Foto anexada!</span>
+                    <span className="text-xs text-muted-foreground break-all">{proofUrl.split('/').pop()}</span>
+                  </>
+                ) : (
+                  <>
+                    <Camera className="w-8 h-8 text-muted-foreground" />
+                    <span className="text-sm font-medium">Tirar Foto do Comprovante</span>
+                    <span className="text-xs text-muted-foreground">Clique para abrir a câmera</span>
+                  </>
+                )}
+              </div>
+              <Input
+                id={`proof-upload-${order.id}`}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={handleFileUpload}
+                disabled={isUploading}
+              />
+            </Label>
+            {isUploading && <p className="text-xs text-center text-muted-foreground animate-pulse">Enviando foto...</p>}
+          </div>
+          
+          <div className="grid gap-2">
+            <Label htmlFor={`proof-text-${order.id}`}>Observação (Opcional)</Label>
+            <Input
+              id={`proof-text-${order.id}`}
+              placeholder="Ex: Entregue na portaria"
+              value={proofUrl.startsWith('/uploads') ? '' : proofUrl}
+              onChange={(e) => {
+                if (!proofUrl.startsWith('/uploads')) {
+                  setProofUrl(e.target.value);
+                }
+              }}
+              disabled={proofUrl.startsWith('/uploads')}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setIsOpen(false)}>Cancelar</Button>
+          <Button onClick={handleDeliver} disabled={isUploading}>
+            Confirmar Entrega
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 };
 
 export default function DriverDashboard() {
@@ -52,6 +209,11 @@ export default function DriverDashboard() {
     o.motoboyId === user?.id &&
     o.status === 'delivered' &&
     o.deliveredAt && new Date(o.deliveredAt).toDateString() === new Date().toDateString()
+  );
+
+  const myHistory = orders.filter(o => 
+    o.motoboyId === user?.id && 
+    o.status === 'delivered'
   );
 
   // Soma taxas das entregas concluídas no dia (valida strings numéricas)
@@ -88,8 +250,8 @@ export default function DriverDashboard() {
 
   // Mutation: marca entrega como concluída
   const deliverOrderMutation = useMutation({
-    mutationFn: async (orderId: string) => {
-      const res = await apiRequest('POST', `/api/orders/${orderId}/deliver`);
+    mutationFn: async ({ orderId, proofUrl }: { orderId: string, proofUrl?: string }) => {
+      const res = await apiRequest('POST', `/api/orders/${orderId}/deliver`, { proofUrl });
       return await res.json();
     },
     onSuccess: () => {
@@ -97,6 +259,14 @@ export default function DriverDashboard() {
       toast({
         title: "Entrega concluída!",
         description: "O pedido foi marcado como entregue.",
+      });
+    },
+    onError: (error) => {
+      console.error("Erro na entrega:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao finalizar entrega",
+        description: "Não foi possível marcar como entregue. Tente novamente.",
       });
     },
   });
@@ -179,21 +349,101 @@ export default function DriverDashboard() {
                 status={order.status as OrderStatus}
                 value={order.valor}
               />
-              {/* Mutation de conclusão altera status para delivered */}
-              <Button
-                variant="outline"
-                className="w-full mt-4"
-                onClick={() => deliverOrderMutation.mutate(order.id)}
-                disabled={deliverOrderMutation.isPending}
-                data-testid={`button-complete-${order.id}`}
-              >
-                Marcar como Entregue
-              </Button>
+              <DeliverDialog 
+                order={order} 
+                token={token} 
+                onDeliver={(data) => deliverOrderMutation.mutate(data)} 
+              />
             </Card>
           ))}
         </div>
       )}
     </div>
+  );
+
+  const History = () => (
+    <Card className="p-6">
+      <h2 className="text-xl font-semibold mb-4">Histórico de Entregas</h2>
+      {myHistory.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground">
+          <Package className="w-12 h-12 mx-auto mb-3 opacity-50" />
+          <p>Nenhuma entrega finalizada ainda.</p>
+        </div>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Data</TableHead>
+              <TableHead>Origem</TableHead>
+              <TableHead>Destino</TableHead>
+              <TableHead>Valor</TableHead>
+              <TableHead>Comprovante</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {myHistory.map((order) => (
+              <TableRow key={order.id}>
+                <TableCell>{new Date(order.createdAt).toLocaleDateString()}</TableCell>
+                <TableCell>{order.coletaBairro}</TableCell>
+                <TableCell>{order.entregaBairro}</TableCell>
+                <TableCell>R$ {parseFloat(order.taxaMotoboy || "0").toFixed(2)}</TableCell>
+                <TableCell>
+                  {order.proofUrl ? (
+                    <a 
+                      href={order.proofUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-primary hover:underline"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      Ver Foto
+                    </a>
+                  ) : (
+                    <span className="text-muted-foreground">-</span>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+    </Card>
+  );
+
+  const LiveDocs = () => (
+    <Card className="p-6">
+      <h2 className="text-xl font-semibold mb-4">Live Docs - Comprovantes</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {myHistory.filter(o => o.proofUrl).map(order => (
+          <Card key={order.id} className="p-4">
+            <div className="aspect-video relative mb-4 bg-muted rounded-md overflow-hidden">
+              <img 
+                src={order.proofUrl || ''} 
+                alt={`Comprovante Pedido #${order.id}`}
+                className="object-cover w-full h-full"
+              />
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="font-semibold">Pedido #{order.id.slice(0, 8)}</span>
+                <Badge variant="outline">{order.deliveredAt ? new Date(order.deliveredAt).toLocaleTimeString() : '-'}</Badge>
+              </div>
+              <Button variant="outline" className="w-full" asChild>
+                <a href={order.proofUrl || '#'} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Ver Original
+                </a>
+              </Button>
+            </div>
+          </Card>
+        ))}
+        {myHistory.filter(o => o.proofUrl).length === 0 && (
+          <div className="col-span-full text-center py-12 text-muted-foreground">
+            <p>Nenhum comprovante enviado ainda.</p>
+          </div>
+        )}
+      </div>
+    </Card>
   );
 
 
@@ -230,14 +480,11 @@ export default function DriverDashboard() {
                 {/* Sub-rota de Minhas Entregas (path="/my-deliveries") */}
                 <Route path="/my-deliveries" component={MyDeliveries} />
 
-                {/* Sub-rota de Histórico (path="/history") placeholder até API de logs */}
-                <Route path="/history">
-                  <Card className="p-12 text-center">
-                    <Package className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-                    <p className="text-lg font-semibold">Histórico de Entregas</p>
-                    <p className="text-muted-foreground mt-2">Em breve você poderá ver todo seu histórico aqui.</p>
-                  </Card>
-                </Route>
+                {/* Sub-rota de Histórico (path="/history") */}
+                <Route path="/history" component={History} />
+
+                {/* Sub-rota de Live Docs (path="/live-docs") */}
+                <Route path="/live-docs" component={LiveDocs} />
 
                 {/* Sub-rota de Configurações (path="/settings") reserva layout futuro */}
                 <Route path="/settings">

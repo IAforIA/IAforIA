@@ -240,6 +240,7 @@ export const orders = pgTable("orders", {
   motoboyId: varchar("motoboy_id"),      // FK para motoboys.id (null se pending)
   motoboyName: text("motoboy_name"),     // Desnormalizado para performance
   status: text("status").notNull().default("pending"), // 'pending' | 'in_progress' | 'delivered' | 'cancelled'
+  proofUrl: text("proof_url"),           // URL ou texto do comprovante de entrega
 
   // GRUPO 7: AUDIT TRAIL (TIMESTAMPS)
   createdAt: timestamp("created_at").defaultNow().notNull(),     // Quando pedido foi criado

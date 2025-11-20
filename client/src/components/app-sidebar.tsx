@@ -3,7 +3,7 @@
  * PROPÓSITO: Sidebar reutilizável que muda o menu conforme o papel do usuário
  */
 
-import { Home, Package, Users, TruckIcon, Settings, BarChart3 } from "lucide-react";
+import { Home, Package, Users, TruckIcon, Settings, BarChart3, FileText } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -28,12 +28,14 @@ const menuItems = {
     { title: "Pedidos", url: "/central/orders", icon: Package },
     { title: "Clientes", url: "/central/clients", icon: Users },
     { title: "Entregadores", url: "/central/drivers", icon: TruckIcon },
+    { title: "Live Docs", url: "/central/live-docs", icon: FileText },
     { title: "Relatórios", url: "/central/reports", icon: BarChart3 },
     { title: "Configurações", url: "/central/settings", icon: Settings },
   ],
   client: [
     { title: "Dashboard", url: "/client", icon: Home },
     { title: "Meus Pedidos", url: "/client/orders", icon: Package },
+    { title: "Live Docs", url: "/client/live-docs", icon: FileText },
     { title: "Histórico", url: "/client/history", icon: BarChart3 },
     { title: "Configurações", url: "/client/settings", icon: Settings },
   ],
@@ -41,6 +43,7 @@ const menuItems = {
     { title: "Dashboard", url: "/driver", icon: Home },
     { title: "Entregas Disponíveis", url: "/driver/available", icon: Package },
     { title: "Minhas Entregas", url: "/driver/my-deliveries", icon: TruckIcon },
+    { title: "Live Docs", url: "/driver/live-docs", icon: FileText },
     { title: "Histórico", url: "/driver/history", icon: BarChart3 },
     { title: "Configurações", url: "/driver/settings", icon: Settings },
   ],

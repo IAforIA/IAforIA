@@ -19,6 +19,8 @@ import express, { type Request, Response, NextFunction } from "express";
 import helmet from "helmet";
 // CORS: Middleware que permite requisições de diferentes origens (cross-origin)
 import cors from "cors";
+// Path: Módulo do Node.js para manipulação de caminhos de arquivos e diretórios
+import path from "path";
 
 // IMPORTANTE: Usamos extensão .ts explícita para garantir que o bundler resolva os arquivos fonte
 // registerRoutes: Função que registra todas as rotas da API (definida em routes.ts)
@@ -107,6 +109,9 @@ app.use((req, res, next) => {
 
   next();
 });
+
+// Serve uploaded files statically
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // ========================================
 // WEBSOCKET - COMUNICAÇÃO EM TEMPO REAL

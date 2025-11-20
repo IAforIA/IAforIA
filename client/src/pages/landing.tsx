@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { TruckIcon, Users, Package, BarChart3 } from "lucide-react";
+import { TruckIcon, Users, Package, BarChart3, Eye, EyeOff } from "lucide-react";
 import { useLocation } from "wouter";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useAuth } from "@/hooks/use-auth";
@@ -19,6 +19,7 @@ import { z } from "zod";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { clientOnboardingSchema } from "@shared/contracts";
+import { motion } from "framer-motion";
 
 const onboardingExtraSchema = z.object({
   confirmPassword: z.string().min(8, "Confirme sua senha"),
@@ -59,6 +60,7 @@ export default function Landing() {
   // CORREÇÃO: Renomeado de 'userId' para 'email'
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<"login" | "register">("login");
@@ -176,32 +178,76 @@ export default function Landing() {
 
       <section className="relative min-h-[700px] md:min-h-[760px] flex items-center justify-center overflow-hidden bg-gradient-to-br from-primary via-blue-600 to-blue-800 pb-16 md:pb-24">
         <div className="absolute inset-0 bg-gradient-to-r from-black/50 to-black/30" />
+        
+        {/* Animated Background Elements */}
+        <motion.div 
+          className="absolute top-20 left-20 w-72 h-72 bg-white/10 rounded-full blur-3xl"
+          animate={{ 
+            scale: [1, 1.2, 1],
+            opacity: [0.3, 0.5, 0.3],
+          }}
+          transition={{ 
+            duration: 8, 
+            repeat: Infinity,
+            ease: "easeInOut" 
+          }}
+        />
+        <motion.div 
+          className="absolute bottom-20 right-20 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl"
+          animate={{ 
+            scale: [1.2, 1, 1.2],
+            opacity: [0.3, 0.5, 0.3],
+          }}
+          transition={{ 
+            duration: 10, 
+            repeat: Infinity,
+            ease: "easeInOut" 
+          }}
+        />
 
         <div className="relative z-10 container mx-auto px-4 grid md:grid-cols-2 gap-12 items-center">
-          <div className="text-white">
+          <motion.div 
+            className="text-white"
+            initial={{ opacity: 0, x: -50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+          >
             <h1 className="text-5xl md:text-6xl font-bold mb-6" data-testid="text-hero-title">
               Conectando Empresas e Entregadores
             </h1>
             <p className="text-xl text-white/90 mb-6">
               A plataforma B2B completa para gerenciar suas entregas com eficiência e transparência
             </p>
-          </div>
+          </motion.div>
 
-          <Card className="max-w-md w-full mx-auto relative z-20 shadow-2xl">
-            <CardHeader>
-              <CardTitle>Acesse ou Cadastre</CardTitle>
-              <CardDescription>
-                Login imediato para equipes existentes ou onboarding PF/PJ com endereço fixo aprovado.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Tabs value={activeTab} onValueChange={handleTabChange}>
-                <TabsList className="grid grid-cols-2 mb-4">
-                  <TabsTrigger value="login">Entrar</TabsTrigger>
-                  <TabsTrigger value="register">Cadastrar</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="login">
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+          >
+            <Card className="max-w-md w-full mx-auto relative z-20 shadow-2xl border-white/20 backdrop-blur-md bg-white/90 dark:bg-black/90">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-2xl text-primary">Acesse ou Cadastre</CardTitle>
+                <CardDescription className="text-gray-600 dark:text-gray-300">
+                  Login imediato para equipes existentes ou onboarding PF/PJ com endereço fixo aprovado.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Tabs value={activeTab} onValueChange={handleTabChange}>
+                  <TabsList className="grid grid-cols-2 mb-6 bg-muted/50 p-1">
+                    <TabsTrigger 
+                      value="login" 
+                      className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all"
+                    >
+                      Entrar
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="register"
+                      className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all"
+                    >
+                      Cadastrar
+                    </TabsTrigger>
+                  </TabsList>                <TabsContent value="login">
                   <form onSubmit={handleLogin} className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="email">Email</Label>
@@ -213,19 +259,30 @@ export default function Landing() {
                         onChange={handleEmailChange}
                         required
                         data-testid="input-user-email"
+                        className="dark:bg-white dark:text-black dark:placeholder:text-gray-500"
                       />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="password">Senha</Label>
-                      <Input
-                        id="password"
-                        type="password"
-                        placeholder="Sua senha"
-                        value={password}
-                        onChange={handlePasswordChange}
-                        required
-                        data-testid="input-password"
-                      />
+                      <div className="relative">
+                        <Input
+                          id="password"
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Sua senha"
+                          value={password}
+                          onChange={handlePasswordChange}
+                          required
+                          data-testid="input-password"
+                          className="dark:bg-white dark:text-black dark:placeholder:text-gray-500 pr-10"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                        >
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
                     </div>
                     <Button type="submit" className="w-full" disabled={isLoading} data-testid="button-login">
                       {isLoading ? "Entrando..." : "Entrar"}
@@ -247,6 +304,7 @@ export default function Landing() {
               </Tabs>
             </CardContent>
           </Card>
+          </motion.div>
         </div>
       </section>
 
@@ -262,7 +320,7 @@ export default function Landing() {
             O formulário é extenso, então limitamos a altura e habilitamos rolagem independente
             para que o usuário complete o onboarding sem deformar o layout principal.
           */}
-          <div className="max-h-[70vh] overflow-y-auto pr-1">
+          <div className="pr-1">
             <Form {...registerForm}>
               <form
                 onSubmit={registerForm.handleSubmit((values) => registerMutation.mutate(values))}
@@ -522,75 +580,82 @@ export default function Landing() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <Card className="p-6 text-center hover-elevate">
-              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                <Users className="w-8 h-8 text-primary" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Central Administrativa</h3>
-              <p className="text-muted-foreground">
-                Gerencie clientes, entregadores e pedidos em uma única plataforma
-              </p>
-            </Card>
+            <motion.div whileHover={{ y: -10 }} transition={{ type: "spring", stiffness: 300 }}>
+              <Card className="p-6 text-center hover:shadow-lg transition-shadow h-full">
+                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                  <Users className="w-8 h-8 text-primary" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2">Central Administrativa</h3>
+                <p className="text-muted-foreground">
+                  Gerencie clientes, entregadores e pedidos em uma única plataforma
+                </p>
+              </Card>
+            </motion.div>
 
-            <Card className="p-6 text-center hover-elevate">
-              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                <Package className="w-8 h-8 text-primary" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Portal do Cliente B2B</h3>
-              <p className="text-muted-foreground">
-                Crie pedidos, acompanhe entregas e acesse histórico completo
-              </p>
-            </Card>
+            <motion.div whileHover={{ y: -10 }} transition={{ type: "spring", stiffness: 300 }}>
+              <Card className="p-6 text-center hover:shadow-lg transition-shadow h-full">
+                <div className="w-16 h-16 rounded-full bg-orange-100 flex items-center justify-center mx-auto mb-4">
+                  <Package className="w-8 h-8 text-orange-600" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2">Portal do Cliente B2B</h3>
+                <p className="text-muted-foreground">
+                  Crie pedidos, acompanhe entregas e acesse histórico completo
+                </p>
+              </Card>
+            </motion.div>
 
-            <Card className="p-6 text-center hover-elevate">
-              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                <TruckIcon className="w-8 h-8 text-primary" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">App do Entregador</h3>
-              <p className="text-muted-foreground">
-                Aceite entregas, atualize status e gerencie suas rotas
-              </p>
-            </Card>
+            <motion.div whileHover={{ y: -10 }} transition={{ type: "spring", stiffness: 300 }}>
+              <Card className="p-6 text-center hover:shadow-lg transition-shadow h-full">
+                <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+                  <TruckIcon className="w-8 h-8 text-green-600" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2">App do Entregador</h3>
+                <p className="text-muted-foreground">
+                  Aceite entregas, atualize status e gerencie suas rotas
+                </p>
+              </Card>
+            </motion.div>
           </div>
         </div>
       </section>
 
-      <section className="py-20">
-        <div className="container mx-auto px-4">
+      <section className="py-20 relative overflow-hidden bg-gradient-to-br from-primary via-blue-600 to-blue-800">
+        <div className="absolute inset-0 bg-gradient-to-r from-black/50 to-black/30" />
+        <div className="container mx-auto px-4 relative z-10">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Recursos Principais</h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">Recursos Principais</h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
             <div className="flex gap-4">
-              <div className="w-12 h-12 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <BarChart3 className="w-6 h-6 text-primary" />
+              <div className="w-12 h-12 rounded-md bg-white/10 flex items-center justify-center flex-shrink-0">
+                <BarChart3 className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h3 className="font-semibold mb-1">Acompanhamento em Tempo Real</h3>
-                <p className="text-sm text-muted-foreground">
+                <h3 className="font-semibold mb-1 text-white">Acompanhamento em Tempo Real</h3>
+                <p className="text-sm text-white/80">
                   Monitore o status e a localização exata de cada entrega do início ao fim.
                 </p>
               </div>
             </div>
             <div className="flex gap-4">
-              <div className="w-12 h-12 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <Users className="w-6 h-6 text-primary" />
+              <div className="w-12 h-12 rounded-md bg-white/10 flex items-center justify-center flex-shrink-0">
+                <Users className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h3 className="font-semibold mb-1">Gestão de Entregadores</h3>
-                <p className="text-sm text-muted-foreground">
+                <h3 className="font-semibold mb-1 text-white">Gestão de Entregadores</h3>
+                <p className="text-sm text-white/80">
                   Gerencie perfis de motoboys, status de disponibilidade e performance.
                 </p>
               </div>
             </div>
             <div className="flex gap-4">
-              <div className="w-12 h-12 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <Package className="w-6 h-6 text-primary" />
+              <div className="w-12 h-12 rounded-md bg-white/10 flex items-center justify-center flex-shrink-0">
+                <Package className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h3 className="font-semibold mb-1">Otimização de Rotas (AI Engine)</h3>
-                <p className="text-sm text-muted-foreground">
+                <h3 className="font-semibold mb-1 text-white">Otimização de Rotas (AI Engine)</h3>
+                <p className="text-sm text-white/80">
                   Algoritmo inteligente para atribuir o entregador mais próximo e otimizar rotas.
                 </p>
               </div>

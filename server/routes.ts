@@ -55,7 +55,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
 // Previne ataques de força bruta (brute force) limitando tentativas de login
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // Janela de tempo: 15 minutos
-  max: 5, // Máximo de 5 tentativas por IP nesta janela
+  max: 100, // AUMENTADO PARA TESTES (era 5)
   message: { error: 'Muitas tentativas de login. Tente novamente em 15 minutos.' },
   standardHeaders: true, // Retorna info de rate limit nos headers: RateLimit-*
   legacyHeaders: false, // Desabilita headers antigos X-RateLimit-*
@@ -601,9 +601,14 @@ export async function registerRoutes() {
         }
       }
 
-      await storage.updateOrderStatus(req.params.id, 'delivered');
+      const { proofUrl } = req.body;
+      console.log(`🚚 Entregando pedido ${req.params.id} com comprovante: ${proofUrl}`);
+      
+      await storage.updateOrderStatus(req.params.id, 'delivered', proofUrl);
       const order = await storage.getOrder(req.params.id);
       
+      console.log(`✅ Pedido ${req.params.id} atualizado para delivered. Status atual: ${order?.status}`);
+
       broadcast({ type: 'order_delivered', payload: order });
       
       res.json(order);
@@ -721,19 +726,35 @@ export async function registerRoutes() {
   // ROTA: POST /api/upload/live-doc
   // PROPÓSITO: Upload de documentos em tempo real (CNH, fotos, etc)
   // MIDDLEWARE: authenticateToken (requer JWT válido)
-  // STATUS: Implementado (Local Storage)
+  // STATUS: Implementado (Local Storage + Banco de Dados)
   router.post("/api/upload/live-doc", authenticateToken, upload.single('file'), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ error: "Nenhum arquivo enviado" });
       }
+
+      const { orderId, tipo, gpsLat, gpsLng } = req.body;
+
+      if (!orderId || !tipo) {
+        return res.status(400).json({ error: "orderId e tipo são obrigatórios" });
+      }
+
+      const fileUrl = `/uploads/${req.file.filename}`;
+
+      const liveDoc = await storage.createLiveDoc({
+        orderId,
+        motoboyId: req.user!.id,
+        tipo,
+        fileUrl,
+        fileName: req.file.originalname,
+        gpsLat: gpsLat ? String(gpsLat) : null,
+        gpsLng: gpsLng ? String(gpsLng) : null,
+      });
       
-      // TODO: Salvar referência no banco de dados (tabela liveDocs)
-      // Por enquanto retorna o caminho do arquivo salvo
       res.json({ 
         message: "Upload realizado com sucesso", 
-        filename: req.file.filename,
-        path: `/uploads/${req.file.filename}`
+        liveDoc,
+        fileUrl
       });
     } catch (error: any) {
       console.error('💥 Erro no upload:', error);

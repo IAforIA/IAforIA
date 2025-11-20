@@ -437,13 +437,17 @@ class DrizzleStorage /* implements IStorage */ {
   }
 
   /**
-   * MÉTODO: updateOrderStatus(id, status)
+   * MÉTODO: updateOrderStatus(id, status, proofUrl)
    * PROPÓSITO: Atualiza status do pedido (pending, in_progress, delivered, cancelled)
    * USADO EM: POST /api/orders/:id/deliver em routes.ts
-   * NOTA: Também atualiza deliveredAt para timestamp atual
+   * NOTA: Também atualiza deliveredAt para timestamp atual e salva comprovante se fornecido
    */
-  async updateOrderStatus(id: string, status: "pending" | "in_progress" | "delivered" | "cancelled") {
-    await db.update(orders).set({ status, deliveredAt: new Date() }).where(eq(orders.id, id));
+  async updateOrderStatus(id: string, status: "pending" | "in_progress" | "delivered" | "cancelled", proofUrl?: string) {
+    const updateData: any = { status, deliveredAt: new Date() };
+    if (proofUrl) {
+      updateData.proofUrl = proofUrl;
+    }
+    await db.update(orders).set(updateData).where(eq(orders.id, id));
   }
 
   /**
@@ -552,6 +556,16 @@ class DrizzleStorage /* implements IStorage */ {
    */
   async updateUser(userId: string, data: Partial<typeof users.$inferSelect>) {
     const result = await db.update(users).set(data).where(eq(users.id, userId)).returning();
+    return result[0];
+  }
+
+  /**
+   * MÉTODO: createLiveDoc(doc)
+   * PROPÓSITO: Registra um novo documento/foto no banco
+   * USADO EM: POST /api/upload/live-doc
+   */
+  async createLiveDoc(doc: typeof liveDocs.$inferInsert) {
+    const result = await db.insert(liveDocs).values(doc).returning();
     return result[0];
   }
 }

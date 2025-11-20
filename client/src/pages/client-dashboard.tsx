@@ -48,8 +48,18 @@ import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Switch as UiSwitch } from "@/components/ui/switch"; // Renomeado para evitar conflito com Wouter
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { ExternalLink } from "lucide-react";
 import { resolveWebSocketUrl } from "@/lib/utils";
+import { Switch as UiSwitch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 
 // ========================================
 // VALIDAÇÃO: SCHEMA ZOD DO FORMULÁRIO
@@ -73,7 +83,7 @@ import { resolveWebSocketUrl } from "@/lib/utils";
 const orderSchema = z.object({
   coletaRua: z.string().min(3, "Rua é obrigatória"),
   coletaNumero: z.string().min(1, "Número é obrigatório"),
-  coletaBairro: z.string().min(3, "Bairro é obrigatório"),
+  coletaBairro: z.string().min(3, "Bairro é obrigatória"),
   coletaCep: z.string().default("29900-000"),
   coletaOverride: z.boolean().default(false), // Etapa 06: toggle auto-fill
   entregaRua: z.string().min(3, "Rua é obrigatória"),
@@ -258,7 +268,8 @@ export default function ClientDashboard() {
   // KPIs do cliente
   const totalOrders = clientOrders.length;
   const pending = clientOrders.filter(o => o.status === 'pending').length;
-  const delivered = clientOrders.filter(o => o.status === 'delivered').length;
+  const deliveredOrders = clientOrders.filter(o => o.status === 'delivered');
+  const deliveredCount = deliveredOrders.length;
   const cancelled = clientOrders.filter(o => o.status === 'cancelled').length;
 
   // Custom properties para largura do sidebar
@@ -266,6 +277,42 @@ export default function ClientDashboard() {
     "--sidebar-width": "16rem",
     "--sidebar-width-icon": "4rem",
   };
+
+  const LiveDocs = () => (
+    <Card className="p-6">
+      <h2 className="text-xl font-semibold mb-4">Live Docs - Comprovantes</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {deliveredOrders.filter(o => o.proofUrl).map(order => (
+          <Card key={order.id} className="p-4">
+            <div className="aspect-video relative mb-4 bg-muted rounded-md overflow-hidden">
+              <img 
+                src={order.proofUrl || ''} 
+                alt={`Comprovante Pedido #${order.id}`}
+                className="object-cover w-full h-full"
+              />
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="font-semibold">Pedido #{order.id.slice(0, 8)}</span>
+                <Badge variant="outline">{order.deliveredAt ? new Date(order.deliveredAt).toLocaleTimeString() : '-'}</Badge>
+              </div>
+              <Button variant="outline" className="w-full" asChild>
+                <a href={order.proofUrl || '#'} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Ver Original
+                </a>
+              </Button>
+            </div>
+          </Card>
+        ))}
+        {deliveredOrders.filter(o => o.proofUrl).length === 0 && (
+          <div className="col-span-full text-center py-12 text-muted-foreground">
+            <p>Nenhum comprovante disponível ainda.</p>
+          </div>
+        )}
+      </div>
+    </Card>
+  );
 
   return (
     <SidebarProvider style={style as React.CSSProperties}>
@@ -491,22 +538,62 @@ export default function ClientDashboard() {
                 <RouterSwitch>
                 {/* Rota Principal (path="/") reusa DashboardContent */}
                 <Route path="/">
-                  <DashboardContent clientOrders={clientOrders} totalOrders={totalOrders} pending={pending} delivered={delivered} cancelled={cancelled} />
+                  <DashboardContent clientOrders={clientOrders} totalOrders={totalOrders} pending={pending} delivered={deliveredCount} cancelled={cancelled} />
                 </Route>
 
                 {/* Rota de Pedidos (path="/orders") mantém mesma listagem para breadcrumbs futuros */}
                 <Route path="/orders">
-                  <DashboardContent clientOrders={clientOrders} totalOrders={totalOrders} pending={pending} delivered={delivered} cancelled={cancelled} />
+                  <DashboardContent clientOrders={clientOrders} totalOrders={totalOrders} pending={pending} delivered={deliveredCount} cancelled={cancelled} />
                 </Route>
 
-                {/* Sub-rota de Histórico (path="/history") mostra placeholder até API ficar pronta */}
+                {/* Sub-rota de Histórico (path="/history") */}
                 <Route path="/history">
-                  <Card className="p-12 text-center">
-                    <Package className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-                    <p className="text-lg font-semibold">Histórico Completo</p>
-                    <p className="text-muted-foreground mt-2">Em breve você verá todo seu histórico de pedidos aqui.</p>
+                  <Card className="p-6">
+                    <h2 className="text-xl font-semibold mb-4">Histórico de Entregas</h2>
+                    {deliveredOrders.length === 0 ? (
+                      <div className="text-center py-12 text-muted-foreground">
+                        <Package className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                        <p>Nenhuma entrega finalizada ainda.</p>
+                      </div>
+                    ) : (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Data</TableHead>
+                            <TableHead>Origem</TableHead>
+                            <TableHead>Destino</TableHead>
+                            <TableHead>Valor</TableHead>
+                            <TableHead>Motoboy</TableHead>
+                            <TableHead>Comprovante</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {deliveredOrders.map((order) => (
+                            <TableRow key={order.id}>
+                              <TableCell>{new Date(order.createdAt).toLocaleDateString()}</TableCell>
+                              <TableCell className="max-w-[200px] truncate" title={`${order.coletaRua}, ${order.coletaNumero}`}>{order.coletaRua}, {order.coletaNumero}</TableCell>
+                              <TableCell className="max-w-[200px] truncate" title={`${order.entregaRua}, ${order.entregaNumero}`}>{order.entregaRua}, {order.entregaNumero}</TableCell>
+                              <TableCell>R$ {Number(order.valor).toFixed(2)}</TableCell>
+                              <TableCell>{order.motoboyName || '-'}</TableCell>
+                              <TableCell>
+                                {order.proofUrl ? (
+                                  <a href={order.proofUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-500 hover:underline">
+                                    Ver <ExternalLink className="w-3 h-3" />
+                                  </a>
+                                ) : (
+                                  <span className="text-muted-foreground text-sm">Pendente</span>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    )}
                   </Card>
                 </Route>
+
+                {/* Sub-rota de Live Docs (path="/live-docs") */}
+                <Route path="/live-docs" component={LiveDocs} />
 
                 {/* Sub-rota de Configurações (path="/settings") reserva layout para futuras preferências */}
                 <Route path="/settings">
