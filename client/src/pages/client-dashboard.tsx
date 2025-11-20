@@ -48,6 +48,8 @@ import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -92,7 +94,25 @@ const orderSchema = z.object({
   entregaCep: z.string().default("29900-000"),
   valor: z.number().min(0.01, "Valor é obrigatório"),
   taxaMotoboy: z.number().default(7.00),
-});
+  // STEP 1: Payment & Change fields
+  formaPagamento: z.enum(["dinheiro", "cartao", "pix"], {
+    required_error: "Forma de pagamento é obrigatória",
+  }),
+  hasTroco: z.boolean().default(false),
+  trocoValor: z.number().optional(),
+}).refine(
+  (data) => {
+    // If payment is cash and change is needed, trocoValor must be provided
+    if (data.formaPagamento === "dinheiro" && data.hasTroco && !data.trocoValor) {
+      return false;
+    }
+    return true;
+  },
+  {
+    message: "Informe o valor para o troco",
+    path: ["trocoValor"],
+  }
+);
 
 // TYPE INFERENCE: Extrai tipo TypeScript do schema Zod
 type OrderFormData = z.infer<typeof orderSchema>;
@@ -187,8 +207,10 @@ export default function ClientDashboard() {
         valor: data.valor.toFixed(2),
         taxaMotoboy: data.taxaMotoboy.toFixed(2),
         entregaComplemento: '',
-        formaPagamento: 'dinheiro',
-        hasTroco: false,
+        // STEP 1: Send payment data instead of hardcoding
+        formaPagamento: data.formaPagamento,
+        hasTroco: data.hasTroco,
+        trocoValor: data.trocoValor ? data.trocoValor.toFixed(2) : null,
       });
       return await res.json();
     },
@@ -212,6 +234,10 @@ export default function ClientDashboard() {
         entregaCep: '29900-000',
         valor: 7.00,
         taxaMotoboy: 7.00,
+        // STEP 1: Reset payment fields
+        formaPagamento: 'dinheiro',
+        hasTroco: false,
+        trocoValor: undefined,
       });
     },
   });
@@ -231,6 +257,10 @@ export default function ClientDashboard() {
       entregaCep: "29900-000",
       valor: 7.00,
       taxaMotoboy: 7.00,
+      // STEP 1: Default payment values
+      formaPagamento: "dinheiro",
+      hasTroco: false,
+      trocoValor: undefined,
     },
   });
 
@@ -510,6 +540,68 @@ export default function ClientDashboard() {
                             <FormMessage />
                           </FormItem>
                         )} />
+                      </div>
+
+                      {/* STEP 1: Payment Method & Change */}
+                      <div className="space-y-4">
+                        <h3 className="font-semibold">Pagamento</h3>
+                        <FormField control={form.control} name="formaPagamento" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Forma de Pagamento</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger data-testid="select-forma-pagamento">
+                                  <SelectValue placeholder="Selecione a forma de pagamento" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                                <SelectItem value="cartao">Cartão</SelectItem>
+                                <SelectItem value="pix">Pix</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+
+                        {form.watch('formaPagamento') === 'dinheiro' && (
+                          <>
+                            <FormField control={form.control} name="hasTroco" render={({ field }) => (
+                              <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                    data-testid="checkbox-has-troco"
+                                  />
+                                </FormControl>
+                                <div className="space-y-1 leading-none">
+                                  <FormLabel>Precisa de troco?</FormLabel>
+                                </div>
+                              </FormItem>
+                            )} />
+
+                            {form.watch('hasTroco') && (
+                              <FormField control={form.control} name="trocoValor" render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Troco para quanto? (R$)</FormLabel>
+                                  <FormControl>
+                                    <Input 
+                                      {...field} 
+                                      type="number" 
+                                      step="0.01" 
+                                      placeholder="50.00"
+                                      onChange={e => field.onChange(parseFloat(e.target.value))}
+                                      value={field.value || ''}
+                                      data-testid="input-troco-valor"
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )} />
+                            )}
+                          </>
+                        )}
                       </div>
 
                       {/* Submit bloqueia enquanto mutation roda para evitar duplicidade */}
