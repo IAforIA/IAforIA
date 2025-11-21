@@ -33,6 +33,8 @@ import { createServer } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 // verifyTokenFromQuery: Valida JWT token passado como query parameter no WebSocket
 import { verifyTokenFromQuery } from "./middleware/auth.ts";
+// storage: Acesso ao banco de dados para atualizar status online dos motoboys
+import { storage } from "./storage.ts";
 
 // VARIÁVEL GLOBAL: Instância do Express application
 // Usada para registrar middlewares e rotas
@@ -159,7 +161,7 @@ function startWebSocketServer(host: string) {
     path: '/ws',
   });
 
-  wss.on('connection', (ws, req) => {
+  wss.on('connection', async (ws, req) => {
     const urlParams = new URLSearchParams(req.url?.split('?')[1] || '');
     const token = urlParams.get('token');
     const user = verifyTokenFromQuery(token);
@@ -172,9 +174,31 @@ function startWebSocketServer(host: string) {
     wsClients.set(user.id, ws);
     log(`WebSocket connected: ${user.id} (${user.role})`, 'ws');
 
-    ws.on('close', () => {
+    // Se for motoboy, marca como online
+    if (user.role === 'motoboy') {
+      try {
+        await storage.updateMotoboyOnlineStatus(user.id, true);
+        broadcast({ type: 'driver_online', payload: { id: user.id } });
+        log(`Motoboy ${user.id} agora está ONLINE`, 'ws');
+      } catch (error) {
+        console.error(`Erro ao atualizar status online do motoboy ${user.id}:`, error);
+      }
+    }
+
+    ws.on('close', async () => {
       wsClients.delete(user.id);
       log(`WebSocket disconnected: ${user.id}`, 'ws');
+
+      // Se for motoboy, marca como offline
+      if (user.role === 'motoboy') {
+        try {
+          await storage.updateMotoboyOnlineStatus(user.id, false);
+          broadcast({ type: 'driver_offline', payload: { id: user.id } });
+          log(`Motoboy ${user.id} agora está OFFLINE`, 'ws');
+        } catch (error) {
+          console.error(`Erro ao atualizar status offline do motoboy ${user.id}:`, error);
+        }
+      }
     });
   });
 

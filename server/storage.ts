@@ -372,6 +372,20 @@ class DrizzleStorage /* implements IStorage */ {
   }
 
   /**
+   * MÉTODO: updateMotoboyOnlineStatus(id, online)
+   * PROPÓSITO: Atualiza status online/offline do motoboy
+   * USADO EM: WebSocket connection/disconnection no index.ts
+   */
+  async updateMotoboyOnlineStatus(id: string, online: boolean) {
+    await db.update(motoboys)
+      .set({ 
+        online: online,
+        updatedAt: new Date().toISOString()
+      })
+      .where(eq(motoboys.id, id));
+  }
+
+  /**
    * MÉTODO: createMotoboy(insertMotoboy)
    * PROPÓSITO: Cadastra novo motoboy no sistema
    * USADO EM: Scripts de importação (import-motoboys-reais.ts)

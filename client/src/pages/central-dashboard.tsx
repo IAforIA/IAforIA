@@ -45,8 +45,9 @@ export default function CentralDashboard() {
   });
 
   // QUERY SECUNDÁRIA: Busca status online dos motoboys para indicadores
-  const { data: motoboys = [] } = useQuery<Motoboy[]>({
+  const { data: motoboys = [], refetch: refetchMotoboys } = useQuery<Motoboy[]>({
     queryKey: ['/api/motoboys'],
+    refetchInterval: 5000, // Atualiza a cada 5 segundos para mostrar status real
   });
 
   // QUERY TERCIÁRIA: Busca lista de clientes para gestão
@@ -156,11 +157,15 @@ export default function CentralDashboard() {
 
     const websocket = new WebSocket(resolveWebSocketUrl(token));
 
-    // Quando chegar mensagem relevante, revalida cache de pedidos
+    // Quando chegar mensagem relevante, revalida cache de pedidos e motoboys
     websocket.onmessage = (event) => {
       const data = JSON.parse(event.data);
       if (data.type === 'new_order' || data.type === 'order_accepted' || data.type === 'order_delivered') {
         refetchOrders();
+      }
+      // Atualiza lista de motoboys quando houver mudança de status online
+      if (data.type === 'driver_online' || data.type === 'driver_offline' || data.type === 'order_accepted') {
+        refetchMotoboys();
       }
     };
 
@@ -171,7 +176,7 @@ export default function CentralDashboard() {
     // Guarda referência para eventual debug e encerra na limpeza do efeito
     setWs(websocket);
     return () => websocket.close();
-  }, [refetchOrders, token]);
+  }, [refetchOrders, refetchMotoboys, token]);
 
   // KPIs exibidos nos StatCards
   const totalOrders = orders.length;
