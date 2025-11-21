@@ -6,12 +6,16 @@
  * - assignBestMotoboy: Calcula distância (Haversine) e pontua motoboys
  * - calculateDynamicTax: Taxa dinâmica baseada em distância, horário e dia
  * - generateAutoResponse: Respostas automáticas para chat
+ * - generateChatResponse: Respostas AI via OpenAI (com controle de custo)
  * - generateInsights: Analytics e recomendações para a central
  * - optimizeRoutes: Ordena pedidos por prioridade
  */
 
 // Importa tipos das tabelas do schema compartilhado
 import type { Order, Motoboy, MotoboyLocation } from "@shared/schema";
+import OpenAI from "openai";
+import { costTracker } from "./middleware/cost-tracker";
+import { responseCache } from "./middleware/response-cache";
 
 // ========================================
 // TIPOS AUXILIARES
@@ -490,4 +494,108 @@ export class AIEngine {
       return priorityB - priorityA; // Ordem decrescente
     });
   }
+
+  // ========================================
+  // MÉTODO ESTÁTICO: RESPOSTA OPENAI (COST-OPTIMIZED)
+  // ========================================
+
+  /**
+   * MÉTODO EXPORTADO: generateChatResponse(message, category, userId)
+   * PROPÓSITO: Gera resposta usando OpenAI API com controles de custo ESTRITOS
+   * 
+   * OTIMIZAÇÕES DE CUSTO:
+   * - Modelo: gpt-4o-mini (mais barato)
+   * - Prompts ultra-concisos (< 100 tokens)
+   * - max_tokens: 150 (respostas curtas)
+   * - temperature: 0.7 (balanceado)
+   * - Tracking de tokens/custos em tempo real
+   * 
+   * PARÂMETROS:
+   *   - message: Mensagem do usuário
+   *   - category: Categoria do chat ('suporte', 'problema', 'status_entrega')
+   *   - userId: ID do usuário (para tracking de custo)
+   * 
+   * RETORNA: Resposta da IA ou mensagem de erro
+   */
+  static async generateChatResponse(
+    message: string,
+    category: string,
+    userId: string
+  ): Promise<string> {
+    try {
+      // OTIMIZAÇÃO 1: Verifica cache primeiro (evita API call)
+      const cachedResponse = responseCache.get(message, category);
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+
+      // VALIDAÇÃO: Verifica se OpenAI está configurada
+      if (!process.env.OPENAI_API_KEY) {
+        throw new Error('OpenAI API key not configured');
+      }
+
+      // CONSTANTE: Cliente OpenAI
+      const openai = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY,
+      });
+
+      // OTIMIZAÇÃO: Prompts ultra-concisos por categoria (< 100 tokens cada)
+      const systemPrompts: Record<string, string> = {
+        suporte: 
+          'Você é assistente de entregas. Seja breve e direto. Máx 2 frases.',
+        problema:
+          'Você resolve problemas de entrega. Responda de forma clara e concisa. Máx 2 frases.',
+        status_entrega:
+          'Você informa status de pedidos. Seja objetivo. Máx 2 frases.',
+      };
+
+      const systemPrompt = systemPrompts[category] || systemPrompts.suporte;
+
+      // CHAMADA API: OpenAI com limites de custo
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4o-mini', // Modelo mais barato
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: message },
+        ],
+        max_tokens: 150, // Resposta curta = custo baixo
+        temperature: 0.7,
+        top_p: 1,
+        frequency_penalty: 0,
+        presence_penalty: 0,
+      });
+
+      // TRACKING: Registra uso de tokens e custo
+      const usage = completion.usage;
+      if (usage) {
+        costTracker.recordUsage(
+          usage.prompt_tokens,
+          usage.completion_tokens
+        );
+
+        console.log(`💰 AI Cost: ${usage.prompt_tokens} in + ${usage.completion_tokens} out = ~$${costTracker.calculateCost(usage.prompt_tokens, usage.completion_tokens).toFixed(6)}`);
+      }
+
+      // EXTRAI RESPOSTA
+      const aiResponse = completion.choices[0]?.message?.content?.trim() || 
+        'Desculpe, não consegui gerar uma resposta. Tente novamente.';
+
+      // OTIMIZAÇÃO 2: Armazena no cache para reutilização
+      responseCache.set(message, category, aiResponse);
+
+      // RETORNA: Resposta da IA
+      return aiResponse;
+
+    } catch (error: any) {
+      console.error('❌ OpenAI Error:', error.message);
+      
+      // FALLBACK: Retorna resposta genérica em caso de erro
+      if (error.code === 'insufficient_quota') {
+        return 'Sistema de IA temporariamente indisponível. Entre em contato com o suporte.';
+      }
+      
+      return 'Desculpe, ocorreu um erro. Nossa equipe foi notificada.';
+    }
+  }
+
 }

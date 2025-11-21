@@ -45,6 +45,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import type { Order, OrderStatus } from "@shared/schema";
 import { resolveWebSocketUrl } from "@/lib/utils";
+import { ChatWidget } from "@/components/ChatWidget";
 
 // Ajuda a converter valores armazenados como string (vindo do banco) sem quebrar a soma
 const parseDecimalSafe = (value: string | null | undefined): number => {
@@ -554,6 +555,15 @@ export default function DriverDashboard() {
           </main>
         </div>
       </div>
+
+      {/* Chat Widget - Comunicação com Central */}
+      {user && (
+        <ChatWidget
+          currentUserId={user.id}
+          currentUserName={user.name}
+          currentUserRole={user.role}
+        />
+      )}
     </SidebarProvider>
   );
 }

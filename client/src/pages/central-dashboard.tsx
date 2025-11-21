@@ -31,6 +31,8 @@ import { useAuth } from "@/hooks/use-auth";
 import type { Order, Motoboy, OrderStatus, Client } from "@shared/schema";
 import { useEffect, useState } from "react";
 import { resolveWebSocketUrl } from "@/lib/utils";
+// Chat widget for real-time communication
+import { ChatWidget } from "@/components/ChatWidget";
 
 export default function CentralDashboard() {
   // CONTEXTO GLOBAL: useAuth provê token JWT e função de logout
@@ -968,6 +970,15 @@ export default function CentralDashboard() {
           </main>
         </div>
       </div>
+
+      {/* Chat Widget - Floating bottom-right */}
+      {user && (
+        <ChatWidget
+          currentUserId={user.id}
+          currentUserName={user.name}
+          currentUserRole={user.role}
+        />
+      )}
     </SidebarProvider>
   );
 }

@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { db } from '../db.ts';
 import { users } from '@shared/schema';
+import { UserRole } from '@shared/enums';
 import { eq } from 'drizzle-orm';
 
 /**
@@ -33,7 +34,7 @@ async function fixTestUserRoles() {
     if (clientUser[0] && clientUser[0].role !== 'client') {
       console.log(`🔧 Corrigindo: client (role: ${clientUser[0].role} → client)`);
       await db.update(users)
-        .set({ role: 'client' })
+        .set({ role: UserRole.CLIENT })
         .where(eq(users.id, 'client'));
       fixed++;
     }
@@ -41,7 +42,7 @@ async function fixTestUserRoles() {
     if (motoboyUser[0] && motoboyUser[0].role !== 'motoboy') {
       console.log(`🔧 Corrigindo: motoboy (role: ${motoboyUser[0].role} → motoboy)`);
       await db.update(users)
-        .set({ role: 'motoboy' })
+        .set({ role: UserRole.MOTOBOY })
         .where(eq(users.id, 'motoboy'));
       fixed++;
     }

@@ -33,6 +33,10 @@ import { insertOrderSchema, insertChatMessageSchema } from "@shared/schema";
 import { clientOnboardingSchema } from "@shared/contracts";
 // Middlewares de autenticação JWT
 import { authenticateToken, requireRole, verifyTokenFromQuery } from "./middleware/auth.ts";
+// Chat rate limiting and cost control
+import { chatRateLimiter, recordAIUsage, getUserUsageStats } from "./middleware/chat-rate-limiter";
+import { costTracker } from "./middleware/cost-tracker";
+import { responseCache } from "./middleware/response-cache";
 // broadcast: Função global para enviar mensagens WebSocket (importada de index.ts)
 import { broadcast } from "./index.ts";
 import { ZodError } from "zod";
@@ -796,41 +800,286 @@ export async function registerRoutes() {
   // ROTAS: CHAT E INSIGHTS (INTELIGÊNCIA ARTIFICIAL)
   // ========================================
 
-  // ROTA: GET /api/chat
-  // PROPÓSITO: Lista todas as mensagens do histórico de chat
-  // MIDDLEWARE: authenticateToken + requireRole (apenas staff)
-  // ACESSO: Restrito a Central e Motoboys (Clientes não veem chat operacional)
-  router.get("/api/chat", authenticateToken, requireRole('central', 'motoboy'), async (req, res) => {
+  // ==============================================
+  // ROTAS: CHAT SYSTEM
+  // ARQUITETURA: Cliente/Motoboy → Central (futura IA) → Destinatário
+  // ==============================================
+
+  /**
+   * GET /api/chat
+   * Retorna mensagens de chat filtradas por:
+   * - CLIENTE: Apenas suas próprias threads (suas conversas com Central)
+   * - MOTOBOY: Threads operacionais + suas conversas com Central
+   * - CENTRAL: TODAS as threads (para monitoramento/suporte)
+   */
+  router.get("/api/chat", authenticateToken, async (req, res) => {
     try {
-      // CONSTANTE: Array de todas as mensagens de chat do banco
-      // CONEXÃO: storage.getChatMessages() definida em storage.ts
-      const messages = await storage.getChatMessages();
-      res.json(messages);
+      const userId = (req as any).user.id;
+      const userRole = (req as any).user.role;
+      const { threadId } = req.query; // Opcional: filtrar por thread específica
+      
+      const allMessages = await storage.getChatMessages();
+      
+      let filteredMessages;
+      
+      if (userRole === 'central') {
+        // CENTRAL: Vê todas as mensagens (admin/IA futura)
+        filteredMessages = allMessages;
+      } else if (userRole === 'motoboy') {
+        // MOTOBOY: Vê mensagens onde ele está envolvido
+        filteredMessages = allMessages.filter(msg => 
+          msg.fromId === userId || // Mensagens que ele enviou
+          msg.toId === userId || // Mensagens enviadas para ele
+          (msg.toRole === 'motoboy' && !msg.toId) // Broadcasts para motoboys
+        );
+      } else if (userRole === 'client') {
+        // CLIENTE: Vê APENAS suas próprias conversas
+        filteredMessages = allMessages.filter(msg => 
+          msg.fromId === userId || // Mensagens que ele enviou
+          msg.toId === userId // Mensagens da Central para ele
+        );
+      } else {
+        filteredMessages = [];
+      }
+      
+      // Se threadId foi especificado, filtra ainda mais
+      if (threadId) {
+        filteredMessages = filteredMessages.filter(msg => msg.threadId === threadId);
+      }
+      
+      res.json(filteredMessages);
     } catch (error) {
       res.status(500).json({ error: "Erro ao buscar mensagens" });
     }
   });
 
-  // ROTA: POST /api/chat
-  // PROPÓSITO: Envia nova mensagem de chat
-  // MIDDLEWARE: authenticateToken (requer JWT válido)
-  // ACESSO: Qualquer usuário autenticado pode enviar mensagens
+  /**
+   * POST /api/chat
+   * Envia mensagem com roteamento automático
+   * - Cliente/Motoboy → sempre vai para Central primeiro
+   * - Central → pode responder diretamente ao usuário
+   * - IA NÃO responde automaticamente (Central controla quando usar IA)
+   */
   router.post("/api/chat", authenticateToken, async (req, res) => {
     try {
-      // CONSTANTE: Mensagem validada pelo schema Zod
-      // CONEXÃO: insertChatMessageSchema definido em @shared/schema.ts
-      const validated = insertChatMessageSchema.parse(req.body);
+      const userId = (req as any).user.id;
+      const userName = (req as any).user.name;
+      const userRole = (req as any).user.role;
       
-      // CONSTANTE: Mensagem recém-criada no banco de dados
-      // CONEXÃO: storage.createChatMessage() definida em storage.ts
-      const message = await storage.createChatMessage(validated);
+      const { message, category, orderId, threadId } = req.body;
       
-      // BROADCAST: Notifica todos os clientes WebSocket sobre nova mensagem
-      // NOTA: Chat funciona em tempo real - todos veem a mensagem instantaneamente
-      broadcast({ type: 'chat_message', payload: message });
-      res.json(message);
+      // VALIDAÇÕES
+      if (!message || message.trim().length === 0) {
+        return res.status(400).json({ error: "Mensagem não pode estar vazia" });
+      }
+      
+      if (!['status_entrega', 'suporte', 'problema'].includes(category)) {
+        return res.status(400).json({ error: "Categoria inválida" });
+      }
+      
+      // OPCIONAL: Status de entrega pode ter orderId (não obrigatório)
+      // if (category === 'status_entrega' && !orderId) {
+      //   return res.status(400).json({ error: "Status de entrega requer orderId" });
+      // }
+      
+      // ROTEAMENTO AUTOMÁTICO
+      let toId = null;
+      let toRole = 'central'; // Por padrão, sempre vai para Central
+      
+      // Se é a Central respondendo, pode enviar para cliente/motoboy específico
+      if (userRole === 'central' && req.body.toId) {
+        toId = req.body.toId;
+        toRole = req.body.toRole;
+      }
+      
+      // ThreadId: mantém consistência para mesma conversa
+      // Formato: userId_categoria (sem timestamp para manter thread consistente)
+      // Se vier do frontend, usa o recebido; senão cria baseado no userId e categoria
+      const finalThreadId = threadId || `${userId}_${category}`;
+      
+      // CRIA MENSAGEM DO USUÁRIO
+      const chatMessage = {
+        fromId: userId,
+        fromName: userName,
+        fromRole: userRole,
+        toId,
+        toRole,
+        category,
+        orderId: orderId || null,
+        threadId: finalThreadId,
+        message: message.trim(),
+        isFromCentral: userRole === 'central',
+      };
+      
+      const createdMessage = await storage.createChatMessage(chatMessage);
+      
+      // Broadcast WebSocket para atualização em tempo real
+      broadcast({ type: 'chat_message', payload: createdMessage });
+      
+      res.json(createdMessage);
     } catch (error: any) {
+      console.error('Erro ao enviar mensagem:', error);
       res.status(400).json({ error: error.message || "Erro ao enviar mensagem" });
+    }
+  });
+
+  /**
+   * GET /api/chat/threads
+   * Lista todas as threads (conversas) do usuário atual
+   * Retorna resumo: categoria, último mensagem, não lidas, etc
+   */
+  router.get("/api/chat/threads", authenticateToken, async (req, res) => {
+    try {
+      const userId = (req as any).user.id;
+      const userRole = (req as any).user.role;
+      
+      const allMessages = await storage.getChatMessages();
+      
+      // Filtra mensagens relevantes para o usuário
+      let userMessages;
+      if (userRole === 'central') {
+        userMessages = allMessages;
+      } else {
+        userMessages = allMessages.filter(msg => 
+          msg.fromId === userId || msg.toId === userId
+        );
+      }
+      
+      // Agrupa por threadId
+      const threadsMap = new Map();
+      userMessages.forEach(msg => {
+        if (!threadsMap.has(msg.threadId)) {
+          threadsMap.set(msg.threadId, {
+            threadId: msg.threadId,
+            category: msg.category,
+            orderId: msg.orderId,
+            messages: [],
+            lastMessage: null,
+            unreadCount: 0,
+          });
+        }
+        const thread = threadsMap.get(msg.threadId);
+        thread.messages.push(msg);
+        // Atualiza última mensagem (assume que mensagens vêm ordenadas por createdAt)
+        thread.lastMessage = msg;
+      });
+      
+      const threads = Array.from(threadsMap.values());
+      res.json(threads);
+    } catch (error) {
+      res.status(500).json({ error: "Erro ao buscar threads" });
+    }
+  });
+
+  /**
+   * POST /api/chat/ai-suggest
+   * Gera sugestão de resposta usando IA (APENAS PARA CENTRAL)
+   * Central usa este endpoint para obter sugestões de como responder
+   * 
+   * Body: { message, category, userId }
+   * - message: mensagem do cliente/motoboy para qual precisa resposta
+   * - category: 'status_entrega' | 'suporte' | 'problema'
+   * - userId: ID do usuário que enviou a mensagem (para rate limiting)
+   */
+  router.post("/api/chat/ai-suggest", authenticateToken, requireRole('central'), async (req, res) => {
+    try {
+      const { message, category, userId } = req.body;
+      
+      if (!message || !category) {
+        return res.status(400).json({ error: "message e category são obrigatórios" });
+      }
+      
+      // VERIFICAÇÃO DE RATE LIMIT
+      const rateLimitCheck = chatRateLimiter.canMakeRequest(userId || 'central');
+      if (!rateLimitCheck.allowed) {
+        return res.status(429).json({ 
+          error: rateLimitCheck.reason,
+          retryAfter: rateLimitCheck.retryAfter 
+        });
+      }
+      
+      // VERIFICAÇÃO DE BUDGET
+      const budgetCheck = costTracker.canAffordRequest();
+      if (!budgetCheck.allowed) {
+        return res.status(503).json({ 
+          error: budgetCheck.reason,
+          budgetInfo: budgetCheck.budgetInfo
+        });
+      }
+      
+      // Gera sugestão via OpenAI
+      const aiSuggestion = await AIEngine.generateChatResponse(
+        message.trim(),
+        category,
+        userId || 'central'
+      );
+      
+      // Registra uso da IA
+      recordAIUsage(userId || 'central');
+      
+      res.json({ suggestion: aiSuggestion });
+      
+    } catch (error: any) {
+      console.error('❌ AI Suggestion Error:', error);
+      res.status(500).json({ error: "Erro ao gerar sugestão de IA" });
+    }
+  });
+
+  // ========================================
+  // ROTAS: MONITORAMENTO DE CUSTO E RATE LIMITS (ADMIN)
+  // ========================================
+
+  /**
+   * GET /api/chat/usage-stats
+   * Retorna estatísticas de uso do chat e custos de IA
+   * Disponível para todos os usuários autenticados
+   */
+  router.get("/api/chat/usage-stats", authenticateToken, async (req, res) => {
+    try {
+      const userId = (req as any).user.id;
+      const userRole = (req as any).user.role;
+      
+      // Stats do usuário atual
+      const userStats = getUserUsageStats(userId);
+      
+      // Stats globais (apenas para central)
+      const globalStats = userRole === 'central' ? {
+        budget: costTracker.getTodayStats(),
+        cache: responseCache.getStats(),
+      } : null;
+      
+      res.json({
+        user: userStats,
+        global: globalStats,
+      });
+    } catch (error: any) {
+      console.error('Erro ao buscar stats:', error);
+      res.status(500).json({ error: "Erro ao buscar estatísticas" });
+    }
+  });
+
+  /**
+   * GET /api/chat/budget-history
+   * Histórico de custos diários (apenas Central)
+   */
+  router.get("/api/chat/budget-history", authenticateToken, requireRole('central'), async (req, res) => {
+    try {
+      const history = costTracker.getBudgetHistory();
+      const cacheStats = responseCache.getStats();
+      
+      res.json({
+        history,
+        cache: cacheStats,
+        summary: {
+          totalDays: history.length,
+          totalSpent: history.reduce((sum, day) => sum + day.totalCost, 0),
+          totalRequests: history.reduce((sum, day) => sum + day.requestCount, 0),
+          cacheSavings: cacheStats.estimatedSavings,
+        },
+      });
+    } catch (error: any) {
+      console.error('Erro ao buscar histórico:', error);
+      res.status(500).json({ error: "Erro ao buscar histórico de custos" });
     }
   });
 

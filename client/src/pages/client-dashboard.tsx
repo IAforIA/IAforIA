@@ -40,6 +40,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
+import { ChatWidget } from "@/components/ChatWidget";
 import type { Order, OrderStatus } from "@shared/schema";
 import type { ClientProfileDto } from "@shared/contracts";
 import { useForm } from "react-hook-form";
@@ -820,6 +821,15 @@ export default function ClientDashboard() {
           </main>
         </div>
       </div>
+
+      {/* Chat Widget - Comunicação com Central */}
+      {user && (
+        <ChatWidget
+          currentUserId={user.id}
+          currentUserName={user.name}
+          currentUserRole={user.role}
+        />
+      )}
     </SidebarProvider>
   );
 }

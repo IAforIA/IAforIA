@@ -58,7 +58,7 @@ async function checkAndCreateProfiles() {
           id: 'client',
           name: clientUser[0].name,
           phone: clientUser[0].phone,
-          email: clientUser[0].email,
+          email: clientUser[0].email ?? '',
           company: 'Empresa Teste LTDA',
           documentType: 'PJ',
           documentNumber: '12345678000190',

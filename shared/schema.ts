@@ -324,15 +324,39 @@ export type LiveDoc = typeof liveDocs.$inferSelect;
  *   - orderId: VARCHAR pedido relacionado (opcional)
  *   - createdAt: TIMESTAMP momento do envio
  */
+/**
+ * TABELA: CHAT_MESSAGES
+ * ARQUITETURA: Cliente/Motoboy → Central (futura IA) → destinatário
+ * NUNCA comunicação direta entre cliente e motoboy
+ * 
+ * CATEGORIAS DE CONVERSA:
+ * - status_entrega: Cliente pergunta sobre pedido → Central → Motoboy
+ * - suporte: Dúvidas gerais, problemas → Central
+ * - problema: Urgências, reportar issues → Central (alta prioridade)
+ */
 export const chatMessages = pgTable("chat_messages", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // REMETENTE
   fromId: varchar("from_id").notNull(),     // UUID do remetente
   fromName: text("from_name").notNull(),    // Nome para exibição
-  fromRole: text("from_role").notNull(),    // Papel do remetente (badge/cor na UI)
-  toId: varchar("to_id"),                   // UUID do destinatário (null = broadcast)
+  fromRole: text("from_role").notNull(),    // 'client' | 'motoboy' | 'central'
+  
+  // DESTINATÁRIO (sempre via Central)
+  toId: varchar("to_id"),                   // UUID destinatário (null = para Central)
+  toRole: text("to_role"),                  // Papel do destinatário
+  
+  // CATEGORIA E CONTEXTO
+  category: text("category").notNull().default('suporte'), // 'status_entrega' | 'suporte' | 'problema'
+  orderId: varchar("order_id"),             // Pedido relacionado (obrigatório para status_entrega)
+  threadId: varchar("thread_id").notNull().default('legacy'), // Agrupa mensagens da mesma conversa
+  
+  // CONTEÚDO
   message: text("message").notNull(),       // Texto da mensagem
-  orderId: varchar("order_id"),             // Contexto: pedido relacionado
-  createdAt: timestamp("created_at").defaultNow().notNull(), // Timestamp
+  isFromCentral: boolean("is_from_central").default(false).notNull(), // true = resposta da IA/Central
+  
+  // METADATA
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({ 

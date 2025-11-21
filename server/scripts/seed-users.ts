@@ -19,23 +19,23 @@ async function seedUsers() {
     // Mapeia e gera os hashes das senhas em paralelo para melhor performance
     const credentialRecorder = new CredentialRecorder('seed-users');
     const credentials: { id: string; role: string; password: string }[] = [];
+    const FIXED_PASSWORD = '12345678'; // Senha fixa para desenvolvimento
     
     // REMOVE usuários antigos para garantir que a senha nova seja aplicada
     console.log('🧹 Removendo usuários de teste antigos...');
     await db.delete(users).where(inArray(users.id, testUsers.map(u => u.id)));
 
     const hashedUsers = await Promise.all(testUsers.map(async (user) => {
-      const tempPassword = generateSecurePassword(user.id);
-      credentials.push({ id: user.id, role: user.role, password: tempPassword });
+      credentials.push({ id: user.id, role: user.role, password: FIXED_PASSWORD });
       credentialRecorder.add({
         id: user.id,
         email: user.email,
         role: user.role,
-        password: tempPassword,
+        password: FIXED_PASSWORD,
       });
       return {
         ...user,
-        password: await bcrypt.hash(tempPassword, 10),
+        password: await bcrypt.hash(FIXED_PASSWORD, 10),
         status: 'active',
       };
     }));
