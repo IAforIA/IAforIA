@@ -16,6 +16,12 @@ import { Router } from "express";
 import rateLimit from "express-rate-limit";
 // storage: Objeto que contém todos os métodos de acesso ao banco de dados (definido em storage.ts)
 import { storage } from "./storage.ts";
+// db: Instância do Drizzle ORM para operações diretas no banco
+import { db } from "./db.ts";
+// orders: Tabela de pedidos do schema
+import { orders } from "@shared/schema";
+// eq: Operador de igualdade do Drizzle ORM
+import { eq } from "drizzle-orm";
 // AIEngine: Classe com lógica de atribuição inteligente de motoboys (definida em ai-engine.ts)
 import { AIEngine } from "./ai-engine.ts";
 // bcrypt: Biblioteca para hash e comparação segura de senhas
@@ -615,6 +621,89 @@ export async function registerRoutes() {
     } catch (error) {
       console.error('💥 Erro ao entregar pedido:', error);
       res.status(500).json({ error: "Erro ao entregar pedido" });
+    }
+  });
+
+  /**
+   * ENDPOINT: PATCH /api/orders/:id/cancel
+   * PROPÓSITO: Cancelar um pedido (apenas central)
+   * ACESSO: Apenas central
+   * 
+   * STEP 5: Manual Order Management
+   */
+  router.patch("/api/orders/:id/cancel", authenticateToken, requireRole('central'), async (req, res) => {
+    try {
+      const order = await storage.getOrder(req.params.id);
+      
+      if (!order) {
+        return res.status(404).json({ error: "Pedido não encontrado" });
+      }
+
+      // Não permitir cancelar pedidos já entregues
+      if (order.status === 'delivered') {
+        return res.status(400).json({ error: "Não é possível cancelar pedidos já entregues" });
+      }
+
+      await storage.updateOrderStatus(req.params.id, 'cancelled');
+      const updatedOrder = await storage.getOrder(req.params.id);
+
+      console.log(`🚫 Pedido ${req.params.id} cancelado por ${req.user!.name}`);
+      broadcast({ type: 'order_cancelled', payload: updatedOrder });
+
+      res.json(updatedOrder);
+    } catch (error) {
+      console.error('💥 Erro ao cancelar pedido:', error);
+      res.status(500).json({ error: "Erro ao cancelar pedido" });
+    }
+  });
+
+  /**
+   * ENDPOINT: PATCH /api/orders/:id/reassign
+   * PROPÓSITO: Reatribuir um pedido para outro motoboy (apenas central)
+   * ACESSO: Apenas central
+   * BODY: { motoboyId: string }
+   * 
+   * STEP 5: Manual Order Management
+   */
+  router.patch("/api/orders/:id/reassign", authenticateToken, requireRole('central'), async (req, res) => {
+    try {
+      const { motoboyId } = req.body;
+      const order = await storage.getOrder(req.params.id);
+      
+      if (!order) {
+        return res.status(404).json({ error: "Pedido não encontrado" });
+      }
+
+      // Não permitir reatribuir pedidos já entregues ou cancelados
+      if (order.status === 'delivered' || order.status === 'cancelled') {
+        return res.status(400).json({ error: "Não é possível reatribuir pedidos entregues ou cancelados" });
+      }
+
+      // Verificar se o motoboy existe
+      const motoboy = await storage.getMotoboy(motoboyId);
+      if (!motoboy) {
+        return res.status(404).json({ error: "Motoboy não encontrado" });
+      }
+
+      // Atualizar pedido com novo motoboy
+      await db.update(orders)
+        .set({
+          motoboyId: motoboyId,
+          motoboyName: motoboy.name,
+          status: 'accepted',
+          acceptedAt: new Date().toISOString(),
+        })
+        .where(eq(orders.id, req.params.id));
+
+      const updatedOrder = await storage.getOrder(req.params.id);
+
+      console.log(`🔄 Pedido ${req.params.id} reatribuído para ${motoboy.name} por ${req.user!.name}`);
+      broadcast({ type: 'order_reassigned', payload: updatedOrder });
+
+      res.json(updatedOrder);
+    } catch (error) {
+      console.error('💥 Erro ao reatribuir pedido:', error);
+      res.status(500).json({ error: "Erro ao reatribuir pedido" });
     }
   });
 

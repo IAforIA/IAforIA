@@ -13,13 +13,14 @@ import { Switch, Route, Router as NestedRouter } from "wouter";
 import ThemeToggle from "@/components/ThemeToggle";
 import StatCard from "@/components/StatCard";
 import OrderCard from "@/components/OrderCard";
-import { Package, TruckIcon, CheckCircle, Users, ExternalLink, UserCog, Shield, Ban, ShieldCheck } from "lucide-react";
+import { Package, TruckIcon, CheckCircle, Users, ExternalLink, UserCog, Shield, Ban, ShieldCheck, XCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 // useQuery coordena chamadas REST com cache automático
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -105,6 +106,49 @@ export default function CentralDashboard() {
       });
     },
   });
+
+  // STEP 5: Mutation para cancelar pedido
+  const cancelOrderMutation = useMutation({
+    mutationFn: async (orderId: string) => {
+      const res = await apiRequest('PATCH', `/api/orders/${orderId}/cancel`, {});
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      toast({ title: "Pedido cancelado com sucesso" });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Erro ao cancelar pedido", 
+        description: error.message,
+        variant: "destructive" 
+      });
+    },
+  });
+
+  // STEP 5: Mutation para reatribuir pedido
+  const reassignOrderMutation = useMutation({
+    mutationFn: async ({ orderId, motoboyId }: { orderId: string, motoboyId: string }) => {
+      const res = await apiRequest('PATCH', `/api/orders/${orderId}/reassign`, { motoboyId });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      toast({ title: "Pedido reatribuído com sucesso" });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Erro ao reatribuir pedido", 
+        description: error.message,
+        variant: "destructive" 
+      });
+    },
+  });
+
+  // STEP 5: Estado para controlar modal de reatribuição
+  const [reassignDialogOpen, setReassignDialogOpen] = useState(false);
+  const [selectedOrderForReassign, setSelectedOrderForReassign] = useState<string | null>(null);
+  const [selectedMotoboyForReassign, setSelectedMotoboyForReassign] = useState<string>('');
 
   // EFEITO: Abre conexão WebSocket autenticada para receber eventos em tempo real
   useEffect(() => {
@@ -332,6 +376,7 @@ export default function CentralDashboard() {
                               <th className="text-left p-4 font-semibold">Status</th>
                               <th className="text-left p-4 font-semibold">Comprovante</th>
                               <th className="text-left p-4 font-semibold">Data</th>
+                              <th className="text-left p-4 font-semibold">Ações</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -347,11 +392,13 @@ export default function CentralDashboard() {
                                   <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                                     order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                                     order.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-                                    'bg-green-100 text-green-800'
+                                    order.status === 'delivered' ? 'bg-green-100 text-green-800' :
+                                    'bg-gray-100 text-gray-800'
                                   }`}>
                                     {order.status === 'pending' && 'Pendente'}
                                     {order.status === 'in_progress' && 'Em Andamento'}
                                     {order.status === 'delivered' && 'Entregue'}
+                                    {order.status === 'cancelled' && 'Cancelado'}
                                   </span>
                                 </td>
                                 <td className="p-4">
@@ -366,12 +413,104 @@ export default function CentralDashboard() {
                                 <td className="p-4 text-sm">
                                   {new Date(order.createdAt).toLocaleDateString('pt-BR')}
                                 </td>
+                                <td className="p-4">
+                                  <div className="flex gap-2">
+                                    {order.status !== 'delivered' && order.status !== 'cancelled' && (
+                                      <>
+                                        <Button 
+                                          size="sm" 
+                                          variant="outline"
+                                          onClick={() => {
+                                            setSelectedOrderForReassign(order.id);
+                                            setReassignDialogOpen(true);
+                                          }}
+                                          disabled={reassignOrderMutation.isPending}
+                                        >
+                                          <RefreshCw className="w-3 h-3 mr-1" />
+                                          Reatribuir
+                                        </Button>
+                                        <Button 
+                                          size="sm" 
+                                          variant="destructive"
+                                          onClick={() => {
+                                            if (confirm('Tem certeza que deseja cancelar este pedido?')) {
+                                              cancelOrderMutation.mutate(order.id);
+                                            }
+                                          }}
+                                          disabled={cancelOrderMutation.isPending}
+                                        >
+                                          <XCircle className="w-3 h-3 mr-1" />
+                                          Cancelar
+                                        </Button>
+                                      </>
+                                    )}
+                                    {(order.status === 'delivered' || order.status === 'cancelled') && (
+                                      <span className="text-muted-foreground text-sm">-</span>
+                                    )}
+                                  </div>
+                                </td>
                               </tr>
                             ))}
                           </tbody>
                         </table>
                       </div>
                     </Card>
+
+                    {/* Reassign Dialog */}
+                    <Dialog open={reassignDialogOpen} onOpenChange={setReassignDialogOpen}>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Reatribuir Pedido</DialogTitle>
+                          <DialogDescription>
+                            Selecione um motoboy para reatribuir este pedido
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="py-4">
+                          <Select 
+                            value={selectedMotoboyForReassign} 
+                            onValueChange={setSelectedMotoboyForReassign}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione um motoboy" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {motoboys.map(motoboy => (
+                                <SelectItem key={motoboy.id} value={motoboy.id}>
+                                  {motoboy.name} {motoboy.online ? '(Online)' : '(Offline)'}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <DialogFooter>
+                          <Button 
+                            variant="outline" 
+                            onClick={() => {
+                              setReassignDialogOpen(false);
+                              setSelectedMotoboyForReassign('');
+                            }}
+                          >
+                            Cancelar
+                          </Button>
+                          <Button
+                            onClick={() => {
+                              if (selectedOrderForReassign && selectedMotoboyForReassign) {
+                                reassignOrderMutation.mutate({
+                                  orderId: selectedOrderForReassign,
+                                  motoboyId: selectedMotoboyForReassign,
+                                });
+                                setReassignDialogOpen(false);
+                                setSelectedOrderForReassign(null);
+                                setSelectedMotoboyForReassign('');
+                              }
+                            }}
+                            disabled={!selectedMotoboyForReassign || reassignOrderMutation.isPending}
+                          >
+                            {reassignOrderMutation.isPending ? 'Reatribuindo...' : 'Reatribuir'}
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
                   </>
                 </Route>
 
