@@ -50,6 +50,13 @@ export default function CentralDashboard() {
     refetchInterval: 5000, // Atualiza a cada 5 segundos para mostrar status real
   });
 
+  // QUERY: Busca usuários online via WebSocket
+  const { data: onlineData, refetch: refetchOnline } = useQuery<{ onlineUsers: string[] }>({
+    queryKey: ['/api/users/online'],
+    refetchInterval: 5000, // Atualiza a cada 5 segundos
+  });
+  const onlineUserIds = onlineData?.onlineUsers || [];
+
   // QUERY TERCIÁRIA: Busca lista de clientes para gestão
   const { data: clients = [] } = useQuery<Client[]>({
     queryKey: ['/api/clients'],
@@ -102,6 +109,25 @@ export default function CentralDashboard() {
     onError: (error: any) => {
       toast({ 
         title: "Erro ao alterar função", 
+        description: error.message,
+        variant: "destructive" 
+      });
+    },
+  });
+
+  // Mutation para toggle online/offline de motoboy
+  const toggleMotoboyOnlineMutation = useMutation({
+    mutationFn: async ({ motoboyId, online }: { motoboyId: string, online: boolean }) => {
+      const res = await apiRequest('PATCH', `/api/motoboys/${motoboyId}/online`, { online });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/motoboys'] });
+      toast({ title: "Status do motoboy atualizado" });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Erro ao atualizar status", 
         description: error.message,
         variant: "destructive" 
       });
@@ -163,9 +189,10 @@ export default function CentralDashboard() {
       if (data.type === 'new_order' || data.type === 'order_accepted' || data.type === 'order_delivered') {
         refetchOrders();
       }
-      // Atualiza lista de motoboys quando houver mudança de status online
+      // Atualiza lista de motoboys e usuários online quando houver mudança de status
       if (data.type === 'driver_online' || data.type === 'driver_offline' || data.type === 'order_accepted') {
         refetchMotoboys();
+        refetchOnline(); // Atualiza lista de usuários online
       }
     };
 
@@ -176,13 +203,27 @@ export default function CentralDashboard() {
     // Guarda referência para eventual debug e encerra na limpeza do efeito
     setWs(websocket);
     return () => websocket.close();
-  }, [refetchOrders, refetchMotoboys, token]);
+  }, [refetchOrders, refetchMotoboys, refetchOnline, token]);
 
   // KPIs exibidos nos StatCards
   const totalOrders = orders.length;
   const inProgress = orders.filter(o => o.status === 'in_progress').length;
   const delivered = orders.filter(o => o.status === 'delivered').length;
-  const activeDrivers = motoboys.filter(m => m.online).length;
+  
+  // Conta motoboys ativos: apenas os marcados como online=true na tabela motoboys
+  // Não usa WebSocket porque os IDs da tabela users são diferentes dos IDs da tabela motoboys
+  // O controle é 100% manual via botão Ativar/Desativar na aba Entregadores
+  const activeDrivers = motoboys.filter((m: any) => m.online === true).length;
+  
+  // Log para debug
+  console.log('📊 Dashboard Stats:', {
+    totalMotoboys: motoboys.length,
+    markedOnline: motoboys.filter((m: any) => m.online === true).length,
+    motoboyIds: motoboys.map((m: any) => m.id),
+    onlineUserIds,
+    activeDrivers,
+    rawMotoboyData: motoboys.slice(0, 3) // Primeiros 3 para debug
+  });
 
   // CSS custom properties: controlam largura do sidebar responsivo
   const style = {
@@ -629,11 +670,24 @@ export default function CentralDashboard() {
                                 <td className="p-4">{motoboy.phone}</td>
                                 <td className="p-4 font-mono">{motoboy.placa}</td>
                                 <td className="p-4">
-                                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                    motoboy.available ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                                  }`}>
-                                    {motoboy.available ? 'Disponível' : 'Ocupado'}
-                                  </span>
+                                  <div className="flex items-center gap-2">
+                                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                      motoboy.online ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                                    }`}>
+                                      {motoboy.online ? 'Online' : 'Offline'}
+                                    </span>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm"
+                                      onClick={() => toggleMotoboyOnlineMutation.mutate({ 
+                                        motoboyId: motoboy.id, 
+                                        online: !motoboy.online 
+                                      })}
+                                      className="h-6 px-2 text-xs"
+                                    >
+                                      {motoboy.online ? 'Desativar' : 'Ativar'}
+                                    </Button>
+                                  </div>
                                 </td>
                                 <td className="p-4">
                                   {orders.filter(o => o.motoboyId === motoboy.id && o.status === 'in_progress').length}

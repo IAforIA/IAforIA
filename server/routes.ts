@@ -711,6 +711,23 @@ export async function registerRoutes() {
   // ROTAS: GERENCIAMENTO DE MOTOBOYS
   // ========================================
 
+  // ROTA: GET /api/users/online
+  // PROPÓSITO: Retorna IDs dos usuários conectados via WebSocket
+  // MIDDLEWARES: authenticateToken + requireRole('central')
+  // ACESSO: Apenas usuários da central
+  router.get("/api/users/online", authenticateToken, requireRole('central'), async (req, res) => {
+    try {
+      // Importa wsClients do index.ts (precisa ser exportado)
+      const { getOnlineUsers } = await import('./index.js');
+      const onlineUserIds = getOnlineUsers();
+      console.log('🔌 Usuários online via WebSocket:', onlineUserIds);
+      res.json({ onlineUsers: onlineUserIds });
+    } catch (error) {
+      console.error('❌ Erro ao buscar usuários online:', error);
+      res.status(500).json({ error: "Erro ao buscar usuários online" });
+    }
+  });
+
   // ROTA: GET /api/motoboys
   // PROPÓSITO: Lista todos os motoboys cadastrados
   // MIDDLEWARES: authenticateToken + requireRole('central')
@@ -723,6 +740,30 @@ export async function registerRoutes() {
       res.json(motoboys);
     } catch (error) {
       res.status(500).json({ error: "Erro ao buscar motoboys" });
+    }
+  });
+
+  // ROTA: PATCH /api/motoboys/:id/online
+  // PROPÓSITO: Atualiza status online/offline de um motoboy (controle manual da central)
+  // MIDDLEWARES: authenticateToken + requireRole('central')
+  // ACESSO: Apenas usuários da central podem alterar
+  // PAYLOAD: { online: boolean }
+  router.patch("/api/motoboys/:id/online", authenticateToken, requireRole('central'), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { online } = req.body;
+      
+      if (typeof online !== 'boolean') {
+        return res.status(400).json({ error: "Campo 'online' deve ser boolean" });
+      }
+
+      console.log(`🔄 Central alterando status online do motoboy ${id} para: ${online}`);
+      await storage.updateMotoboyOnlineStatus(id, online);
+      
+      res.json({ success: true, id, online });
+    } catch (error) {
+      console.error('❌ Erro ao atualizar status online do motoboy:', error);
+      res.status(500).json({ error: "Erro ao atualizar status online" });
     }
   });
 

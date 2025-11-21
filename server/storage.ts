@@ -380,7 +380,7 @@ class DrizzleStorage /* implements IStorage */ {
     await db.update(motoboys)
       .set({ 
         online: online,
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date() // Drizzle espera Date object, não string
       })
       .where(eq(motoboys.id, id));
   }

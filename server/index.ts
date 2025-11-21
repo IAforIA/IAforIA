@@ -125,6 +125,15 @@ app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 const wsClients = new Map<string, WebSocket>();
 
 /**
+ * FUNÇÃO EXPORTADA: getOnlineUsers
+ * PROPÓSITO: Retorna array com IDs dos usuários conectados via WebSocket
+ * USADO EM: routes.ts - endpoint /api/users/online
+ */
+export function getOnlineUsers(): string[] {
+  return Array.from(wsClients.keys());
+}
+
+/**
  * FUNÇÃO EXPORTADA: broadcast
  * PROPÓSITO: Envia mensagem para todos os clientes WebSocket conectados
  * 
