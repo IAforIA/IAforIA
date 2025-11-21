@@ -401,25 +401,25 @@ export type MotoboySchedule = typeof motoboySchedules.$inferSelect;
 // ========================================
 /**
  * TABELA EXPORTADA: clientSchedules
- * PROPÓSITO: Horários de funcionamento de clientes corporativos
+ * PROPÓSITO: Horários de funcionamento de clientes corporativos por dia da semana
  * USADO EM: Validação de pedidos (não aceitar entregas fora do horário)
- * PADRÃO: Registro por cliente (global, não por dia da semana)
+ * PADRÃO: Múltiplos registros por cliente (um por dia da semana)
  * 
  * CAMPOS:
  *   - id: VARCHAR UUID gerado automaticamente
  *   - clientId: VARCHAR referência ao cliente
+ *   - diaSemana: INTEGER dia da semana (0=Domingo, 1=Segunda, ..., 6=Sábado)
  *   - horaAbertura: TEXT horário de abertura (ex: "08:00")
  *   - horaFechamento: TEXT horário de fechamento (ex: "18:00")
- *   - fechado: BOOLEAN se cliente está temporariamente fechado (default false)
- * 
- * NOTA: Formato simples - poderia evoluir para horários por dia da semana
+ *   - fechado: BOOLEAN se cliente está fechado neste dia (default false)
  */
 export const clientSchedules = pgTable("client_schedules", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   clientId: varchar("client_id").notNull(), // FK para clients.id
+  diaSemana: integer("dia_semana").notNull(),  // 0-6 (JavaScript Date.getDay())
   horaAbertura: text("hora_abertura"),      // Formato "HH:MM"
   horaFechamento: text("hora_fechamento"),  // Formato "HH:MM"
-  fechado: boolean("fechado").default(false), // Override temporário
+  fechado: boolean("fechado").default(false), // Dia fechado
 });
 
 export const insertClientScheduleSchema = createInsertSchema(clientSchedules).omit({ id: true });

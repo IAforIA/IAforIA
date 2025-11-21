@@ -13,6 +13,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 // Cartões reutilizáveis de estatística e pedido
 import StatCard from "@/components/StatCard";
 import OrderCard from "@/components/OrderCard";
+import { ScheduleGrid } from "@/components/ScheduleGrid";
 import { TruckIcon, Package, CheckCircle, DollarSign, Camera, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -46,6 +47,7 @@ import { useAuth } from "@/hooks/use-auth";
 import type { Order, OrderStatus } from "@shared/schema";
 import { resolveWebSocketUrl } from "@/lib/utils";
 import { ChatWidget } from "@/components/ChatWidget";
+import { SettingsPage } from "@/components/SettingsPage";
 
 // Ajuda a converter valores armazenados como string (vindo do banco) sem quebrar a soma
 const parseDecimalSafe = (value: string | null | undefined): number => {
@@ -501,52 +503,17 @@ export default function DriverDashboard() {
                 {/* Sub-rota de Live Docs (path="/live-docs") */}
                 <Route path="/live-docs" component={LiveDocs} />
 
+                {/* Sub-rota de Disponibilidade (path="/availability") */}
+                <Route path="/availability">
+                  <>
+                    <h2 className="text-2xl font-bold mb-6">Minha Disponibilidade</h2>
+                    <ScheduleGrid />
+                  </>
+                </Route>
+
                 {/* Sub-rota de Configurações (path="/settings") reserva layout futuro */}
                 <Route path="/settings">
-                  <>
-                    <h2 className="text-2xl font-bold mb-6">Configurações da Conta</h2>
-
-                    <Card className="p-6 max-w-2xl">
-                      <h3 className="text-lg font-semibold mb-4">Informações Pessoais</h3>
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-medium mb-2">Nome</label>
-                          <Input placeholder="Seu nome completo" />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium mb-2">Email</label>
-                          <Input type="email" placeholder="seu@email.com" />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium mb-2">Telefone</label>
-                          <Input placeholder="(00) 00000-0000" />
-                        </div>
-                      </div>
-
-                      <div className="border-t mt-6 pt-6">
-                        <h3 className="text-lg font-semibold mb-4">Segurança</h3>
-                        <div className="space-y-4">
-                          <div>
-                            <label className="block text-sm font-medium mb-2">Senha Atual</label>
-                            <Input type="password" placeholder="••••••••" />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium mb-2">Nova Senha</label>
-                            <Input type="password" placeholder="••••••••" />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium mb-2">Confirmar Nova Senha</label>
-                            <Input type="password" placeholder="••••••••" />
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex gap-3 mt-6">
-                        <Button>Salvar Alterações</Button>
-                        <Button variant="outline">Cancelar</Button>
-                      </div>
-                    </Card>
-                  </>
+                  <SettingsPage user={user} />
                 </Route>
 
                 </Switch>

@@ -16,6 +16,7 @@ import type { Order, Motoboy, MotoboyLocation } from "@shared/schema";
 import OpenAI from "openai";
 import { costTracker } from "./middleware/cost-tracker";
 import { responseCache } from "./middleware/response-cache";
+import { storage } from "./storage";
 
 // ========================================
 // TIPOS AUXILIARES
@@ -117,6 +118,7 @@ export class AIEngine {
    * MÉTODO EXPORTADO: assignBestMotoboy(order, availableMotoboys, currentLocations)
    * PROPÓSITO: Atribui o melhor motoboy baseado em distância, status online e pontuação
    * ALGORITMO:
+   *   0. Filtra motoboys que estão disponíveis no horário atual (schedules)
    *   1. Calcula distância de cada motoboy até o pedido (Haversine)
    *   2. Pontua: score = 100 - (distância * 10) + (online ? 20 : 0)
    *   3. Ordena por score (maior = melhor)
@@ -140,14 +142,50 @@ export class AIEngine {
     // VALIDAÇÃO: Se não há motoboys disponíveis, retorna null
     if (availableMotoboys.length === 0) return null;
 
+    // FILTRO DE DISPONIBILIDADE POR HORÁRIO
+    const now = new Date();
+    const currentDay = now.getDay(); // 0 = Domingo, 6 = Sábado
+    const currentHour = now.getHours();
+    const DAYS = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
+    
+    // Determina o turno atual baseado na hora
+    const currentShift = currentHour >= 6 && currentHour < 12 ? 'turnoManha' :
+                         currentHour >= 12 && currentHour < 18 ? 'turnoTarde' : 'turnoNoite';
+    
+    // Busca schedules de todos os motoboys em paralelo
+    const schedulesPromises = availableMotoboys.map(m => 
+      storage.getMotoboySchedules(m.id)
+    );
+    const schedulesResults = await Promise.all(schedulesPromises);
+    
+    // Filtra apenas motoboys que trabalham hoje no turno atual
+    const availableNow = availableMotoboys.filter((motoboy, index) => {
+      const schedules = schedulesResults[index];
+      const todaySchedule = schedules.find(s => s.diaSemana === currentDay);
+      
+      // Se não tem schedule para hoje, não está disponível
+      if (!todaySchedule) return false;
+      
+      // Verifica se o turno atual está ativo
+      return todaySchedule[currentShift as keyof typeof todaySchedule] === true;
+    });
+
+    // Se nenhum motoboy disponível no horário, retorna null
+    if (availableNow.length === 0) {
+      console.log(`[AI-Engine] Nenhum motoboy disponível para ${DAYS[currentDay]} ${currentShift}`);
+      return null;
+    }
+
+    console.log(`[AI-Engine] ${availableNow.length}/${availableMotoboys.length} motoboys disponíveis agora`);
+
     // CRÍTICO: Coordenadas do pedido - MOCKADAS para demonstração
     // TODO: Implementar geocodificação de endereços (coletaRua + coletaCep -> lat/lng)
     const orderWithGeo = order as OrderWithLatLng;
     const orderLat = this.parseDecimal(orderWithGeo.coletaLat) || -19.0; // São Paulo mock
     const orderLng = this.parseDecimal(orderWithGeo.coletaLng) || -40.0;
 
-    // CONSTANTE: Array de resultados com distância e score de cada motoboy
-    const scores: DistanceResult[] = availableMotoboys.map(motoboy => {
+    // CONSTANTE: Array de resultados com distância e score de cada motoboy DISPONÍVEL AGORA
+    const scores: DistanceResult[] = availableNow.map(motoboy => {
       // CONSTANTE: Localização GPS mais recente do motoboy
       const location = currentLocations.get(motoboy.id);
 

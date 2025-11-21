@@ -64,6 +64,9 @@ import { ExternalLink } from "lucide-react";
 import { resolveWebSocketUrl } from "@/lib/utils";
 import { Switch as UiSwitch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { ClientScheduleViewer } from "@/components/ClientScheduleViewer";
+import { ClientScheduleEditor } from "@/components/ClientScheduleEditor";
+import { SettingsPage } from "@/components/SettingsPage";
 
 // ========================================
 // VALIDAÇÃO: SCHEMA ZOD DO FORMULÁRIO
@@ -187,6 +190,26 @@ export default function ClientDashboard() {
     retry: false,
   });
 
+  // QUERY: Busca horário de funcionamento do cliente
+  interface ClientScheduleEntry {
+    id: number;
+    clienteId: number;
+    diaSemana: number;
+    periodo: string;
+    horaInicio: string;
+    horaFim: string;
+  }
+
+  const { data: clientSchedule = [] } = useQuery<ClientScheduleEntry[]>({
+    queryKey: ['/api/clients', user?.id, 'schedules'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', `/api/clients/${user?.id}/schedules`, {});
+      return res.json();
+    },
+    enabled: Boolean(user?.id),
+    retry: false,
+  });
+
   // FILTRO LOCAL: garante que cliente veja apenas seus próprios pedidos
   const clientOrders = orders.filter(o => o.clientId === user?.id);
 
@@ -200,6 +223,43 @@ export default function ClientDashboard() {
 
     return () => websocket.close();
   }, [user?.id, refetch, token]);
+
+  // VALIDATION: Verifica se o cliente está em horário de funcionamento
+  const validateBusinessHours = (): { valid: boolean; message: string } => {
+    if (!clientSchedule || clientSchedule.length === 0) {
+      // Sem horário cadastrado, permite criar pedido
+      return { valid: true, message: '' };
+    }
+
+    const now = new Date();
+    const currentDay = now.getDay(); // 0 = Domingo, 6 = Sábado
+    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+    // Busca horários do dia atual
+    const todaySchedules = clientSchedule.filter(s => s.diaSemana === currentDay);
+
+    if (todaySchedules.length === 0) {
+      return {
+        valid: false,
+        message: 'Seu estabelecimento está FECHADO hoje. Não é possível criar pedidos em dias de folga.',
+      };
+    }
+
+    // Verifica se está dentro de algum dos períodos de funcionamento
+    const isWithinBusinessHours = todaySchedules.some(schedule => {
+      return currentTime >= schedule.horaInicio && currentTime <= schedule.horaFim;
+    });
+
+    if (!isWithinBusinessHours) {
+      const hours = todaySchedules.map(s => `${s.horaInicio} às ${s.horaFim}`).join(', ');
+      return {
+        valid: false,
+        message: `Seu estabelecimento está FECHADO neste momento. Horário de funcionamento hoje: ${hours}`,
+      };
+    }
+
+    return { valid: true, message: '' };
+  };
 
   // MUTATION: envia POST /api/orders com dados do formulário
   const createOrderMutation = useMutation({
@@ -397,7 +457,19 @@ export default function ClientDashboard() {
                     <p className="text-sm text-muted-foreground">Carregando endereço fixo cadastrado...</p>
                   )}
                   <Form {...form}>
-                    <form onSubmit={form.handleSubmit((data) => createOrderMutation.mutate(data))} className="space-y-4">
+                    <form onSubmit={form.handleSubmit((data) => {
+                      // Validate business hours before submission
+                      const validation = validateBusinessHours();
+                      if (!validation.valid) {
+                        toast({
+                          title: "Fora do horário de funcionamento",
+                          description: validation.message,
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+                      createOrderMutation.mutate(data);
+                    })} className="space-y-4">
                       <FormField
                         control={form.control}
                         name="coletaOverride"
@@ -767,52 +839,22 @@ export default function ClientDashboard() {
                 {/* Sub-rota de Live Docs (path="/live-docs") */}
                 <Route path="/live-docs" component={LiveDocs} />
 
+                {/* Sub-rota de Horário de Funcionamento (path="/schedule") */}
+                <Route path="/schedule">
+                  <div className="space-y-6">
+                    <div>
+                      <h2 className="text-2xl font-bold mb-2">Horário de Funcionamento</h2>
+                      <p className="text-muted-foreground">Configure quando seu estabelecimento está aberto para receber pedidos</p>
+                    </div>
+                    {user && (
+                      <ClientScheduleEditor clientId={user.id} />
+                    )}
+                  </div>
+                </Route>
+
                 {/* Sub-rota de Configurações (path="/settings") reserva layout para futuras preferências */}
                 <Route path="/settings">
-                  <>
-                    <h2 className="text-2xl font-bold mb-6">Configurações da Conta</h2>
-
-                    <Card className="p-6 max-w-2xl">
-                      <h3 className="text-lg font-semibold mb-4">Informações Pessoais</h3>
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-medium mb-2">Nome</label>
-                          <Input placeholder="Seu nome completo" />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium mb-2">Email</label>
-                          <Input type="email" placeholder="seu@email.com" />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium mb-2">Telefone</label>
-                          <Input placeholder="(00) 00000-0000" />
-                        </div>
-                      </div>
-
-                      <div className="border-t mt-6 pt-6">
-                        <h3 className="text-lg font-semibold mb-4">Segurança</h3>
-                        <div className="space-y-4">
-                          <div>
-                            <label className="block text-sm font-medium mb-2">Senha Atual</label>
-                            <Input type="password" placeholder="••••••••" />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium mb-2">Nova Senha</label>
-                            <Input type="password" placeholder="••••••••" />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium mb-2">Confirmar Nova Senha</label>
-                            <Input type="password" placeholder="••••••••" />
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex gap-3 mt-6">
-                        <Button>Salvar Alterações</Button>
-                        <Button variant="outline">Cancelar</Button>
-                      </div>
-                    </Card>
-                  </>
+                  <SettingsPage user={user} />
                 </Route>
 
                 </RouterSwitch>

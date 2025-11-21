@@ -12,8 +12,8 @@
 import { neon } from '@neondatabase/serverless';
 // drizzle: ORM TypeScript-first que gera queries SQL type-safe
 import { drizzle } from 'drizzle-orm/neon-http';
-// eq, desc: Funções helper do Drizzle para filtros e ordenação SQL
-import { eq, desc } from 'drizzle-orm';
+// eq, desc, and: Funções helper do Drizzle para filtros e ordenação SQL
+import { eq, desc, and } from 'drizzle-orm';
 // randomUUID: Gera IDs únicos para novos clientes cadastrados via onboarding
 import { randomUUID } from 'crypto';
 // Importa todas as tabelas e tipos do schema compartilhado
@@ -21,6 +21,7 @@ import {
   users,           // Tabela de usuários (clients, motoboys, central)
   motoboys,        // Tabela de motoboys (informações específicas como veículo)
   motoboyLocations, // Tabela de histórico de localizações GPS
+  motoboySchedules, // Tabela de disponibilidade semanal dos motoboys
   clients,         // Tabela de clientes (informações complementares)
   orders,          // Tabela de pedidos (principal)
   liveDocs,        // Tabela de documentos (CNH, fotos, etc)
@@ -538,11 +539,70 @@ class DrizzleStorage /* implements IStorage */ {
 
   /**
    * MÉTODO: getClientSchedule(clientId)
-   * PROPÓSITO: Busca horário de funcionamento do cliente
+   * PROPÓSITO: Busca horários de funcionamento do cliente (todos os dias)
+   * RETORNA: Array de schedules com diaSemana, horários e status fechado
    */
   async getClientSchedule(clientId: string) {
-    const result = await db.select().from(clientSchedules).where(eq(clientSchedules.clientId, clientId)).limit(1);
-    return result[0];
+    return await db.select().from(clientSchedules).where(eq(clientSchedules.clientId, clientId));
+  }
+
+  /**
+   * MÉTODO: getMotoboySchedules(motoboyId)
+   * PROPÓSITO: Busca disponibilidade semanal do motoboy
+   * USADO EM: GET /api/motoboys/:id/schedules
+   * RETORNA: Array de schedules com diaSemana e turnos (manha/tarde/noite)
+   */
+  async getMotoboySchedules(motoboyId: string) {
+    return await db.select()
+      .from(motoboySchedules)
+      .where(eq(motoboySchedules.motoboyId, motoboyId))
+      .orderBy(motoboySchedules.diaSemana);
+  }
+
+  /**
+   * MÉTODO: upsertMotoboySchedule(motoboyId, diaSemana, shifts)
+   * PROPÓSITO: Cria ou atualiza disponibilidade para um dia específico
+   * USADO EM: POST /api/motoboys/:id/schedules
+   * LÓGICA: Delete existing + Insert new (simula UPSERT)
+   */
+  async upsertMotoboySchedule(
+    motoboyId: string, 
+    diaSemana: number, 
+    turnoManha: boolean, 
+    turnoTarde: boolean, 
+    turnoNoite: boolean
+  ) {
+    // Delete existing schedule for this day
+    await db.delete(motoboySchedules)
+      .where(
+        and(
+          eq(motoboySchedules.motoboyId, motoboyId),
+          eq(motoboySchedules.diaSemana, diaSemana)
+        )
+      );
+    
+    // If at least one shift is active, insert new schedule
+    if (turnoManha || turnoTarde || turnoNoite) {
+      const result = await db.insert(motoboySchedules).values({
+        motoboyId,
+        diaSemana,
+        turnoManha,
+        turnoTarde,
+        turnoNoite
+      }).returning();
+      return result[0];
+    }
+    
+    return null; // All shifts disabled = no schedule entry
+  }
+
+  /**
+   * MÉTODO: deleteMotoboySchedule(id)
+   * PROPÓSITO: Remove entrada de disponibilidade específica
+   * USADO EM: DELETE /api/motoboy-schedules/:id
+   */
+  async deleteMotoboySchedule(id: string) {
+    await db.delete(motoboySchedules).where(eq(motoboySchedules.id, id));
   }
 
   // ========================================
@@ -590,6 +650,47 @@ class DrizzleStorage /* implements IStorage */ {
   async createLiveDoc(doc: typeof liveDocs.$inferInsert) {
     const result = await db.insert(liveDocs).values(doc).returning();
     return result[0];
+  }
+
+  /**
+   * MÉTODO: upsertClientSchedule(data)
+   * PROPÓSITO: Cria horário de funcionamento do cliente
+   * USADO EM: POST /api/clients/:id/schedules
+   */
+  async upsertClientSchedule(data: {
+    clienteId: string;
+    diaSemana: number;
+    periodo: string;
+    horaInicio: string;
+    horaFim: string;
+  }) {
+    const result = await db.insert(clientSchedules).values({
+      clienteId: data.clienteId,
+      diaSemana: data.diaSemana,
+      periodo: data.periodo,
+      horaInicio: data.horaInicio,
+      horaFim: data.horaFim,
+    }).returning();
+    return result[0];
+  }
+
+  /**
+   * MÉTODO: deleteClientSchedule(id)
+   * PROPÓSITO: Remove horário de funcionamento específico
+   * USADO EM: POST /api/clients/:id/schedules (delete before insert)
+   */
+  async deleteClientSchedule(id: number) {
+    await db.delete(clientSchedules).where(eq(clientSchedules.id, id));
+  }
+
+  /**
+   * MÉTODO: getAllClientSchedules()
+   * PROPÓSITO: Busca TODOS os horários de TODOS os clientes de uma vez
+   * USADO EM: GET /api/schedules/all-clients (otimização para central dashboard)
+   * RETORNA: Array completo de schedules com clientId
+   */
+  async getAllClientSchedules() {
+    return await db.select().from(clientSchedules).orderBy(clientSchedules.clientId, clientSchedules.diaSemana);
   }
 }
 

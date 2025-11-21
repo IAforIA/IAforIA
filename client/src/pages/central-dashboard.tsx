@@ -33,6 +33,12 @@ import { useEffect, useState } from "react";
 import { resolveWebSocketUrl } from "@/lib/utils";
 // Chat widget for real-time communication
 import { ChatWidget } from "@/components/ChatWidget";
+// Schedule viewer for driver availability
+import { DriverScheduleViewer, DriverAvailabilityBadge } from "@/components/DriverScheduleViewer";
+// AI-powered availability insights
+import { AvailabilityInsights } from "@/components/AvailabilityInsights";
+import { SettingsPage } from "@/components/SettingsPage";
+import { ClientStatusBadge } from "@/components/ClientStatusBadge";
 
 export default function CentralDashboard() {
   // CONTEXTO GLOBAL: useAuth provê token JWT e função de logout
@@ -40,6 +46,9 @@ export default function CentralDashboard() {
   const { toast } = useToast();
   // ESTADO LOCAL: Guarda instância WebSocket para fechar ao desmontar
   const [ws, setWs] = useState<WebSocket | null>(null);
+  // ESTADO: Dialog de visualização de schedule
+  const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
+  const [selectedDriver, setSelectedDriver] = useState<{ id: string; name: string } | null>(null);
 
   // QUERY PRINCIPAL: Busca lista completa de pedidos (cacheado por React Query)
   const { data: orders = [], refetch: refetchOrders } = useQuery<Order[]>({
@@ -65,11 +74,21 @@ export default function CentralDashboard() {
     enabled: !!token, // Só faz a query se tiver token
   });
 
+  // QUERY: Busca TODOS os horários dos clientes de uma vez (otimização)
+  const { data: allClientSchedules = [] } = useQuery<any[]>({
+    queryKey: ['/api/schedules/all-clients'],
+    enabled: !!token,
+    refetchInterval: 60000, // Atualiza a cada 1 minuto
+  });
+
   // STEP 4: Query de usuários
   const { data: usersData = [] } = useQuery<any[]>({
     queryKey: ['/api/users'],
     enabled: !!token,
   });
+
+  // Estado de busca de pedidos
+  const [searchQuery, setSearchQuery] = useState('');
 
   // STEP 4: Mutation para alterar status de usuário
   const toggleUserStatusMutation = useMutation({
@@ -306,22 +325,46 @@ export default function CentralDashboard() {
                       <StatCard title="Entregadores Ativos" value={activeDrivers} icon={Users} />
                     </div>
 
-                    {/* Barra de busca local (futuro filtro de pedidos) */}
+                    {/* AI Insights de Disponibilidade */}
+                    <AvailabilityInsights motoboys={motoboys} />
+
+                    {/* Barra de busca de pedidos */}
                     <div className="flex items-center justify-between gap-4 flex-wrap">
                       <h2 className="text-lg font-semibold">Pedidos Recentes</h2>
                       <div className="flex gap-2 flex-1 max-w-md">
                         <Input
-                          placeholder="Buscar pedidos..."
+                          placeholder="Buscar por endereço, cliente..."
                           className="flex-1"
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
                           data-testid="input-search-orders"
                         />
-                        <Button data-testid="button-search">Buscar</Button>
+                        {searchQuery && (
+                          <Button 
+                            variant="outline" 
+                            onClick={() => setSearchQuery('')}
+                            data-testid="button-clear-search"
+                          >
+                            Limpar
+                          </Button>
+                        )}
                       </div>
                     </div>
 
                     {/* Cards resumidos dos pedidos mais recentes */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {orders.slice(0, 9).map((order) => (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {orders.filter(order => {
+                        if (!searchQuery.trim()) return true;
+                        const query = searchQuery.toLowerCase();
+                        return (
+                          order.coletaRua?.toLowerCase().includes(query) ||
+                          order.coletaBairro?.toLowerCase().includes(query) ||
+                          order.entregaRua?.toLowerCase().includes(query) ||
+                          order.entregaBairro?.toLowerCase().includes(query) ||
+                          order.clientId?.toString().includes(query) ||
+                          order.id?.toString().includes(query)
+                        );
+                      }).slice(0, 6).map((order) => (
                         <OrderCard
                           key={order.id}
                           id={order.id}
@@ -587,6 +630,7 @@ export default function CentralDashboard() {
                               <th className="text-left p-4 font-semibold">Nome</th>
                               <th className="text-left p-4 font-semibold">Telefone</th>
                               <th className="text-left p-4 font-semibold">Email</th>
+                              <th className="text-left p-4 font-semibold">Status</th>
                               <th className="text-left p-4 font-semibold">Pedidos</th>
                               <th className="text-left p-4 font-semibold">Cadastro</th>
                               <th className="text-left p-4 font-semibold">Ações</th>
@@ -595,27 +639,37 @@ export default function CentralDashboard() {
                           <tbody>
                             {clients.length === 0 ? (
                               <tr className="border-b">
-                                <td className="p-4 text-muted-foreground text-center" colSpan={6}>
+                                <td className="p-4 text-muted-foreground text-center" colSpan={7}>
                                   Nenhum cliente cadastrado
                                 </td>
                               </tr>
                             ) : (
-                              clients.map(client => (
-                                <tr key={client.id} className="border-b hover:bg-muted/50">
-                                  <td className="p-4 font-medium">{client.name}</td>
-                                  <td className="p-4">{client.phone}</td>
-                                  <td className="p-4">{client.email}</td>
-                                  <td className="p-4">
-                                    {orders.filter(o => o.clientId === client.id).length}
-                                  </td>
-                                  <td className="p-4 text-sm">
-                                    {new Date(client.createdAt).toLocaleDateString('pt-BR')}
-                                  </td>
-                                  <td className="p-4">
-                                    <Button variant="ghost" size="sm">Ver Pedidos</Button>
-                                  </td>
-                                </tr>
-                              ))
+                              clients.map(client => {
+                                // Filtra schedules deste cliente (compara string e número)
+                                const clientSchedules = allClientSchedules.filter(s => 
+                                  s.clienteId === client.id || s.clienteId === String(client.id) || s.clientId === Number(client.id)
+                                );
+                                
+                                return (
+                                  <tr key={client.id} className="border-b hover:bg-muted/50">
+                                    <td className="p-4 font-medium">{client.name}</td>
+                                    <td className="p-4">{client.phone}</td>
+                                    <td className="p-4">{client.email}</td>
+                                    <td className="p-4">
+                                      <ClientStatusBadge clientId={client.id} schedules={clientSchedules} />
+                                    </td>
+                                    <td className="p-4">
+                                      {orders.filter(o => o.clientId === client.id).length}
+                                    </td>
+                                    <td className="p-4 text-sm">
+                                      {new Date(client.createdAt).toLocaleDateString('pt-BR')}
+                                    </td>
+                                    <td className="p-4">
+                                      <Button variant="ghost" size="sm">Ver Pedidos</Button>
+                                    </td>
+                                  </tr>
+                                );
+                              })
                             )}
                           </tbody>
                         </table>
@@ -660,6 +714,7 @@ export default function CentralDashboard() {
                               <th className="text-left p-4 font-semibold">Telefone</th>
                               <th className="text-left p-4 font-semibold">Placa</th>
                               <th className="text-left p-4 font-semibold">Situação</th>
+                              <th className="text-left p-4 font-semibold">Disponibilidade</th>
                               <th className="text-left p-4 font-semibold">Pedidos Ativos</th>
                               <th className="text-left p-4 font-semibold">Última Atualização</th>
                               <th className="text-left p-4 font-semibold">Ações</th>
@@ -688,6 +743,22 @@ export default function CentralDashboard() {
                                       className="h-6 px-2 text-xs"
                                     >
                                       {motoboy.online ? 'Desativar' : 'Ativar'}
+                                    </Button>
+                                  </div>
+                                </td>
+                                <td className="p-4">
+                                  <div className="flex items-center gap-2">
+                                    <DriverAvailabilityBadge motoboyId={motoboy.id} />
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm"
+                                      onClick={() => {
+                                        setSelectedDriver({ id: motoboy.id, name: motoboy.name });
+                                        setScheduleDialogOpen(true);
+                                      }}
+                                      className="h-6 px-2 text-xs"
+                                    >
+                                      Ver schedule
                                     </Button>
                                   </div>
                                 </td>
@@ -918,50 +989,7 @@ export default function CentralDashboard() {
 
                 {/* Sub-rota de Configurações (path="/settings") */}
                 <Route path="/settings">
-                  <>
-                    <h2 className="text-2xl font-bold mb-6">Configurações da Conta</h2>
-
-                    <Card className="p-6 max-w-2xl">
-                      <h3 className="text-lg font-semibold mb-4">Informações Pessoais</h3>
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-medium mb-2">Nome</label>
-                          <Input placeholder="Seu nome completo" />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium mb-2">Email</label>
-                          <Input type="email" placeholder="seu@email.com" />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium mb-2">Telefone</label>
-                          <Input placeholder="(00) 00000-0000" />
-                        </div>
-                      </div>
-
-                      <div className="border-t mt-6 pt-6">
-                        <h3 className="text-lg font-semibold mb-4">Segurança</h3>
-                        <div className="space-y-4">
-                          <div>
-                            <label className="block text-sm font-medium mb-2">Senha Atual</label>
-                            <Input type="password" placeholder="••••••••" />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium mb-2">Nova Senha</label>
-                            <Input type="password" placeholder="••••••••" />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium mb-2">Confirmar Nova Senha</label>
-                            <Input type="password" placeholder="••••••••" />
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex gap-3 mt-6">
-                        <Button>Salvar Alterações</Button>
-                        <Button variant="outline">Cancelar</Button>
-                      </div>
-                    </Card>
-                  </>
+                  <SettingsPage user={user} />
                 </Route>
 
                 </Switch>
@@ -979,6 +1007,30 @@ export default function CentralDashboard() {
           currentUserRole={user.role}
         />
       )}
+
+      {/* Schedule Viewer Dialog */}
+      <Dialog open={scheduleDialogOpen} onOpenChange={setScheduleDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Disponibilidade do Motoboy</DialogTitle>
+            <DialogDescription>
+              Visualização completa da disponibilidade semanal com insights da AI
+            </DialogDescription>
+          </DialogHeader>
+          {selectedDriver && (
+            <DriverScheduleViewer 
+              motoboyId={selectedDriver.id} 
+              motoboyName={selectedDriver.name}
+              compact={false}
+            />
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setScheduleDialogOpen(false)}>
+              Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </SidebarProvider>
   );
 }

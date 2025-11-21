@@ -24,6 +24,8 @@ import { orders } from "@shared/schema";
 import { eq } from "drizzle-orm";
 // AIEngine: Classe com lógica de atribuição inteligente de motoboys (definida em ai-engine.ts)
 import { AIEngine } from "./ai-engine.ts";
+// Analytics: Business intelligence and financial calculations
+import * as analytics from "./analytics.ts";
 // bcrypt: Biblioteca para hash e comparação segura de senhas
 import bcrypt from "bcryptjs";
 // jwt: Biblioteca para criar e validar tokens JWT (JSON Web Tokens)
@@ -695,7 +697,7 @@ export async function registerRoutes() {
           motoboyId: motoboyId,
           motoboyName: motoboy.name,
           status: 'accepted',
-          acceptedAt: new Date().toISOString(),
+          acceptedAt: new Date(),
         })
         .where(eq(orders.id, req.params.id));
 
@@ -797,6 +799,220 @@ export async function registerRoutes() {
   });
 
   // ========================================
+  // ROTAS: SCHEDULE MANAGEMENT (DISPONIBILIDADE)
+  // ========================================
+
+  /**
+   * GET /api/motoboys/:id/schedules
+   * Retorna disponibilidade semanal do motoboy
+   * ACESSO: Motoboy próprio ou Central
+   */
+  router.get("/api/motoboys/:id/schedules", authenticateToken, async (req, res) => {
+    try {
+      // Security: Only the motoboy or central can view schedules
+      if (req.user!.role !== 'central' && req.user!.id !== req.params.id) {
+        return res.status(403).json({ error: "Acesso negado" });
+      }
+
+      const schedules = await storage.getMotoboySchedules(req.params.id);
+      res.json(schedules);
+    } catch (error) {
+      console.error("Error fetching motoboy schedules:", error);
+      res.status(500).json({ error: "Erro ao buscar disponibilidade" });
+    }
+  });
+
+  /**
+   * POST /api/motoboys/:id/schedules
+   * Cria ou atualiza disponibilidade para um dia específico
+   * BODY: { diaSemana: 0-6, turnoManha: boolean, turnoTarde: boolean, turnoNoite: boolean }
+   * ACESSO: Apenas o próprio motoboy
+   */
+  router.post("/api/motoboys/:id/schedules", authenticateToken, requireRole('motoboy'), async (req, res) => {
+    try {
+      // Security: Only the motoboy can update their own schedule
+      if (req.user!.id !== req.params.id) {
+        return res.status(403).json({ error: "Acesso negado: você só pode atualizar sua própria disponibilidade" });
+      }
+
+      const { diaSemana, turnoManha, turnoTarde, turnoNoite } = req.body;
+
+      // Validation
+      if (typeof diaSemana !== 'number' || diaSemana < 0 || diaSemana > 6) {
+        return res.status(400).json({ error: "diaSemana deve ser entre 0 (Domingo) e 6 (Sábado)" });
+      }
+
+      // At least one shift must be true if creating/updating
+      if (!turnoManha && !turnoTarde && !turnoNoite) {
+        return res.status(400).json({ error: "Pelo menos um turno deve estar ativo" });
+      }
+
+      const schedule = await storage.upsertMotoboySchedule(
+        req.params.id,
+        diaSemana,
+        !!turnoManha,
+        !!turnoTarde,
+        !!turnoNoite
+      );
+
+      res.json(schedule);
+    } catch (error) {
+      console.error("Error upserting motoboy schedule:", error);
+      res.status(500).json({ error: "Erro ao atualizar disponibilidade" });
+    }
+  });
+
+  /**
+   * DELETE /api/motoboy-schedules/:id
+   * Remove entrada de disponibilidade
+   * ACESSO: Apenas o motoboy dono do schedule
+   */
+  router.delete("/api/motoboy-schedules/:id", authenticateToken, requireRole('motoboy'), async (req, res) => {
+    try {
+      await storage.deleteMotoboySchedule(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting motoboy schedule:", error);
+      res.status(500).json({ error: "Erro ao remover disponibilidade" });
+    }
+  });
+
+  /**
+   * GET /api/clients/:id/schedules
+   * Retorna horários de funcionamento do cliente (todos os dias)
+   * ACESSO: Cliente próprio ou Central
+   */
+  router.get("/api/clients/:id/schedules", authenticateToken, async (req, res) => {
+    try {
+      // Security: Only the client or central can view schedules
+      if (req.user!.role !== 'central' && req.user!.id !== req.params.id) {
+        return res.status(403).json({ error: "Acesso negado" });
+      }
+
+      const schedules = await storage.getClientSchedule(req.params.id);
+      res.json(schedules);
+    } catch (error) {
+      console.error("Error fetching client schedules:", error);
+      res.status(500).json({ error: "Erro ao buscar horários" });
+    }
+  });
+
+  /**
+   * POST /api/clients/:id/schedules
+   * Cria/atualiza horário de funcionamento do cliente
+   * ACESSO: Cliente próprio ou Central
+   * BODY: { diaSemana: 0-6, periodo: string, horaInicio: "HH:MM", horaFim: "HH:MM" }
+   */
+  router.post("/api/clients/:id/schedules", authenticateToken, async (req, res) => {
+    try {
+      console.log('📥 POST /api/clients/:id/schedules');
+      console.log('  - req.params.id:', req.params.id);
+      console.log('  - req.user:', req.user);
+      console.log('  - req.body:', req.body);
+      
+      // Security: Only the client themselves or central can update schedules
+      // ACEITA tanto UUID quanto IDs de teste como "client"
+      if (req.user!.role !== 'central' && req.user!.id !== req.params.id) {
+        console.log('❌ Acesso negado - user.id:', req.user!.id, 'params.id:', req.params.id);
+        return res.status(403).json({ error: "Acesso negado" });
+      }
+      
+      console.log('✅ Acesso permitido');
+
+      const { diaSemana, periodo, horaInicio, horaFim } = req.body;
+
+      // Validation
+      if (diaSemana === undefined || !periodo || !horaInicio || !horaFim) {
+        return res.status(400).json({ error: "Campos obrigatórios: diaSemana, periodo, horaInicio, horaFim" });
+      }
+
+      if (diaSemana < 0 || diaSemana > 6) {
+        return res.status(400).json({ error: "diaSemana deve estar entre 0 (Domingo) e 6 (Sábado)" });
+      }
+
+      // Delete existing schedules for this day first
+      const existingSchedules = await storage.getClientSchedule(req.params.id);
+      console.log('📋 Schedules existentes para este dia:', existingSchedules.filter((s: any) => s.diaSemana === diaSemana));
+      const toDelete = existingSchedules.filter((s: any) => s.diaSemana === diaSemana);
+      
+      for (const schedule of toDelete) {
+        console.log('🗑️ Deletando schedule antigo:', schedule.id);
+        await storage.deleteClientSchedule(Number(schedule.id));
+      }
+
+      // Se horário é 00:00 a 00:00, significa dia fechado - só deletamos e não criamos novo
+      if (horaInicio === "00:00" && horaFim === "00:00") {
+        console.log('✅ POST /api/clients/:id/schedules - Day marked as closed, schedules deleted');
+        return res.json({ message: "Dia marcado como fechado" });
+      }
+
+      // Create new schedule
+      console.log('💾 Criando novo schedule...');
+      const newSchedule = await storage.upsertClientSchedule({
+        clienteId: req.params.id,
+        diaSemana,
+        periodo,
+        horaInicio,
+        horaFim,
+      });
+
+      console.log('✅ POST /api/clients/:id/schedules - Saved:', newSchedule);
+      res.json(newSchedule);
+    } catch (error) {
+      console.error("❌ Error creating client schedule:", error);
+      res.status(500).json({ error: "Erro ao salvar horário" });
+    }
+  });
+
+  /**
+   * DELETE /api/client-schedules/:id
+   * Deleta um horário de funcionamento do cliente
+   * ACESSO: Cliente próprio ou Central
+   */
+  router.delete("/api/client-schedules/:id", authenticateToken, async (req, res) => {
+    try {
+      const scheduleId = Number(req.params.id);
+      
+      // Get the schedule to check ownership
+      const allSchedules = await storage.getAllClientSchedules();
+      const schedule = allSchedules.find((s: any) => s.id === scheduleId);
+      
+      if (!schedule) {
+        return res.status(404).json({ error: "Horário não encontrado" });
+      }
+
+      // Security: Only the client themselves or central can delete schedules
+      if (req.user!.role !== 'central' && req.user!.id !== schedule.clientId) {
+        return res.status(403).json({ error: "Acesso negado" });
+      }
+
+      await storage.deleteClientSchedule(scheduleId);
+      res.json({ message: "Horário deletado com sucesso" });
+    } catch (error) {
+      console.error("Error deleting client schedule:", error);
+      res.status(500).json({ error: "Erro ao deletar horário" });
+    }
+  });
+
+  /**
+   * GET /api/schedules/all-clients
+   * Retorna TODOS os horários de TODOS os clientes de uma vez
+   * ACESSO: Apenas Central
+   * PROPÓSITO: Otimização - evita N queries individuais na tabela de clientes
+   */
+  router.get("/api/schedules/all-clients", authenticateToken, requireRole('central'), async (req, res) => {
+    try {
+      const allSchedules = await storage.getAllClientSchedules();
+      console.log('📅 GET /api/schedules/all-clients - Total schedules:', allSchedules.length);
+      console.log('📅 Sample schedule:', allSchedules[0]);
+      res.json(allSchedules);
+    } catch (error) {
+      console.error("Error fetching all client schedules:", error);
+      res.status(500).json({ error: "Erro ao buscar horários" });
+    }
+  });
+
+  // ========================================
   // ROTAS: CHAT E INSIGHTS (INTELIGÊNCIA ARTIFICIAL)
   // ========================================
 
@@ -820,7 +1036,7 @@ export async function registerRoutes() {
       
       const allMessages = await storage.getChatMessages();
       
-      let filteredMessages;
+      let filteredMessages: any[];
       
       if (userRole === 'central') {
         // CENTRAL: Vê todas as mensagens (admin/IA futura)
@@ -1362,6 +1578,145 @@ export async function registerRoutes() {
     } catch (error: any) {
       console.error('💥 Erro ao atualizar usuário:', error);
       res.status(500).json({ error: "Erro ao atualizar usuário" });
+    }
+  });
+
+  // ========================================
+  // ANALYTICS & FINANCIAL REPORTS
+  // ========================================
+  
+  /**
+   * GET /api/analytics/dashboard
+   * Returns all KPIs for central dashboard homepage
+   * Auth: Central only
+   */
+  router.get('/api/analytics/dashboard', authenticateToken, requireRole('central'), async (req, res) => {
+    try {
+      const kpis = await analytics.getDashboardKPIs();
+      res.json(kpis);
+    } catch (error) {
+      console.error('❌ Error fetching dashboard KPIs:', error);
+      res.status(500).json({ error: 'Erro ao carregar métricas do dashboard' });
+    }
+  });
+
+  /**
+   * GET /api/analytics/revenue?start=YYYY-MM-DD&end=YYYY-MM-DD
+   * Returns revenue data for a date range
+   * Auth: Central only
+   */
+  router.get('/api/analytics/revenue', authenticateToken, requireRole('central'), async (req, res) => {
+    try {
+      const { start, end } = req.query;
+      
+      if (!start || !end) {
+        return res.status(400).json({ error: 'Parâmetros start e end são obrigatórios (formato: YYYY-MM-DD)' });
+      }
+      
+      const startDate = new Date(start as string);
+      const endDate = new Date(end as string);
+      
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        return res.status(400).json({ error: 'Datas inválidas. Use formato YYYY-MM-DD' });
+      }
+      
+      const revenueData = await analytics.getRevenueByDateRange(startDate, endDate);
+      
+      res.json({
+        startDate: start,
+        endDate: end,
+        ...revenueData,
+      });
+    } catch (error) {
+      console.error('❌ Error fetching revenue:', error);
+      res.status(500).json({ error: 'Erro ao calcular receita' });
+    }
+  });
+
+  /**
+   * GET /api/analytics/motoboy/:id?start=YYYY-MM-DD&end=YYYY-MM-DD
+   * Returns earnings report for a specific motoboy
+   * Auth: Motoboy can see their own, Central can see all
+   */
+  router.get('/api/analytics/motoboy/:id', authenticateToken, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { start, end } = req.query;
+      
+      // Authorization check
+      if (req.user!.role !== 'central' && req.user!.id !== id) {
+        return res.status(403).json({ error: 'Acesso negado' });
+      }
+      
+      // Default to current month if no dates provided
+      const today = new Date();
+      const startDate = start 
+        ? new Date(start as string) 
+        : new Date(today.getFullYear(), today.getMonth(), 1);
+      const endDate = end 
+        ? new Date(end as string) 
+        : today;
+      
+      const earnings = await analytics.getMotoboyEarnings(id, startDate, endDate);
+      
+      res.json({
+        motoboyId: id,
+        period: { 
+          start: startDate.toISOString().split('T')[0], 
+          end: endDate.toISOString().split('T')[0] 
+        },
+        ...earnings,
+      });
+    } catch (error) {
+      console.error('❌ Error fetching motoboy earnings:', error);
+      res.status(500).json({ error: 'Erro ao calcular ganhos do motoboy' });
+    }
+  });
+
+  /**
+   * GET /api/analytics/client/:id?month=YYYY-MM
+   * Returns billing/debt data for a specific client
+   * Auth: Client can see their own, Central can see all
+   */
+  router.get('/api/analytics/client/:id', authenticateToken, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { month } = req.query;
+      
+      // Authorization check
+      if (req.user!.role !== 'central' && req.user!.id !== id) {
+        return res.status(403).json({ error: 'Acesso negado' });
+      }
+      
+      // Default to current month if not provided
+      const currentMonth = month as string || new Date().toISOString().slice(0, 7);
+      
+      // Validate month format
+      if (!/^\d{4}-\d{2}$/.test(currentMonth)) {
+        return res.status(400).json({ error: 'Formato de mês inválido. Use YYYY-MM' });
+      }
+      
+      const debtData = await analytics.getClientDebt(id, currentMonth);
+      
+      res.json(debtData);
+    } catch (error) {
+      console.error('❌ Error fetching client debt:', error);
+      res.status(500).json({ error: 'Erro ao calcular fatura do cliente' });
+    }
+  });
+
+  /**
+   * GET /api/analytics/mrr
+   * Returns Monthly Recurring Revenue
+   * Auth: Central only
+   */
+  router.get('/api/analytics/mrr', authenticateToken, requireRole('central'), async (req, res) => {
+    try {
+      const mrr = await analytics.getMonthlyRecurringRevenue();
+      res.json({ mrr });
+    } catch (error) {
+      console.error('❌ Error fetching MRR:', error);
+      res.status(500).json({ error: 'Erro ao calcular MRR' });
     }
   });
 
