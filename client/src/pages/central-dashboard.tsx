@@ -89,15 +89,14 @@ export default function CentralDashboard() {
 
   // STEP 13: Query para analytics dashboard (KPIs em tempo real)
   const { data: analyticsData } = useQuery<{
-    totalRevenue: number;
-    totalCost: number;
-    totalProfit: number;
-    profitMargin: number;
-    totalOrders: number;
-    deliveredOrders: number;
-    pendingOrders: number;
-    pendingValue: number;
+    todayRevenue: number;
+    todayProfit: number;
+    monthToDateRevenue: number;
+    monthToDateProfit: number;
     mrr: number;
+    activeDriversCount: number;
+    pendingOrdersCount: number;
+    pendingOrdersValue: number;
   }>({
     queryKey: ['/api/analytics/dashboard'],
     enabled: !!token,
@@ -807,34 +806,34 @@ export default function CentralDashboard() {
                       <Card className="p-4">
                         <p className="text-sm text-muted-foreground">Receita Hoje</p>
                         <p className="text-3xl font-bold mt-2">
-                          R$ {analyticsData?.totalRevenue.toFixed(2) || '0.00'}
+                          R$ {(analyticsData?.todayRevenue ?? 0).toFixed(2)}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          Pedidos entregues: {analyticsData?.deliveredOrders || 0}
+                          Lucro: R$ {(analyticsData?.todayProfit ?? 0).toFixed(2)}
                         </p>
                       </Card>
                       <Card className="p-4">
-                        <p className="text-sm text-muted-foreground">Lucro Hoje</p>
+                        <p className="text-sm text-muted-foreground">Receita do Mês</p>
                         <p className="text-3xl font-bold mt-2 text-green-600">
-                          R$ {analyticsData?.totalProfit.toFixed(2) || '0.00'}
+                          R$ {(analyticsData?.monthToDateRevenue ?? 0).toFixed(2)}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          Margem: {analyticsData?.profitMargin.toFixed(1) || '0'}%
+                          Lucro: R$ {(analyticsData?.monthToDateProfit ?? 0).toFixed(2)}
                         </p>
                       </Card>
                       <Card className="p-4">
                         <p className="text-sm text-muted-foreground">Valor Pendente</p>
                         <p className="text-3xl font-bold mt-2 text-amber-600">
-                          R$ {analyticsData?.pendingValue.toFixed(2) || '0.00'}
+                          R$ {(analyticsData?.pendingOrdersValue ?? 0).toFixed(2)}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          {analyticsData?.pendingOrders || 0} pedidos em andamento
+                          {analyticsData?.pendingOrdersCount ?? 0} pedidos em andamento
                         </p>
                       </Card>
                       <Card className="p-4">
                         <p className="text-sm text-muted-foreground">MRR (Mensalidades)</p>
                         <p className="text-3xl font-bold mt-2 text-blue-600">
-                          R$ {analyticsData?.mrr.toFixed(2) || '0.00'}
+                          R$ {(analyticsData?.mrr ?? 0).toFixed(2)}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
                           Receita recorrente mensal
