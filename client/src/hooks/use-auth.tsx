@@ -3,7 +3,7 @@ import { createContext, useContext } from "react";
 export type AuthUser = { 
   id: string; 
   name: string; 
-  role: string; 
+  role: 'client' | 'motoboy' | 'central'; 
   phone?: string 
 };
 

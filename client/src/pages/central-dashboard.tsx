@@ -87,6 +87,23 @@ export default function CentralDashboard() {
     enabled: !!token,
   });
 
+  // STEP 13: Query para analytics dashboard (KPIs em tempo real)
+  const { data: analyticsData } = useQuery<{
+    totalRevenue: number;
+    totalCost: number;
+    totalProfit: number;
+    profitMargin: number;
+    totalOrders: number;
+    deliveredOrders: number;
+    pendingOrders: number;
+    pendingValue: number;
+    mrr: number;
+  }>({
+    queryKey: ['/api/analytics/dashboard'],
+    enabled: !!token,
+    refetchInterval: 30000, // Atualiza a cada 30 segundos
+  });
+
   // Estado de busca de pedidos
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -785,28 +802,42 @@ export default function CentralDashboard() {
                   <>
                     <h2 className="text-2xl font-bold mb-6">Relatórios e Análises</h2>
 
-                    {/* KPIs */}
+                    {/* KPIs - Dados em tempo real via analytics */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                       <Card className="p-4">
-                        <p className="text-sm text-muted-foreground">Total de Pedidos</p>
-                        <p className="text-3xl font-bold mt-2">{orders.length}</p>
-                      </Card>
-                      <Card className="p-4">
-                        <p className="text-sm text-muted-foreground">Pedidos Entregues</p>
+                        <p className="text-sm text-muted-foreground">Receita Hoje</p>
                         <p className="text-3xl font-bold mt-2">
-                          {orders.filter(o => o.status === 'delivered').length}
+                          R$ {analyticsData?.totalRevenue.toFixed(2) || '0.00'}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Pedidos entregues: {analyticsData?.deliveredOrders || 0}
                         </p>
                       </Card>
                       <Card className="p-4">
-                        <p className="text-sm text-muted-foreground">Em Andamento</p>
-                        <p className="text-3xl font-bold mt-2">
-                          {orders.filter(o => o.status === 'in_progress').length}
+                        <p className="text-sm text-muted-foreground">Lucro Hoje</p>
+                        <p className="text-3xl font-bold mt-2 text-green-600">
+                          R$ {analyticsData?.totalProfit.toFixed(2) || '0.00'}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Margem: {analyticsData?.profitMargin.toFixed(1) || '0'}%
                         </p>
                       </Card>
                       <Card className="p-4">
-                        <p className="text-sm text-muted-foreground">Receita Total</p>
-                        <p className="text-3xl font-bold mt-2">
-                          R$ {orders.reduce((sum, o) => sum + parseFloat(o.valor), 0).toFixed(2)}
+                        <p className="text-sm text-muted-foreground">Valor Pendente</p>
+                        <p className="text-3xl font-bold mt-2 text-amber-600">
+                          R$ {analyticsData?.pendingValue.toFixed(2) || '0.00'}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {analyticsData?.pendingOrders || 0} pedidos em andamento
+                        </p>
+                      </Card>
+                      <Card className="p-4">
+                        <p className="text-sm text-muted-foreground">MRR (Mensalidades)</p>
+                        <p className="text-3xl font-bold mt-2 text-blue-600">
+                          R$ {analyticsData?.mrr.toFixed(2) || '0.00'}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Receita recorrente mensal
                         </p>
                       </Card>
                     </div>
@@ -1004,7 +1035,7 @@ export default function CentralDashboard() {
         <ChatWidget
           currentUserId={user.id}
           currentUserName={user.name}
-          currentUserRole={user.role}
+          currentUserRole={user.role as 'client' | 'motoboy' | 'central'}
         />
       )}
 

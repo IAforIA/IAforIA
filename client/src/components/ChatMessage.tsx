@@ -3,11 +3,13 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Sparkles } from "lucide-react";
 
+type ChatCategory = 'status_entrega' | 'suporte' | 'problema';
+
 interface ChatMessageProps {
   message: ChatMessageType;
   currentUserId: string;
   currentUserRole?: 'client' | 'motoboy' | 'central';
-  onAISuggestion?: (message: string, category: string, userId: string) => void;
+  onAISuggestion?: (message: string, category: ChatCategory, userId: string) => void;
   loadingAISuggestion?: boolean;
 }
 
@@ -93,7 +95,7 @@ export function ChatMessage({
             variant="outline"
             size="sm"
             className="self-start gap-2"
-            onClick={() => onAISuggestion(message.message, message.category, message.fromId)}
+            onClick={() => onAISuggestion(message.message, message.category as ChatCategory, message.fromId)}
             disabled={loadingAISuggestion}
           >
             <Sparkles className="h-3 w-3" />
