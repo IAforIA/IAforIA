@@ -3,7 +3,7 @@
  * PROPÓSITO: Sidebar reutilizável que muda o menu conforme o papel do usuário
  */
 
-import { Home, Package, Users, TruckIcon, Settings, BarChart3, FileText, UserCog, Calendar } from "lucide-react";
+import { Home, Package, Users, TruckIcon, Settings, BarChart3, FileText, UserCog, Calendar, DollarSign } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -26,6 +26,7 @@ const menuItems = {
   central: [
     { title: "Dashboard", url: "/central", icon: Home },
     { title: "Pedidos", url: "/central/orders", icon: Package },
+    { title: "Financeiro", url: "/central/financial", icon: DollarSign },
     { title: "Clientes", url: "/central/clients", icon: Users },
     { title: "Entregadores", url: "/central/drivers", icon: TruckIcon },
     { title: "Usuários", url: "/central/users", icon: UserCog },

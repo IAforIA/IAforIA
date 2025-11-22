@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Layout 11 - Automotive UI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111111;
+            color: #f3f4f6;
+        }
+
+        .glass-panel {
+            background: rgba(30, 30, 30, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .neumorphic-btn {
+            background: linear-gradient(145deg, #1e1e1e, #161616);
+            box-shadow: 5px 5px 10px #0b0b0b, -5px -5px 10px #272727;
+        }
+        
+        .neumorphic-btn:active {
+            background: #1a1a1a;
+            box-shadow: inset 5px 5px 10px #0b0b0b, inset -5px -5px 10px #272727;
+        }
+    </style>
+</head>
+<body class="h-screen flex overflow-hidden p-4 gap-4">
+
+    <!-- Left: Map & Navigation (65%) -->
+    <section class="flex-[2] relative rounded-3xl overflow-hidden shadow-2xl">
+        <!-- Map Background -->
+        <div class="absolute inset-0 bg-[url('https://maps.googleapis.com/maps/api/staticmap?center=-18.9, -39.7&zoom=14&size=1000x800&sensor=false&style=feature:all|element:geometry|color:0x242f3e&style=feature:all|element:labels.text.stroke|visibility:off&style=feature:all|element:labels.text.fill|color:0x746855&style=feature:administrative.locality|element:labels.text.fill|color:0xd59563&style=feature:poi|element:labels.text.fill|color:0xd59563&style=feature:poi.park|element:geometry|color:0x263c3f&style=feature:poi.park|element:labels.text.fill|color:0x6b9a76&style=feature:road|element:geometry|color:0x38414e&style=feature:road|element:geometry.stroke|color:0x212a37&style=feature:road.highway|element:geometry|color:0x746855&style=feature:road.highway|element:geometry.stroke|color:0x1f2835&style=feature:road.highway|element:labels.text.fill|color:0xf3d19c&style=feature:transit|element:geometry|color:0x2f3948&style=feature:transit.station|element:labels.text.fill|color:0xd59563&style=feature:water|element:geometry|color:0x17263c&style=feature:water|element:labels.text.fill|color:0x515c6d&style=feature:water|element:labels.text.stroke|visibility:off')] bg-cover"></div>
+
+        <!-- Top Search Bar (Floating) -->
+        <div class="absolute top-6 left-6 right-6 h-16 glass-panel rounded-2xl flex items-center px-6 shadow-lg">
+            <i class="fas fa-search text-gray-400 text-xl"></i>
+            <input type="text" placeholder="Search for order, driver or address..." class="bg-transparent border-none outline-none text-white text-lg ml-4 w-full placeholder-gray-500">
+            <button class="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-lg hover:bg-blue-500 transition">
+                <i class="fas fa-microphone"></i>
+            </button>
+        </div>
+
+        <!-- Active Order Cards (Floating Bottom) -->
+        <div class="absolute bottom-6 left-6 right-6 flex gap-4 overflow-x-auto pb-2">
+            <!-- Card 1 -->
+            <div class="min-w-[280px] glass-panel p-4 rounded-2xl flex flex-col gap-2 cursor-pointer hover:bg-white/5 transition">
+                <div class="flex justify-between items-center">
+                    <span class="font-bold text-white">#4590</span>
+                    <span class="bg-orange-500/20 text-orange-400 px-2 py-1 rounded-lg text-xs font-bold">PICKUP</span>
+                </div>
+                <div class="text-sm text-gray-300">Burger King <i class="fas fa-arrow-right text-xs mx-1"></i> Rua A</div>
+                <div class="flex items-center gap-2 mt-1">
+                    <div class="w-6 h-6 rounded-full bg-gray-600"></div>
+                    <span class="text-xs text-gray-400">João Silva</span>
+                </div>
+            </div>
+            <!-- Card 2 -->
+            <div class="min-w-[280px] glass-panel p-4 rounded-2xl flex flex-col gap-2 cursor-pointer hover:bg-white/5 transition">
+                <div class="flex justify-between items-center">
+                    <span class="font-bold text-white">#4589</span>
+                    <span class="bg-green-500/20 text-green-400 px-2 py-1 rounded-lg text-xs font-bold">DELIVERY</span>
+                </div>
+                <div class="text-sm text-gray-300">Rest. Chef <i class="fas fa-arrow-right text-xs mx-1"></i> Av. B</div>
+                <div class="flex items-center gap-2 mt-1">
+                    <div class="w-6 h-6 rounded-full bg-gray-600"></div>
+                    <span class="text-xs text-gray-400">Maria O.</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Right: Control Center (35%) -->
+    <section class="flex-1 flex flex-col gap-4">
+        
+        <!-- Status / Weather / Time -->
+        <div class="h-40 glass-panel rounded-3xl p-6 flex flex-col justify-between relative overflow-hidden">
+            <div class="absolute top-0 right-0 p-6 opacity-20 text-6xl"><i class="fas fa-cloud-sun"></i></div>
+            <div>
+                <div class="text-4xl font-bold">14:45</div>
+                <div class="text-gray-400">Friday, Nov 22</div>
+            </div>
+            <div class="flex gap-4">
+                <div>
+                    <div class="text-2xl font-bold text-green-400">R$ 1.2k</div>
+                    <div class="text-xs text-gray-500 uppercase font-bold">Revenue</div>
+                </div>
+                <div>
+                    <div class="text-2xl font-bold text-blue-400">12</div>
+                    <div class="text-xs text-gray-500 uppercase font-bold">Active</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions Grid -->
+        <div class="flex-1 glass-panel rounded-3xl p-6">
+            <h3 class="text-gray-400 uppercase text-xs font-bold mb-4 tracking-wider">Quick Controls</h3>
+            <div class="grid grid-cols-2 gap-4 h-full content-start">
+                <button class="neumorphic-btn h-24 rounded-2xl flex flex-col items-center justify-center gap-2 text-gray-300 hover:text-white transition">
+                    <i class="fas fa-plus-circle text-2xl text-blue-500"></i>
+                    <span class="text-sm font-medium">New Order</span>
+                </button>
+                <button class="neumorphic-btn h-24 rounded-2xl flex flex-col items-center justify-center gap-2 text-gray-300 hover:text-white transition">
+                    <i class="fas fa-users text-2xl text-purple-500"></i>
+                    <span class="text-sm font-medium">Drivers</span>
+                </button>
+                <button class="neumorphic-btn h-24 rounded-2xl flex flex-col items-center justify-center gap-2 text-gray-300 hover:text-white transition">
+                    <i class="fas fa-file-invoice-dollar text-2xl text-green-500"></i>
+                    <span class="text-sm font-medium">Finance</span>
+                </button>
+                <button class="neumorphic-btn h-24 rounded-2xl flex flex-col items-center justify-center gap-2 text-gray-300 hover:text-white transition">
+                    <i class="fas fa-cog text-2xl text-gray-500"></i>
+                    <span class="text-sm font-medium">Settings</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Media/Chat Player Style -->
+        <div class="h-48 glass-panel rounded-3xl p-6 flex flex-col">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-gray-400 uppercase text-xs font-bold tracking-wider">Recent Comms</h3>
+                <span class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+            </div>
+            <div class="flex-1 flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center text-xl">JS</div>
+                <div class="flex-1">
+                    <div class="font-bold text-lg">João Silva</div>
+                    <div class="text-gray-400 text-sm truncate">"Cheguei no local, aguardando..."</div>
+                </div>
+                <button class="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center hover:bg-gray-200">
+                    <i class="fas fa-phone"></i>
+                </button>
+            </div>
+            <!-- Progress Bar Visual -->
+            <div class="w-full bg-gray-700 h-1 rounded-full mt-4 overflow-hidden">
+                <div class="bg-blue-500 h-full w-1/3"></div>
+            </div>
+        </div>
+
+    </section>
+
+</body>
+</html>

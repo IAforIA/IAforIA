@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guriri Express - Final Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #0f0f11; /* Deep dark background */
+            color: #ffffff;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden; /* App-like feel */
+        }
+
+        /* Glassmorphism Effect (from Layout 11 & 19) */
+        .glass-panel {
+            background: rgba(30, 30, 35, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        /* Sidebar Active State (from Layout 19) */
+        .nav-item.active {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
+            border: none;
+        }
+
+        /* Status Badges (from Layout 12) */
+        .badge {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .badge-new { background: rgba(59, 130, 246, 0.2); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.3); }
+        .badge-cooking { background: rgba(245, 158, 11, 0.2); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.3); }
+        .badge-delivering { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.3); }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); }
+
+        /* Map Container */
+        .map-container {
+            background-image: url('https://maps.googleapis.com/maps/api/staticmap?center=-18.9, -39.7&zoom=14&size=800x600&sensor=false&style=feature:all|element:geometry|color:0x242f3e&style=feature:all|element:labels.text.stroke|visibility:off&style=feature:all|element:labels.text.fill|color:0x746855&style=feature:administrative.locality|element:labels.text.fill|color:0xd59563&style=feature:poi|element:labels.text.fill|color:0xd59563&style=feature:poi.park|element:geometry|color:0x263c3f&style=feature:poi.park|element:labels.text.fill|color:0x6b9a76&style=feature:road|element:geometry|color:0x38414e&style=feature:road|element:geometry.stroke|color:0x212a37&style=feature:road.highway|element:geometry|color:0x746855&style=feature:road.highway|element:geometry.stroke|color:0x1f2835&style=feature:road.highway|element:labels.text.fill|color:0xf3d19c&style=feature:transit|element:geometry|color:0x2f3948&style=feature:transit.station|element:labels.text.fill|color:0xd59563&style=feature:water|element:geometry|color:0x17263c&style=feature:water|element:labels.text.fill|color:0x515c6d&style=feature:water|element:labels.text.stroke|visibility:off');
+            background-size: cover;
+            background-position: center;
+        }
+    </style>
+</head>
+<body class="h-screen flex p-4 gap-4">
+
+    <!-- Sidebar (Layout 19 Structure + Layout 11 Style) -->
+    <aside class="w-20 glass-panel rounded-2xl flex flex-col items-center py-6 gap-8 z-20">
+        <!-- Logo -->
+        <div class="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/50">
+            <i class="fas fa-bolt text-xl text-white"></i>
+        </div>
+
+        <!-- Nav Items -->
+        <nav class="flex flex-col gap-4 w-full px-3">
+            <button class="nav-item active w-full aspect-square rounded-xl flex flex-col items-center justify-center gap-1 text-white transition-all duration-300 group">
+                <i class="fas fa-home text-lg mb-1"></i>
+            </button>
+            <button class="nav-item w-full aspect-square rounded-xl flex flex-col items-center justify-center gap-1 text-gray-400 hover:bg-white/5 hover:text-white transition-all duration-300 group">
+                <i class="fas fa-box text-lg mb-1"></i>
+            </button>
+            <button class="nav-item w-full aspect-square rounded-xl flex flex-col items-center justify-center gap-1 text-gray-400 hover:bg-white/5 hover:text-white transition-all duration-300 group">
+                <i class="fas fa-map-marked-alt text-lg mb-1"></i>
+            </button>
+            <button class="nav-item w-full aspect-square rounded-xl flex flex-col items-center justify-center gap-1 text-gray-400 hover:bg-white/5 hover:text-white transition-all duration-300 group">
+                <i class="fas fa-users text-lg mb-1"></i>
+            </button>
+            <button class="nav-item w-full aspect-square rounded-xl flex flex-col items-center justify-center gap-1 text-gray-400 hover:bg-white/5 hover:text-white transition-all duration-300 group">
+                <i class="fas fa-chart-pie text-lg mb-1"></i>
+            </button>
+        </nav>
+
+        <!-- Bottom Actions -->
+        <div class="mt-auto flex flex-col gap-4">
+            <button class="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 transition">
+                <i class="fas fa-cog"></i>
+            </button>
+            <div class="w-10 h-10 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 p-[2px]">
+                <img src="https://i.pravatar.cc/100?img=33" class="rounded-full w-full h-full object-cover border-2 border-[#0f0f11]" alt="User">
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col gap-4 min-w-0">
+        
+        <!-- Top Header & Stats (Layout 19 Cards + Layout 12 Data) -->
+        <header class="flex justify-between items-end h-24 pb-2">
+            <div>
+                <h1 class="text-3xl font-bold text-white tracking-tight">Dashboard</h1>
+                <p class="text-gray-400 text-sm mt-1">Visão geral da operação em tempo real</p>
+            </div>
+            
+            <!-- Quick Stats Row -->
+            <div class="flex gap-4">
+                <!-- Stat Card 1 -->
+                <div class="glass-panel px-5 py-3 rounded-xl flex items-center gap-4 min-w-[180px]">
+                    <div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400">
+                        <i class="fas fa-shopping-bag"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs text-gray-400 uppercase font-semibold">Pedidos Hoje</div>
+                        <div class="text-xl font-bold">142</div>
+                    </div>
+                </div>
+                <!-- Stat Card 2 -->
+                <div class="glass-panel px-5 py-3 rounded-xl flex items-center gap-4 min-w-[180px]">
+                    <div class="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center text-green-400">
+                        <i class="fas fa-motorcycle"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs text-gray-400 uppercase font-semibold">Online</div>
+                        <div class="text-xl font-bold">18 <span class="text-sm text-gray-500 font-normal">/ 24</span></div>
+                    </div>
+                </div>
+                <!-- Stat Card 3 -->
+                <div class="glass-panel px-5 py-3 rounded-xl flex items-center gap-4 min-w-[180px]">
+                    <div class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-400">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs text-gray-400 uppercase font-semibold">Receita</div>
+                        <div class="text-xl font-bold">R$ 3.2k</div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Grid Split -->
+        <div class="flex-1 flex gap-4 min-h-0">
+            
+            <!-- Left: Map View (Layout 11 Inspiration) -->
+            <section class="flex-[3] glass-panel rounded-2xl relative overflow-hidden group">
+                <div class="absolute inset-0 map-container transition-transform duration-700 group-hover:scale-105"></div>
+                
+                <!-- Map Overlays -->
+                <div class="absolute top-4 left-4 glass-panel px-4 py-2 rounded-lg flex items-center gap-2">
+                    <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                    <span class="text-xs font-bold">LIVE TRACKING</span>
+                </div>
+
+                <!-- Floating Driver Cards on Map -->
+                <div class="absolute top-1/3 left-1/4 glass-panel p-2 rounded-lg flex items-center gap-2 transform -translate-x-1/2 -translate-y-1/2 cursor-pointer hover:scale-110 transition">
+                    <div class="w-8 h-8 rounded-full bg-gray-700 overflow-hidden border border-white/20">
+                        <img src="https://i.pravatar.cc/100?img=11" class="w-full h-full object-cover">
+                    </div>
+                    <div class="pr-2">
+                        <div class="text-xs font-bold">João S.</div>
+                        <div class="text-[10px] text-green-400">Entregando</div>
+                    </div>
+                </div>
+
+                <div class="absolute bottom-1/3 right-1/3 glass-panel p-2 rounded-lg flex items-center gap-2 transform cursor-pointer hover:scale-110 transition">
+                    <div class="w-8 h-8 rounded-full bg-gray-700 overflow-hidden border border-white/20">
+                        <img src="https://i.pravatar.cc/100?img=59" class="w-full h-full object-cover">
+                    </div>
+                    <div class="pr-2">
+                        <div class="text-xs font-bold">Maria O.</div>
+                        <div class="text-[10px] text-blue-400">Coletando</div>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- Right: Active Orders Feed (Layout 12 Data + Layout 19 Cards) -->
+            <section class="flex-[2] flex flex-col gap-4 min-w-[350px]">
+                
+                <!-- Section Header -->
+                <div class="flex justify-between items-center px-1">
+                    <h2 class="text-lg font-bold">Pedidos Ativos</h2>
+                    <button class="text-xs text-blue-400 hover:text-blue-300 font-medium">Ver Todos</button>
+                </div>
+
+                <!-- Scrollable List -->
+                <div class="flex-1 overflow-y-auto flex flex-col gap-3 pr-1">
+                    
+                    <!-- Order Card 1 (New) -->
+                    <div class="glass-panel p-4 rounded-xl border-l-4 border-blue-500 hover:bg-white/5 transition cursor-pointer group">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center text-lg">
+                                    <i class="fas fa-hamburger"></i>
+                                </div>
+                                <div>
+                                    <div class="font-bold text-sm group-hover:text-blue-400 transition">Burger King</div>
+                                    <div class="text-xs text-gray-400">#4590 • Centro</div>
+                                </div>
+                            </div>
+                            <span class="badge badge-new">Novo</span>
+                        </div>
+                        <div class="flex justify-between items-center mt-3 pt-3 border-t border-white/5">
+                            <div class="flex items-center gap-2">
+                                <div class="w-6 h-6 rounded-full bg-gray-700 flex items-center justify-center text-[10px] text-gray-400">
+                                    <i class="fas fa-question"></i>
+                                </div>
+                                <span class="text-xs text-gray-400">Aguardando Motoboy</span>
+                            </div>
+                            <span class="font-bold text-sm">R$ 45,90</span>
+                        </div>
+                    </div>
+
+                    <!-- Order Card 2 (Cooking) -->
+                    <div class="glass-panel p-4 rounded-xl border-l-4 border-yellow-500 hover:bg-white/5 transition cursor-pointer group">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-yellow-500/10 text-yellow-400 flex items-center justify-center text-lg">
+                                    <i class="fas fa-pizza-slice"></i>
+                                </div>
+                                <div>
+                                    <div class="font-bold text-sm group-hover:text-yellow-400 transition">Pizza Hut</div>
+                                    <div class="text-xs text-gray-400">#4589 • Guriri Norte</div>
+                                </div>
+                            </div>
+                            <span class="badge badge-cooking">Preparando</span>
+                        </div>
+                        <div class="flex justify-between items-center mt-3 pt-3 border-t border-white/5">
+                            <div class="flex items-center gap-2">
+                                <img src="https://i.pravatar.cc/100?img=11" class="w-6 h-6 rounded-full border border-gray-600">
+                                <span class="text-xs text-gray-300">João Silva</span>
+                            </div>
+                            <span class="font-bold text-sm">R$ 82,00</span>
+                        </div>
+                    </div>
+
+                    <!-- Order Card 3 (Delivering) -->
+                    <div class="glass-panel p-4 rounded-xl border-l-4 border-green-500 hover:bg-white/5 transition cursor-pointer group">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-green-500/10 text-green-400 flex items-center justify-center text-lg">
+                                    <i class="fas fa-utensils"></i>
+                                </div>
+                                <div>
+                                    <div class="font-bold text-sm group-hover:text-green-400 transition">Restaurante Chef</div>
+                                    <div class="text-xs text-gray-400">#4588 • Bosque</div>
+                                </div>
+                            </div>
+                            <span class="badge badge-delivering">Em Rota</span>
+                        </div>
+                        <div class="flex justify-between items-center mt-3 pt-3 border-t border-white/5">
+                            <div class="flex items-center gap-2">
+                                <img src="https://i.pravatar.cc/100?img=59" class="w-6 h-6 rounded-full border border-gray-600">
+                                <span class="text-xs text-gray-300">Maria O.</span>
+                            </div>
+                            <span class="font-bold text-sm">R$ 125,50</span>
+                        </div>
+                    </div>
+
+                     <!-- Order Card 4 (Delivering) -->
+                     <div class="glass-panel p-4 rounded-xl border-l-4 border-green-500 hover:bg-white/5 transition cursor-pointer group opacity-75">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-green-500/10 text-green-400 flex items-center justify-center text-lg">
+                                    <i class="fas fa-ice-cream"></i>
+                                </div>
+                                <div>
+                                    <div class="font-bold text-sm group-hover:text-green-400 transition">Açaí Concept</div>
+                                    <div class="text-xs text-gray-400">#4587 • Centro</div>
+                                </div>
+                            </div>
+                            <span class="badge badge-delivering">Em Rota</span>
+                        </div>
+                        <div class="flex justify-between items-center mt-3 pt-3 border-t border-white/5">
+                            <div class="flex items-center gap-2">
+                                <img src="https://i.pravatar.cc/100?img=12" class="w-6 h-6 rounded-full border border-gray-600">
+                                <span class="text-xs text-gray-300">Carlos M.</span>
+                            </div>
+                            <span class="font-bold text-sm">R$ 22,00</span>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Quick Action Button -->
+                <button class="w-full py-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold shadow-lg shadow-blue-900/20 transition flex items-center justify-center gap-2">
+                    <i class="fas fa-plus"></i> Novo Pedido Manual
+                </button>
+
+            </section>
+        </div>
+    </main>
+
+</body>
+</html>

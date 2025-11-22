@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Layout 20 - POS System (Fast Food/Retail)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background-color: #1a1a1a; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: white; }
+        .pos-btn { transition: all 0.1s; active: scale(0.98); }
+        .pos-btn:active { transform: scale(0.98); }
+        .category-btn.active { background-color: #f59e0b; color: black; border-color: #f59e0b; }
+        .order-card { border-left: 4px solid transparent; }
+        .order-card.selected { background-color: #333; border-left-color: #f59e0b; }
+    </style>
+</head>
+<body class="h-screen flex overflow-hidden">
+
+    <!-- Left Panel: Order Queue (Ticket Rail) -->
+    <aside class="w-1/4 bg-[#222] border-r border-gray-700 flex flex-col">
+        <div class="p-4 border-b border-gray-700 bg-[#2a2a2a]">
+            <h2 class="text-xl font-bold text-gray-100">Orders Queue</h2>
+            <div class="flex gap-2 mt-2">
+                <button class="flex-1 bg-yellow-500 text-black py-1 px-2 rounded font-bold text-sm">Active (4)</button>
+                <button class="flex-1 bg-gray-700 text-gray-300 py-1 px-2 rounded font-bold text-sm">History</button>
+            </div>
+        </div>
+        
+        <div class="flex-1 overflow-y-auto">
+            <!-- Ticket -->
+            <div class="order-card selected p-4 border-b border-gray-700 cursor-pointer hover:bg-[#2a2a2a]">
+                <div class="flex justify-between mb-1">
+                    <span class="font-bold text-yellow-500">#4590</span>
+                    <span class="text-xs bg-blue-900 text-blue-200 px-2 py-0.5 rounded">NEW</span>
+                </div>
+                <div class="font-bold text-lg mb-1">Burger King</div>
+                <div class="text-sm text-gray-400 mb-2">2 items • R$ 45.00</div>
+                <div class="flex justify-between text-xs text-gray-500">
+                    <span><i class="far fa-clock"></i> 2m ago</span>
+                    <span>Motoboy: Pending</span>
+                </div>
+            </div>
+
+            <!-- Ticket -->
+            <div class="order-card p-4 border-b border-gray-700 cursor-pointer hover:bg-[#2a2a2a]">
+                <div class="flex justify-between mb-1">
+                    <span class="font-bold text-gray-400">#4589</span>
+                    <span class="text-xs bg-green-900 text-green-200 px-2 py-0.5 rounded">COOKING</span>
+                </div>
+                <div class="font-bold text-lg mb-1">Pizza Hut</div>
+                <div class="text-sm text-gray-400 mb-2">1 item • R$ 62.00</div>
+                <div class="flex justify-between text-xs text-gray-500">
+                    <span><i class="far fa-clock"></i> 12m ago</span>
+                    <span>Motoboy: João S.</span>
+                </div>
+            </div>
+
+             <!-- Ticket -->
+             <div class="order-card p-4 border-b border-gray-700 cursor-pointer hover:bg-[#2a2a2a]">
+                <div class="flex justify-between mb-1">
+                    <span class="font-bold text-gray-400">#4588</span>
+                    <span class="text-xs bg-purple-900 text-purple-200 px-2 py-0.5 rounded">DELIVERING</span>
+                </div>
+                <div class="font-bold text-lg mb-1">Subway</div>
+                <div class="text-sm text-gray-400 mb-2">3 items • R$ 28.50</div>
+                <div class="flex justify-between text-xs text-gray-500">
+                    <span><i class="far fa-clock"></i> 25m ago</span>
+                    <span>Motoboy: Carlos M.</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-4 border-t border-gray-700 bg-[#2a2a2a]">
+            <button class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded text-lg shadow-lg pos-btn">
+                <i class="fas fa-plus mr-2"></i> New Order
+            </button>
+        </div>
+    </aside>
+
+    <!-- Center Panel: Order Details & Actions -->
+    <main class="flex-1 flex flex-col bg-[#1a1a1a]">
+        <!-- Top Bar -->
+        <header class="h-16 border-b border-gray-700 flex items-center justify-between px-6 bg-[#222]">
+            <div class="flex items-center gap-4">
+                <h1 class="text-2xl font-bold">Order #4590</h1>
+                <span class="bg-yellow-500 text-black px-3 py-1 rounded font-bold text-sm">PENDING ACCEPTANCE</span>
+            </div>
+            <div class="text-xl font-mono text-green-400">11:42 AM</div>
+        </header>
+
+        <div class="flex-1 flex">
+            <!-- Order Items -->
+            <div class="flex-1 p-6">
+                <div class="bg-[#2a2a2a] rounded-lg p-6 h-full flex flex-col">
+                    <div class="flex justify-between items-center mb-6 pb-4 border-b border-gray-700">
+                        <div>
+                            <div class="text-gray-400 text-sm">Customer</div>
+                            <div class="font-bold text-xl">Maria Oliveira</div>
+                            <div class="text-gray-500 text-sm">Rua das Palmeiras, 123 - Centro</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-gray-400 text-sm">Payment</div>
+                            <div class="font-bold text-xl text-green-400">PIX</div>
+                            <div class="text-gray-500 text-sm">Paid</div>
+                        </div>
+                    </div>
+
+                    <div class="flex-1 overflow-y-auto">
+                        <table class="w-full text-left">
+                            <thead class="text-gray-500 border-b border-gray-700">
+                                <tr>
+                                    <th class="pb-2">Qty</th>
+                                    <th class="pb-2">Item</th>
+                                    <th class="pb-2 text-right">Price</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-lg">
+                                <tr class="border-b border-gray-800">
+                                    <td class="py-4 font-bold text-yellow-500">1x</td>
+                                    <td class="py-4">
+                                        <div>Whopper Combo</div>
+                                        <div class="text-sm text-gray-500">+ Fries (M)</div>
+                                        <div class="text-sm text-gray-500">+ Coke (M)</div>
+                                    </td>
+                                    <td class="py-4 text-right">R$ 32.00</td>
+                                </tr>
+                                <tr class="border-b border-gray-800">
+                                    <td class="py-4 font-bold text-yellow-500">1x</td>
+                                    <td class="py-4">
+                                        <div>Onion Rings (6pcs)</div>
+                                    </td>
+                                    <td class="py-4 text-right">R$ 13.00</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-auto pt-4 border-t border-gray-700">
+                        <div class="flex justify-between text-2xl font-bold">
+                            <span>Total</span>
+                            <span>R$ 45.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Grid -->
+            <div class="w-80 bg-[#222] border-l border-gray-700 p-4 flex flex-col gap-4">
+                <div class="grid grid-cols-2 gap-3">
+                    <button class="pos-btn h-24 bg-blue-600 rounded-lg font-bold text-lg flex flex-col items-center justify-center gap-2 hover:bg-blue-500">
+                        <i class="fas fa-print text-2xl"></i> Print
+                    </button>
+                    <button class="pos-btn h-24 bg-gray-700 rounded-lg font-bold text-lg flex flex-col items-center justify-center gap-2 hover:bg-gray-600">
+                        <i class="fas fa-edit text-2xl"></i> Edit
+                    </button>
+                    <button class="pos-btn h-24 bg-gray-700 rounded-lg font-bold text-lg flex flex-col items-center justify-center gap-2 hover:bg-gray-600">
+                        <i class="fas fa-user text-2xl"></i> Contact
+                    </button>
+                    <button class="pos-btn h-24 bg-red-900/50 text-red-400 border border-red-900 rounded-lg font-bold text-lg flex flex-col items-center justify-center gap-2 hover:bg-red-900">
+                        <i class="fas fa-ban text-2xl"></i> Cancel
+                    </button>
+                </div>
+
+                <div class="mt-auto flex flex-col gap-3">
+                    <div class="text-gray-400 text-sm font-bold uppercase tracking-wider">Assign Driver</div>
+                    <button class="pos-btn p-4 bg-gray-800 border border-gray-600 rounded-lg flex items-center gap-3 hover:bg-gray-700">
+                        <div class="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center"><i class="fas fa-robot"></i></div>
+                        <div class="text-left">
+                            <div class="font-bold">Auto-Assign</div>
+                            <div class="text-xs text-gray-400">Nearest driver</div>
+                        </div>
+                    </button>
+                    
+                    <button class="pos-btn w-full py-6 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl text-xl shadow-lg mt-4">
+                        ACCEPT ORDER
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+</body>
+</html>

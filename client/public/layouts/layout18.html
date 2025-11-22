@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Layout 18 - Excel Style (Data Grid)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f0f0f0; font-size: 13px; }
+        .toolbar { background: #f3f3f3; border-bottom: 1px solid #d1d1d1; }
+        .grid-header { background: #e6e6e6; border-bottom: 1px solid #999; border-right: 1px solid #999; font-weight: 600; color: #333; padding: 4px 8px; user-select: none; }
+        .grid-cell { background: white; border-bottom: 1px solid #e0e0e0; border-right: 1px solid #e0e0e0; padding: 4px 8px; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .grid-cell:focus { outline: 2px solid #217346; z-index: 10; }
+        .grid-row:hover .grid-cell { background-color: #f5f5f5; }
+        .grid-row.selected .grid-cell { background-color: #e8f5e9; }
+        .tab-active { background: white; border-bottom: 2px solid #217346; color: #217346; font-weight: 600; }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden">
+    
+    <!-- App Header -->
+    <header class="bg-[#217346] text-white h-10 flex items-center px-4 justify-between">
+        <div class="flex items-center gap-4">
+            <div class="font-bold tracking-wide"><i class="fas fa-table mr-2"></i>GuririSheets</div>
+            <nav class="flex gap-4 text-sm font-light">
+                <a href="#" class="hover:bg-[#1e6b41] px-2 py-1 rounded">Arquivo</a>
+                <a href="#" class="hover:bg-[#1e6b41] px-2 py-1 rounded">Editar</a>
+                <a href="#" class="hover:bg-[#1e6b41] px-2 py-1 rounded">Exibir</a>
+                <a href="#" class="hover:bg-[#1e6b41] px-2 py-1 rounded">Dados</a>
+            </nav>
+        </div>
+        <div class="text-xs bg-[#1e6b41] px-2 py-1 rounded">Salvo no sistema</div>
+    </header>
+
+    <!-- Toolbar -->
+    <div class="toolbar h-10 flex items-center px-2 gap-2">
+        <button class="p-1 hover:bg-gray-200 rounded"><i class="fas fa-undo text-gray-600"></i></button>
+        <button class="p-1 hover:bg-gray-200 rounded"><i class="fas fa-redo text-gray-600"></i></button>
+        <div class="w-px h-4 bg-gray-300 mx-1"></div>
+        <button class="p-1 hover:bg-gray-200 rounded"><i class="fas fa-print text-gray-600"></i></button>
+        <button class="p-1 hover:bg-gray-200 rounded"><i class="fas fa-filter text-gray-600"></i></button>
+        <div class="w-px h-4 bg-gray-300 mx-1"></div>
+        <select class="bg-white border border-gray-300 rounded px-2 py-0.5 text-xs">
+            <option>Arial</option>
+        </select>
+        <select class="bg-white border border-gray-300 rounded px-2 py-0.5 text-xs">
+            <option>10</option>
+        </select>
+        <div class="w-px h-4 bg-gray-300 mx-1"></div>
+        <button class="p-1 hover:bg-gray-200 rounded font-bold">B</button>
+        <button class="p-1 hover:bg-gray-200 rounded italic">I</button>
+        <div class="w-px h-4 bg-gray-300 mx-1"></div>
+        <div class="flex-1 bg-white border border-gray-300 rounded px-2 py-1 text-gray-400 italic text-xs flex items-center">
+            <span class="font-bold not-italic text-gray-600 mr-2">fx</span> =SUM(E2:E50)
+        </div>
+    </div>
+
+    <!-- Formula Bar / Grid -->
+    <main class="flex-1 overflow-auto bg-[#cdcdcd] p-[1px]">
+        <div class="bg-white min-w-[1000px]">
+            <!-- Header Row -->
+            <div class="flex">
+                <div class="w-10 bg-[#f3f3f3] border-b border-r border-[#d1d1d1]"></div> <!-- Corner -->
+                <div class="w-16 grid-header text-center">A</div>
+                <div class="w-40 grid-header">B</div>
+                <div class="w-32 grid-header">C</div>
+                <div class="w-64 grid-header">D</div>
+                <div class="w-24 grid-header text-right">E</div>
+                <div class="w-32 grid-header">F</div>
+                <div class="w-32 grid-header">G</div>
+                <div class="flex-1 grid-header">H</div>
+            </div>
+
+            <!-- Data Rows -->
+            <!-- Row 1 -->
+            <div class="flex grid-row">
+                <div class="w-10 bg-[#f3f3f3] border-b border-r border-[#d1d1d1] text-center py-1 text-gray-500">1</div>
+                <div class="w-16 grid-cell font-bold bg-gray-50">ID</div>
+                <div class="w-40 grid-cell font-bold bg-gray-50">CLIENTE</div>
+                <div class="w-32 grid-cell font-bold bg-gray-50">STATUS</div>
+                <div class="w-64 grid-cell font-bold bg-gray-50">ENDEREÇO</div>
+                <div class="w-24 grid-cell font-bold bg-gray-50 text-right">VALOR</div>
+                <div class="w-32 grid-cell font-bold bg-gray-50">MOTOBOY</div>
+                <div class="w-32 grid-cell font-bold bg-gray-50">HORA</div>
+                <div class="flex-1 grid-cell font-bold bg-gray-50">OBS</div>
+            </div>
+
+            <!-- Row 2 -->
+            <div class="flex grid-row selected">
+                <div class="w-10 bg-[#f3f3f3] border-b border-r border-[#d1d1d1] text-center py-1 text-gray-500">2</div>
+                <div class="w-16 grid-cell text-right">4590</div>
+                <div class="w-40 grid-cell">Burger King</div>
+                <div class="w-32 grid-cell text-green-600">Entregue</div>
+                <div class="w-64 grid-cell">Rua das Palmeiras, 120</div>
+                <div class="w-24 grid-cell text-right">R$ 45,00</div>
+                <div class="w-32 grid-cell">João Silva</div>
+                <div class="w-32 grid-cell text-right">14:30</div>
+                <div class="flex-1 grid-cell">Pagamento PIX</div>
+            </div>
+
+            <!-- Row 3 -->
+            <div class="flex grid-row">
+                <div class="w-10 bg-[#f3f3f3] border-b border-r border-[#d1d1d1] text-center py-1 text-gray-500">3</div>
+                <div class="w-16 grid-cell text-right">4589</div>
+                <div class="w-40 grid-cell">Restaurante Chef</div>
+                <div class="w-32 grid-cell text-orange-600">Em Rota</div>
+                <div class="w-64 grid-cell">Av. Oceano, 500</div>
+                <div class="w-24 grid-cell text-right">R$ 32,50</div>
+                <div class="w-32 grid-cell">Maria O.</div>
+                <div class="w-32 grid-cell text-right">14:45</div>
+                <div class="flex-1 grid-cell">Troco para 50</div>
+            </div>
+
+            <!-- Row 4 -->
+            <div class="flex grid-row">
+                <div class="w-10 bg-[#f3f3f3] border-b border-r border-[#d1d1d1] text-center py-1 text-gray-500">4</div>
+                <div class="w-16 grid-cell text-right">4588</div>
+                <div class="w-40 grid-cell">Pizza Hut</div>
+                <div class="w-32 grid-cell text-red-600">Pendente</div>
+                <div class="w-64 grid-cell">Rua 15, Centro</div>
+                <div class="w-24 grid-cell text-right">R$ 55,00</div>
+                <div class="w-32 grid-cell">--</div>
+                <div class="w-32 grid-cell text-right">14:50</div>
+                <div class="flex-1 grid-cell"></div>
+            </div>
+
+            <!-- Fill Rows -->
+            <div class="flex grid-row">
+                <div class="w-10 bg-[#f3f3f3] border-b border-r border-[#d1d1d1] text-center py-1 text-gray-500">5</div>
+                <div class="w-16 grid-cell"></div>
+                <div class="w-40 grid-cell"></div>
+                <div class="w-32 grid-cell"></div>
+                <div class="w-64 grid-cell"></div>
+                <div class="w-24 grid-cell"></div>
+                <div class="w-32 grid-cell"></div>
+                <div class="w-32 grid-cell"></div>
+                <div class="flex-1 grid-cell"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer Tabs -->
+    <footer class="h-8 bg-[#f3f3f3] border-t border-[#d1d1d1] flex items-end px-2 gap-1">
+        <button class="px-2 py-1 text-gray-500 hover:bg-gray-200"><i class="fas fa-plus"></i></button>
+        <button class="px-2 py-1 text-gray-500 hover:bg-gray-200"><i class="fas fa-bars"></i></button>
+        <div class="px-4 py-1 tab-active text-xs rounded-t border-t border-x border-[#d1d1d1] relative top-[1px] bg-white">Pedidos_Hoje</div>
+        <div class="px-4 py-1 text-gray-600 text-xs hover:bg-gray-200 rounded-t cursor-pointer">Motoboys</div>
+        <div class="px-4 py-1 text-gray-600 text-xs hover:bg-gray-200 rounded-t cursor-pointer">Financeiro</div>
+    </footer>
+
+</body>
+</html>

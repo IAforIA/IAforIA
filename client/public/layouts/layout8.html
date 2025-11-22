@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Layout 8 - Workspace por Abas (Foco em Multitarefa)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-900 h-screen flex flex-col overflow-hidden font-sans text-slate-200">
+
+    <!-- Top Bar: Abas de Navegação -->
+    <header class="bg-slate-950 h-10 flex items-end px-2 gap-1 select-none">
+        <!-- Aba Ativa (Dashboard) -->
+        <div class="bg-slate-800 text-white px-4 py-2 rounded-t-lg text-xs font-bold flex items-center gap-2 border-t border-x border-slate-700 cursor-default">
+            <i class="fas fa-home text-indigo-400"></i> Central
+        </div>
+        
+        <!-- Aba Inativa (Pedido) -->
+        <div class="bg-slate-900 text-slate-400 px-4 py-2 rounded-t-lg text-xs font-medium flex items-center gap-2 border-t border-x border-transparent hover:bg-slate-800 hover:text-slate-200 cursor-pointer transition">
+            <i class="fas fa-box text-green-500"></i> #1234
+            <button class="hover:text-white ml-1">×</button>
+        </div>
+
+        <!-- Aba Inativa (Cliente) -->
+        <div class="bg-slate-900 text-slate-400 px-4 py-2 rounded-t-lg text-xs font-medium flex items-center gap-2 border-t border-x border-transparent hover:bg-slate-800 hover:text-slate-200 cursor-pointer transition">
+            <i class="fas fa-store text-blue-500"></i> Rest. Chef
+            <button class="hover:text-white ml-1">×</button>
+        </div>
+
+        <!-- Botão Nova Aba -->
+        <button class="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-white">
+            <i class="fas fa-plus"></i>
+        </button>
+    </header>
+
+    <!-- Toolbar de Ações -->
+    <div class="bg-slate-800 h-12 border-b border-slate-700 flex items-center px-4 justify-between">
+        <div class="flex gap-4">
+            <button class="text-slate-300 hover:text-white text-sm font-medium flex items-center gap-2">
+                <i class="fas fa-columns"></i> Layout
+            </button>
+            <button class="text-slate-300 hover:text-white text-sm font-medium flex items-center gap-2">
+                <i class="fas fa-filter"></i> Filtros
+            </button>
+            <div class="h-6 w-px bg-slate-600 mx-2"></div>
+            <button class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1 rounded text-xs font-bold">
+                + Novo Pedido
+            </button>
+        </div>
+        <div class="flex items-center gap-4 text-xs">
+            <div class="flex items-center gap-2">
+                <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                <span class="text-green-400">Sistema Online</span>
+            </div>
+            <div class="text-slate-400">v2.5.0</div>
+        </div>
+    </div>
+
+    <!-- Main Workspace -->
+    <div class="flex-1 flex overflow-hidden bg-slate-900">
+        
+        <!-- Sidebar Esquerda (Menu Principal) -->
+        <nav class="w-16 bg-slate-950 border-r border-slate-800 flex flex-col items-center py-4 gap-6">
+            <button class="w-10 h-10 rounded-lg bg-slate-800 text-indigo-400 flex items-center justify-center shadow border border-slate-700" title="Dashboard">
+                <i class="fas fa-chart-line"></i>
+            </button>
+            <button class="w-10 h-10 rounded-lg hover:bg-slate-800 text-slate-500 hover:text-slate-200 flex items-center justify-center transition" title="Pedidos">
+                <i class="fas fa-list"></i>
+            </button>
+            <button class="w-10 h-10 rounded-lg hover:bg-slate-800 text-slate-500 hover:text-slate-200 flex items-center justify-center transition" title="Financeiro">
+                <i class="fas fa-wallet"></i>
+            </button>
+            <button class="w-10 h-10 rounded-lg hover:bg-slate-800 text-slate-500 hover:text-slate-200 flex items-center justify-center transition" title="Mapa">
+                <i class="fas fa-map"></i>
+            </button>
+        </nav>
+
+        <!-- Conteúdo da Aba Ativa (Dashboard) -->
+        <main class="flex-1 p-6 overflow-y-auto">
+            
+            <!-- Grid de Widgets -->
+            <div class="grid grid-cols-3 gap-6 mb-6">
+                <!-- Widget Financeiro -->
+                <div class="bg-slate-800 rounded-xl p-4 border border-slate-700 shadow-lg">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-slate-300 text-sm uppercase">Financeiro Hoje</h3>
+                        <button class="text-slate-500 hover:text-white"><i class="fas fa-external-link-alt"></i></button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <div class="text-xs text-slate-500">Receita</div>
+                            <div class="text-2xl font-bold text-green-400">R$ 450</div>
+                        </div>
+                        <div>
+                            <div class="text-xs text-slate-500">A Pagar</div>
+                            <div class="text-2xl font-bold text-red-400">R$ 280</div>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-slate-700">
+                        <button class="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 py-2 rounded text-xs font-bold">
+                            Ver Relatório Completo
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Widget Operacional -->
+                <div class="bg-slate-800 rounded-xl p-4 border border-slate-700 shadow-lg col-span-2">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-slate-300 text-sm uppercase">Status da Frota</h3>
+                        <div class="flex gap-2">
+                            <span class="text-xs bg-green-900 text-green-300 px-2 py-1 rounded">5 Livres</span>
+                            <span class="text-xs bg-blue-900 text-blue-300 px-2 py-1 rounded">3 Em Rota</span>
+                        </div>
+                    </div>
+                    <!-- Mini Mapa -->
+                    <div class="h-32 bg-slate-700 rounded-lg relative overflow-hidden">
+                        <div class="absolute inset-0 bg-[url('https://maps.googleapis.com/maps/api/staticmap?center=-18.9, -39.7&zoom=13&size=600x200&sensor=false&style=feature:all|element:all|saturation:-100|visibility:simplified')] bg-cover opacity-50"></div>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <button class="bg-slate-900/80 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-900 backdrop-blur">
+                                Abrir Mapa Completo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabela de Pedidos Recentes -->
+            <div class="bg-slate-800 rounded-xl border border-slate-700 shadow-lg overflow-hidden">
+                <div class="p-4 border-b border-slate-700 flex justify-between items-center">
+                    <h3 class="font-bold text-slate-300 text-sm uppercase">Pedidos Recentes</h3>
+                    <input type="text" placeholder="Filtrar..." class="bg-slate-900 border border-slate-600 rounded px-3 py-1 text-xs text-slate-300 focus:border-indigo-500 outline-none">
+                </div>
+                <table class="w-full text-sm text-left text-slate-400">
+                    <thead class="text-xs text-slate-500 uppercase bg-slate-900/50">
+                        <tr>
+                            <th class="px-6 py-3">ID</th>
+                            <th class="px-6 py-3">Cliente</th>
+                            <th class="px-6 py-3">Motoboy</th>
+                            <th class="px-6 py-3">Status</th>
+                            <th class="px-6 py-3">Valor</th>
+                            <th class="px-6 py-3">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-700">
+                        <tr class="hover:bg-slate-700/50 transition cursor-pointer">
+                            <td class="px-6 py-4 font-medium text-white">#1234</td>
+                            <td class="px-6 py-4">Restaurante do Chef</td>
+                            <td class="px-6 py-4">João Silva</td>
+                            <td class="px-6 py-4"><span class="bg-green-900 text-green-300 px-2 py-1 rounded text-xs">Entregue</span></td>
+                            <td class="px-6 py-4">R$ 50,00</td>
+                            <td class="px-6 py-4">
+                                <button class="text-indigo-400 hover:text-indigo-300">Detalhes</button>
+                            </td>
+                        </tr>
+                        <tr class="hover:bg-slate-700/50 transition cursor-pointer">
+                            <td class="px-6 py-4 font-medium text-white">#1235</td>
+                            <td class="px-6 py-4">Burger King</td>
+                            <td class="px-6 py-4">--</td>
+                            <td class="px-6 py-4"><span class="bg-yellow-900 text-yellow-300 px-2 py-1 rounded text-xs">Pendente</span></td>
+                            <td class="px-6 py-4">R$ 35,00</td>
+                            <td class="px-6 py-4">
+                                <button class="text-indigo-400 hover:text-indigo-300">Detalhes</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </main>
+    </div>
+
+</body>
+</html>

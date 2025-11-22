@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Layout 12 - Logistics Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #000000;
+            color: #e5e5e5;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .status-badge {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .status-green { background-color: #064e3b; color: #6ee7b7; border: 1px solid #059669; }
+        .status-yellow { background-color: #451a03; color: #fdba74; border: 1px solid #d97706; }
+        .status-blue { background-color: #172554; color: #93c5fd; border: 1px solid #2563eb; }
+        
+        .table-row:hover {
+            background-color: #171717;
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0a0a0a; }
+        ::-webkit-scrollbar-thumb { background: #404040; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #525252; }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden">
+
+    <!-- Top Bar -->
+    <header class="h-12 bg-[#111] border-b border-[#333] flex items-center justify-between px-4">
+        <div class="flex items-center gap-4">
+            <div class="font-bold text-xl tracking-tight text-white">GURIRI<span class="text-orange-500">LOG</span></div>
+            <div class="h-6 w-px bg-[#333]"></div>
+            <nav class="flex gap-4 text-sm font-medium text-gray-400">
+                <a href="#" class="text-white hover:text-orange-500">Operations</a>
+                <a href="#" class="hover:text-white">Planning</a>
+                <a href="#" class="hover:text-white">Analytics</a>
+                <a href="#" class="hover:text-white">Administration</a>
+            </nav>
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="relative">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i>
+                <input type="text" placeholder="Search ID, Driver..." class="bg-[#222] border border-[#444] rounded text-sm pl-8 pr-4 py-1 focus:border-orange-500 outline-none w-64 text-white">
+            </div>
+            <div class="w-8 h-8 bg-orange-600 rounded-full flex items-center justify-center text-white font-bold text-xs">AD</div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex overflow-hidden">
+        
+        <!-- Left Panel: Order List (30%) -->
+        <aside class="w-[400px] bg-[#0a0a0a] border-r border-[#333] flex flex-col">
+            <div class="p-3 border-b border-[#333] flex justify-between items-center bg-[#111]">
+                <h2 class="font-bold text-sm uppercase text-gray-400">Active Shipments (12)</h2>
+                <button class="text-xs bg-[#333] hover:bg-[#444] px-2 py-1 rounded text-white"><i class="fas fa-filter"></i> Filter</button>
+            </div>
+            <div class="flex-1 overflow-y-auto">
+                <!-- Item 1 -->
+                <div class="p-4 border-b border-[#222] table-row cursor-pointer border-l-4 border-l-orange-500 bg-[#1a1a1a]">
+                    <div class="flex justify-between mb-1">
+                        <span class="font-bold text-white">#4590</span>
+                        <span class="status-badge status-yellow">PICKUP</span>
+                    </div>
+                    <div class="text-sm text-gray-300 mb-2">Burger King <i class="fas fa-arrow-right text-[10px] mx-1 text-gray-500"></i> Rua das Palmeiras, 120</div>
+                    <div class="flex justify-between items-center text-xs text-gray-500">
+                        <div class="flex items-center gap-2"><i class="fas fa-motorcycle"></i> João Silva</div>
+                        <div>ETA: 14:55</div>
+                    </div>
+                </div>
+                <!-- Item 2 -->
+                <div class="p-4 border-b border-[#222] table-row cursor-pointer border-l-4 border-l-transparent">
+                    <div class="flex justify-between mb-1">
+                        <span class="font-bold text-white">#4589</span>
+                        <span class="status-badge status-green">DELIVERING</span>
+                    </div>
+                    <div class="text-sm text-gray-300 mb-2">Rest. Chef <i class="fas fa-arrow-right text-[10px] mx-1 text-gray-500"></i> Av. Oceano, 500</div>
+                    <div class="flex justify-between items-center text-xs text-gray-500">
+                        <div class="flex items-center gap-2"><i class="fas fa-motorcycle"></i> Maria O.</div>
+                        <div>ETA: 14:48</div>
+                    </div>
+                </div>
+                <!-- Item 3 -->
+                <div class="p-4 border-b border-[#222] table-row cursor-pointer border-l-4 border-l-transparent">
+                    <div class="flex justify-between mb-1">
+                        <span class="font-bold text-white">#4588</span>
+                        <span class="status-badge status-blue">ASSIGNED</span>
+                    </div>
+                    <div class="text-sm text-gray-300 mb-2">Pizza Hut <i class="fas fa-arrow-right text-[10px] mx-1 text-gray-500"></i> Rua 15</div>
+                    <div class="flex justify-between items-center text-xs text-gray-500">
+                        <div class="flex items-center gap-2"><i class="fas fa-motorcycle"></i> Carlos M.</div>
+                        <div>ETA: 15:10</div>
+                    </div>
+                </div>
+                 <!-- Item 4 -->
+                 <div class="p-4 border-b border-[#222] table-row cursor-pointer border-l-4 border-l-transparent opacity-50">
+                    <div class="flex justify-between mb-1">
+                        <span class="font-bold text-white">#4587</span>
+                        <span class="status-badge bg-gray-800 text-gray-400 border border-gray-700">COMPLETED</span>
+                    </div>
+                    <div class="text-sm text-gray-300 mb-2">Subway <i class="fas fa-arrow-right text-[10px] mx-1 text-gray-500"></i> Centro</div>
+                    <div class="flex justify-between items-center text-xs text-gray-500">
+                        <div class="flex items-center gap-2"><i class="fas fa-check"></i> Pedro A.</div>
+                        <div>14:10</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Center/Right Panel: Map & Timeline -->
+        <main class="flex-1 flex flex-col bg-[#111]">
+            
+            <!-- Map View (70%) -->
+            <div class="flex-[2] relative bg-[#1a1a1a]">
+                <div class="absolute inset-0 bg-[url('https://maps.googleapis.com/maps/api/staticmap?center=-18.9, -39.7&zoom=13&size=800x600&sensor=false&style=feature:all|element:labels.text.fill|color:0xffffff&style=feature:all|element:labels.text.stroke|color:0x000000&style=feature:administrative|element:geometry.fill|color:0x000000&style=feature:administrative|element:geometry.stroke|color:0x144b53&style=feature:landscape|element:geometry|color:0x08304b&style=feature:poi|element:geometry|color:0x0c4152&style=feature:road|element:geometry.fill|color:0x000000&style=feature:road|element:geometry.stroke|color:0x0b434f&style=feature:road|element:labels.text.fill|color:0x527189&style=feature:transit|element:geometry|color:0x2f3948&style=feature:water|element:geometry|color:0x021019&style=feature:water|element:labels.text.fill|color:0x242829')] bg-cover opacity-80"></div>
+                
+                <!-- Map Overlay Info -->
+                <div class="absolute top-4 right-4 bg-black/80 border border-[#333] p-4 rounded w-64">
+                    <h3 class="text-xs font-bold uppercase text-gray-400 mb-2">Route Optimization</h3>
+                    <div class="flex justify-between text-sm mb-1">
+                        <span>Efficiency</span>
+                        <span class="text-green-500">94%</span>
+                    </div>
+                    <div class="w-full bg-[#333] h-1 rounded-full mb-3">
+                        <div class="bg-green-500 h-full w-[94%]"></div>
+                    </div>
+                    <div class="text-xs text-gray-500">
+                        <i class="fas fa-info-circle"></i> Traffic is light in Sector 4.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Timeline (30%) -->
+            <div class="h-48 bg-[#0a0a0a] border-t border-[#333] flex flex-col">
+                <div class="h-8 border-b border-[#333] flex items-center px-4 bg-[#111]">
+                    <span class="text-xs font-bold uppercase text-gray-400">Driver Schedule Timeline</span>
+                </div>
+                <div class="flex-1 overflow-x-auto p-4 relative">
+                    <!-- Time Markers -->
+                    <div class="flex justify-between text-[10px] text-gray-600 mb-2 border-b border-[#222] pb-1 w-[1000px]">
+                        <span>14:00</span><span>14:15</span><span>14:30</span><span>14:45</span><span class="text-orange-500 font-bold">15:00 (NOW)</span><span>15:15</span><span>15:30</span><span>15:45</span>
+                    </div>
+                    
+                    <!-- Driver Rows -->
+                    <div class="space-y-3 w-[1000px]">
+                        <!-- Row 1 -->
+                        <div class="flex items-center gap-4">
+                            <div class="w-20 text-xs text-gray-400 truncate">João Silva</div>
+                            <div class="flex-1 h-6 bg-[#1a1a1a] rounded relative">
+                                <div class="absolute left-[10%] width-[20%] h-full bg-green-900/50 border border-green-700 rounded text-[10px] flex items-center justify-center text-green-400">#4585</div>
+                                <div class="absolute left-[35%] width-[25%] h-full bg-orange-900/50 border border-orange-700 rounded text-[10px] flex items-center justify-center text-orange-400">#4590</div>
+                            </div>
+                        </div>
+                        <!-- Row 2 -->
+                        <div class="flex items-center gap-4">
+                            <div class="w-20 text-xs text-gray-400 truncate">Maria O.</div>
+                            <div class="flex-1 h-6 bg-[#1a1a1a] rounded relative">
+                                <div class="absolute left-[5%] width-[30%] h-full bg-green-900/50 border border-green-700 rounded text-[10px] flex items-center justify-center text-green-400">#4586</div>
+                                <div class="absolute left-[40%] width-[20%] h-full bg-green-900/50 border border-green-700 rounded text-[10px] flex items-center justify-center text-green-400">#4589</div>
+                            </div>
+                        </div>
+                         <!-- Row 3 -->
+                         <div class="flex items-center gap-4">
+                            <div class="w-20 text-xs text-gray-400 truncate">Carlos M.</div>
+                            <div class="flex-1 h-6 bg-[#1a1a1a] rounded relative">
+                                <div class="absolute left-[60%] width-[20%] h-full bg-blue-900/50 border border-blue-700 rounded text-[10px] flex items-center justify-center text-blue-400">#4588</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Current Time Line -->
+                    <div class="absolute top-0 bottom-0 left-[50%] w-px bg-orange-500 z-10 pointer-events-none"></div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+</body>
+</html>

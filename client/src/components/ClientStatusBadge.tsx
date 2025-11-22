@@ -37,7 +37,9 @@ export function ClientStatusBadge({ clientId, schedules }: ClientStatusBadgeProp
   // Check if client is open now
   const now = new Date();
   const currentDay = now.getDay();
-  const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  const currentHour = now.getHours();
+  const currentMinute = now.getMinutes();
+  const currentTimeInMinutes = currentHour * 60 + currentMinute;
 
   const todaySchedules = schedules.filter(s => s.diaSemana === currentDay);
 
@@ -50,8 +52,16 @@ export function ClientStatusBadge({ clientId, schedules }: ClientStatusBadgeProp
   }
 
   const schedule = todaySchedules[0];
-  const isOpen = schedule.horaAbertura && schedule.horaFechamento && 
-    currentTime >= schedule.horaAbertura && currentTime <= schedule.horaFechamento;
+  
+  // Convert time strings to minutes for proper comparison
+  const parseTimeToMinutes = (time: string): number => {
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * 60 + minutes;
+  };
+
+  const openTime = parseTimeToMinutes(schedule.horaAbertura);
+  const closeTime = parseTimeToMinutes(schedule.horaFechamento);
+  const isOpen = currentTimeInMinutes >= openTime && currentTimeInMinutes <= closeTime;
 
   if (isOpen) {
     return (
@@ -62,7 +72,7 @@ export function ClientStatusBadge({ clientId, schedules }: ClientStatusBadgeProp
   }
 
   // Check if will open later today
-  const willOpenLater = schedule.horaAbertura && currentTime < schedule.horaAbertura;
+  const willOpenLater = currentTimeInMinutes < openTime;
 
   return (
     <Badge variant="destructive" title={willOpenLater ? `Abre às ${schedule.horaAbertura}` : "Fechado hoje"}>

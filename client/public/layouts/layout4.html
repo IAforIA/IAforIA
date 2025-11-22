@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Layout 4 - Command Center (Visão Total)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-slate-100 h-screen flex flex-col overflow-hidden font-sans">
+
+    <!-- Header Compacto com KPIs -->
+    <header class="bg-white border-b h-14 flex items-center justify-between px-4 shadow-sm z-20 shrink-0">
+        <div class="flex items-center gap-4">
+            <div class="bg-slate-800 text-white px-2 py-1 rounded font-bold text-lg tracking-tighter">GE</div>
+            <div class="flex gap-4 text-sm">
+                <div class="flex flex-col leading-tight">
+                    <span class="text-xs text-gray-500">Receita Hoje</span>
+                    <span class="font-bold text-green-600">R$ 450,00</span>
+                </div>
+                <div class="flex flex-col leading-tight border-l pl-4">
+                    <span class="text-xs text-gray-500">A Pagar</span>
+                    <span class="font-bold text-red-500">R$ 280,00</span>
+                </div>
+                <div class="flex flex-col leading-tight border-l pl-4">
+                    <span class="text-xs text-gray-500">Lucro</span>
+                    <span class="font-bold text-blue-600">R$ 170,00</span>
+                </div>
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            <button class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded text-xs font-medium transition shadow-sm">
+                <i class="fas fa-plus mr-1"></i> Novo Pedido
+            </button>
+            <div class="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-600">
+                <i class="fas fa-user"></i>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Grid - 3 Colunas -->
+    <div class="flex-1 flex overflow-hidden">
+        
+        <!-- COLUNA 1: CHAT (30%) -->
+        <div class="w-[30%] bg-white border-r flex flex-col z-10 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
+            <div class="p-3 border-b bg-slate-50 flex justify-between items-center">
+                <h2 class="font-bold text-slate-700 text-sm"><i class="fas fa-robot text-indigo-600 mr-2"></i>Assistente IA</h2>
+                <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse" title="Online"></span>
+            </div>
+            
+            <div class="flex-1 p-4 overflow-y-auto space-y-4 bg-slate-50/50">
+                <!-- Mensagens -->
+                <div class="flex gap-2">
+                    <div class="w-6 h-6 rounded bg-indigo-600 flex items-center justify-center text-white text-xs mt-1"><i class="fas fa-robot"></i></div>
+                    <div class="bg-white p-3 rounded-lg rounded-tl-none shadow-sm border text-sm text-gray-700">
+                        <p><strong>Atenção:</strong> O pedido #123 do Burger King está atrasado há 5 minutos. O motoboy João está preso no trânsito.</p>
+                        <div class="mt-2 flex gap-2">
+                            <button class="text-xs bg-red-50 text-red-600 px-2 py-1 rounded border border-red-100 hover:bg-red-100">Contatar João</button>
+                            <button class="text-xs bg-gray-50 text-gray-600 px-2 py-1 rounded border border-gray-200 hover:bg-gray-100">Ver Pedido</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-2 flex-row-reverse">
+                    <div class="bg-indigo-100 text-indigo-900 p-3 rounded-lg rounded-tr-none text-sm max-w-[85%]">
+                        <p>Avise o cliente sobre o atraso, por favor.</p>
+                    </div>
+                </div>
+
+                <div class="flex gap-2">
+                    <div class="w-6 h-6 rounded bg-indigo-600 flex items-center justify-center text-white text-xs mt-1"><i class="fas fa-robot"></i></div>
+                    <div class="bg-white p-3 rounded-lg rounded-tl-none shadow-sm border text-sm text-gray-700">
+                        <p>✅ Mensagem enviada para o cliente via WhatsApp.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-3 border-t bg-white">
+                <div class="relative">
+                    <input type="text" placeholder="Comando ou mensagem..." class="w-full bg-slate-100 border-0 rounded-md pl-3 pr-10 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                    <button class="absolute right-1 top-1 bottom-1 w-8 text-indigo-600 hover:text-indigo-800"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- COLUNA 2: MAPA & PEDIDOS (45%) -->
+        <div class="w-[45%] flex flex-col bg-slate-100">
+            
+            <!-- Mapa (Topo - 50%) -->
+            <div class="h-[50%] relative bg-slate-200 border-b group">
+                <!-- Placeholder do Mapa -->
+                <div class="absolute inset-0 bg-[url('https://maps.googleapis.com/maps/api/staticmap?center=-18.9, -39.7&zoom=13&size=600x400&sensor=false')] bg-cover opacity-60 grayscale group-hover:grayscale-0 transition duration-500"></div>
+                
+                <!-- Overlay de Controles do Mapa -->
+                <div class="absolute top-3 left-3 bg-white/90 backdrop-blur px-3 py-1 rounded shadow-sm text-xs font-bold text-slate-700 border">
+                    <i class="fas fa-map-marker-alt text-red-500 mr-1"></i> Guriri Ao Vivo
+                </div>
+                
+                <!-- Marcadores Simulados -->
+                <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                    <div class="relative">
+                        <div class="w-3 h-3 bg-blue-500 rounded-full border-2 border-white shadow-lg animate-ping absolute"></div>
+                        <div class="w-3 h-3 bg-blue-500 rounded-full border-2 border-white shadow-lg relative"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista de Pedidos (Baixo - 50%) -->
+            <div class="flex-1 flex flex-col bg-white overflow-hidden">
+                <div class="p-2 border-b bg-slate-50 flex justify-between items-center">
+                    <h3 class="font-bold text-xs uppercase text-slate-500 tracking-wider">Pedidos em Andamento (5)</h3>
+                    <button class="text-xs text-indigo-600 hover:underline">Ver Todos</button>
+                </div>
+                <div class="flex-1 overflow-y-auto p-2 space-y-2">
+                    <!-- Card Pedido -->
+                    <div class="bg-white border rounded-lg p-3 hover:shadow-md transition cursor-pointer border-l-4 border-l-green-500">
+                        <div class="flex justify-between items-start mb-1">
+                            <span class="font-bold text-sm text-slate-800">#1234 • Restaurante do Chef</span>
+                            <span class="text-xs font-mono bg-slate-100 px-1 rounded">14:30</span>
+                        </div>
+                        <div class="flex items-center gap-2 text-xs text-gray-600 mb-2">
+                            <i class="fas fa-motorcycle text-slate-400"></i> João Silva
+                            <span class="text-slate-300">|</span>
+                            <i class="fas fa-map-pin text-slate-400"></i> Praia do Canto
+                        </div>
+                        <div class="flex justify-between items-center border-t pt-2 mt-1">
+                            <span class="font-bold text-green-700 text-sm">R$ 45,00</span>
+                            <span class="text-[10px] uppercase font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">Em Rota</span>
+                        </div>
+                    </div>
+
+                    <!-- Card Pedido -->
+                    <div class="bg-white border rounded-lg p-3 hover:shadow-md transition cursor-pointer border-l-4 border-l-yellow-500">
+                        <div class="flex justify-between items-start mb-1">
+                            <span class="font-bold text-sm text-slate-800">#1235 • Burger King</span>
+                            <span class="text-xs font-mono bg-slate-100 px-1 rounded">14:45</span>
+                        </div>
+                        <div class="flex items-center gap-2 text-xs text-gray-600 mb-2">
+                            <i class="fas fa-motorcycle text-slate-400"></i> --
+                            <span class="text-slate-300">|</span>
+                            <i class="fas fa-map-pin text-slate-400"></i> Centro
+                        </div>
+                        <div class="flex justify-between items-center border-t pt-2 mt-1">
+                            <span class="font-bold text-green-700 text-sm">R$ 32,00</span>
+                            <span class="text-[10px] uppercase font-bold text-yellow-600 bg-yellow-50 px-2 py-0.5 rounded-full">Aguardando</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- COLUNA 3: STATUS (25%) -->
+        <div class="w-[25%] bg-slate-50 border-l flex flex-col">
+            
+            <!-- Clientes (Topo) -->
+            <div class="flex-1 flex flex-col border-b overflow-hidden">
+                <div class="p-2 bg-white border-b font-bold text-xs uppercase text-slate-500 flex justify-between items-center">
+                    <span>🏪 Clientes (10)</span>
+                    <span class="bg-green-100 text-green-700 px-1.5 rounded text-[10px]">8 Abertos</span>
+                </div>
+                <div class="flex-1 overflow-y-auto p-2 space-y-1">
+                    <div class="flex items-center justify-between p-2 bg-white border rounded hover:bg-slate-50 cursor-pointer">
+                        <span class="text-sm font-medium text-slate-700">Restaurante do Chef</span>
+                        <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                    </div>
+                    <div class="flex items-center justify-between p-2 bg-white border rounded hover:bg-slate-50 cursor-pointer">
+                        <span class="text-sm font-medium text-slate-700">Burger King</span>
+                        <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                    </div>
+                    <div class="flex items-center justify-between p-2 bg-white border rounded hover:bg-slate-50 cursor-pointer opacity-60">
+                        <span class="text-sm font-medium text-slate-700">Açaí do Jão</span>
+                        <div class="w-2 h-2 bg-red-500 rounded-full"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Motoboys (Baixo) -->
+            <div class="flex-1 flex flex-col overflow-hidden bg-slate-100">
+                <div class="p-2 bg-white border-b font-bold text-xs uppercase text-slate-500 flex justify-between items-center">
+                    <span>🏍️ Motoboys (8)</span>
+                    <span class="bg-blue-100 text-blue-700 px-1.5 rounded text-[10px]">5 Online</span>
+                </div>
+                <div class="flex-1 overflow-y-auto p-2 space-y-1">
+                    <div class="flex items-center justify-between p-2 bg-white border rounded hover:bg-slate-50 cursor-pointer">
+                        <div class="flex items-center gap-2">
+                            <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                            <span class="text-sm font-medium text-slate-700">João Silva</span>
+                        </div>
+                        <span class="text-[10px] bg-green-50 text-green-600 px-1 rounded border border-green-100">Livre</span>
+                    </div>
+                    <div class="flex items-center justify-between p-2 bg-white border rounded hover:bg-slate-50 cursor-pointer">
+                        <div class="flex items-center gap-2">
+                            <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
+                            <span class="text-sm font-medium text-slate-700">Maria Santos</span>
+                        </div>
+                        <span class="text-[10px] bg-blue-50 text-blue-600 px-1 rounded border border-blue-100">Em Rota</span>
+                    </div>
+                    <div class="flex items-center justify-between p-2 bg-white border rounded hover:bg-slate-50 cursor-pointer opacity-60">
+                        <div class="flex items-center gap-2">
+                            <div class="w-2 h-2 bg-gray-400 rounded-full"></div>
+                            <span class="text-sm font-medium text-slate-700">Pedro Costa</span>
+                        </div>
+                        <span class="text-[10px] bg-gray-100 text-gray-500 px-1 rounded border border-gray-200">Offline</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</body>
+</html>

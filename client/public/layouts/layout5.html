@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Layout 5 - Sistema Completo (Interativo)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    </style>
+</head>
+<body class="bg-slate-100 h-screen flex overflow-hidden font-sans text-slate-800">
+
+    <!-- 1. SIDEBAR DE NAVEGAÇÃO (Acesso aos Módulos) -->
+    <nav class="w-16 bg-slate-900 text-slate-400 flex flex-col items-center py-6 gap-8 z-30 shrink-0">
+        <div class="text-white font-bold text-xl mb-2">GE</div>
+        
+        <button class="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-500/30" title="Central Operacional">
+            <i class="fas fa-satellite-dish"></i>
+        </button>
+        
+        <button class="w-10 h-10 rounded-xl hover:bg-slate-800 hover:text-white flex items-center justify-center transition relative" title="Financeiro & Relatórios">
+            <i class="fas fa-chart-pie"></i>
+            <!-- Badge de notificação financeira -->
+            <span class="absolute top-0 right-0 w-2.5 h-2.5 bg-amber-500 rounded-full border-2 border-slate-900"></span>
+        </button>
+
+        <button class="w-10 h-10 rounded-xl hover:bg-slate-800 hover:text-white flex items-center justify-center transition" title="Gestão de Usuários (Docs/Contratos)">
+            <i class="fas fa-users"></i>
+        </button>
+
+        <button class="w-10 h-10 rounded-xl hover:bg-slate-800 hover:text-white flex items-center justify-center transition" title="Configurações">
+            <i class="fas fa-cog"></i>
+        </button>
+
+        <div class="mt-auto">
+            <button class="w-10 h-10 rounded-xl hover:bg-red-900/30 hover:text-red-400 flex items-center justify-center transition" title="Sair">
+                <i class="fas fa-sign-out-alt"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <div class="flex-1 flex flex-col min-w-0">
+
+        <!-- 2. HEADER COM BUSCA GLOBAL E ALERTAS -->
+        <header class="bg-white border-b h-16 flex items-center justify-between px-6 shadow-sm z-20">
+            
+            <!-- Busca Global -->
+            <div class="flex-1 max-w-xl relative">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input type="text" 
+                    placeholder="Buscar pedido (#123), cliente, motoboy, telefone..." 
+                    class="w-full bg-slate-100 border-0 rounded-lg pl-10 pr-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:bg-white transition text-sm"
+                >
+            </div>
+
+            <!-- Área de Alertas e Status -->
+            <div class="flex items-center gap-6 ml-4">
+                <!-- Alerta Crítico (Piscando) -->
+                <button class="flex items-center gap-2 bg-red-50 text-red-600 px-3 py-1.5 rounded-full border border-red-100 animate-pulse shadow-sm">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span class="text-xs font-bold">SOS Motoboy (1)</span>
+                </button>
+
+                <div class="h-6 w-px bg-slate-200"></div>
+
+                <!-- Resumo Financeiro Rápido -->
+                <div class="flex gap-4 text-xs">
+                    <div>
+                        <p class="text-slate-500">Receita Hoje</p>
+                        <p class="font-bold text-green-600 text-sm">R$ 450,00</p>
+                    </div>
+                    <div>
+                        <p class="text-slate-500">A Pagar</p>
+                        <p class="font-bold text-amber-600 text-sm">R$ 280,00</p>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- GRID OPERACIONAL (Igual Layout 4, mas com interatividade) -->
+        <div class="flex-1 flex overflow-hidden relative">
+            
+            <!-- Coluna 1: Chat -->
+            <div class="w-[25%] bg-white border-r flex flex-col">
+                <div class="p-3 border-b bg-slate-50 font-bold text-xs text-slate-500 uppercase">Chat Operacional</div>
+                <div class="flex-1 p-4 bg-slate-50/50">
+                    <!-- Chat content placeholder -->
+                    <div class="text-center text-slate-400 text-sm mt-10">Chat ativo...</div>
+                </div>
+            </div>
+
+            <!-- Coluna 2: Mapa e Pedidos -->
+            <div class="w-[50%] flex flex-col bg-slate-100 relative">
+                <!-- Mapa -->
+                <div class="h-[55%] bg-slate-200 relative border-b">
+                    <div class="absolute inset-0 bg-[url('https://maps.googleapis.com/maps/api/staticmap?center=-18.9, -39.7&zoom=13&size=600x400&sensor=false')] bg-cover opacity-60"></div>
+                    <div class="absolute top-4 right-4 bg-white p-2 rounded shadow text-xs">
+                        <div class="font-bold mb-1">Filtros do Mapa</div>
+                        <label class="flex items-center gap-2"><input type="checkbox" checked> Motoboys</label>
+                        <label class="flex items-center gap-2"><input type="checkbox" checked> Entregas</label>
+                    </div>
+                </div>
+                
+                <!-- Lista de Pedidos -->
+                <div class="flex-1 bg-white flex flex-col">
+                    <div class="p-2 border-b flex justify-between items-center bg-slate-50">
+                        <span class="font-bold text-xs uppercase text-slate-500">Pedidos Recentes</span>
+                        <div class="flex gap-2 text-xs">
+                            <button class="px-2 py-1 bg-white border rounded hover:bg-slate-50">Todos</button>
+                            <button class="px-2 py-1 bg-white border rounded hover:bg-slate-50 text-red-500">Atrasados</button>
+                        </div>
+                    </div>
+                    <div class="flex-1 p-2">
+                        <!-- Pedido Exemplo -->
+                        <div class="border rounded-lg p-3 flex justify-between items-center hover:bg-slate-50 cursor-pointer group">
+                            <div>
+                                <div class="font-bold text-sm">#1234 • Burger King</div>
+                                <div class="text-xs text-slate-500">Motoboy: João Silva • <span class="text-green-600">Em Rota</span></div>
+                            </div>
+                            <button class="opacity-0 group-hover:opacity-100 bg-indigo-50 text-indigo-600 px-3 py-1 rounded text-xs font-bold transition">
+                                Ver Detalhes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coluna 3: Status -->
+            <div class="w-[25%] bg-white border-l flex flex-col">
+                <div class="p-3 border-b bg-slate-50 font-bold text-xs text-slate-500 uppercase">Status</div>
+                <!-- Lista de Clientes -->
+                <div class="p-2">
+                    <div class="flex items-center justify-between p-2 bg-indigo-50 border border-indigo-200 rounded cursor-pointer">
+                        <span class="font-bold text-indigo-900 text-sm">Restaurante do Chef</span>
+                        <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. DRAWER DE DETALHES (Abre ao clicar em Cliente/Motoboy) -->
+            <div class="absolute top-2 bottom-2 right-2 w-80 bg-white rounded-xl shadow-2xl border border-slate-200 flex flex-col z-40 transform transition-transform duration-300">
+                
+                <!-- Header do Drawer -->
+                <div class="p-4 border-b bg-slate-50 rounded-t-xl flex justify-between items-start">
+                    <div class="flex gap-3">
+                        <div class="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center text-xl text-gray-500">
+                            <i class="fas fa-store"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-lg leading-tight">Restaurante do Chef</h3>
+                            <span class="text-xs text-green-600 font-bold bg-green-100 px-2 py-0.5 rounded-full">● Aberto</span>
+                        </div>
+                    </div>
+                    <button class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
+                </div>
+
+                <!-- Ações Rápidas (Contato) -->
+                <div class="grid grid-cols-2 gap-2 p-4 border-b">
+                    <button class="bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2">
+                        <i class="fab fa-whatsapp"></i> WhatsApp
+                    </button>
+                    <button class="bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2">
+                        <i class="fas fa-phone"></i> Ligar
+                    </button>
+                </div>
+
+                <!-- Conteúdo do Drawer (Abas) -->
+                <div class="flex-1 overflow-y-auto p-4 space-y-6">
+                    
+                    <!-- Endereço -->
+                    <div>
+                        <h4 class="text-xs font-bold text-slate-400 uppercase mb-2">Localização</h4>
+                        <div class="bg-slate-50 p-3 rounded border text-sm">
+                            <i class="fas fa-map-marker-alt text-red-500 mr-2"></i>
+                            Av. Oceano Atlântico, 123 - Guriri
+                            <a href="#" class="block text-indigo-600 text-xs mt-1 hover:underline">Abrir no Maps</a>
+                        </div>
+                    </div>
+
+                    <!-- Horários -->
+                    <div>
+                        <h4 class="text-xs font-bold text-slate-400 uppercase mb-2">Horário de Hoje</h4>
+                        <div class="flex justify-between text-sm border-b border-dashed pb-1">
+                            <span>Abertura:</span> <span class="font-mono">18:00</span>
+                        </div>
+                        <div class="flex justify-between text-sm pt-1">
+                            <span>Fechamento:</span> <span class="font-mono">23:30</span>
+                        </div>
+                    </div>
+
+                    <!-- Financeiro Rápido -->
+                    <div>
+                        <h4 class="text-xs font-bold text-slate-400 uppercase mb-2">Financeiro (Hoje)</h4>
+                        <div class="bg-indigo-50 p-3 rounded border border-indigo-100">
+                            <div class="flex justify-between text-sm mb-1">
+                                <span>Pedidos Entregues:</span> <strong>12</strong>
+                            </div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span>Repasse Frete:</span> <strong class="text-indigo-700">R$ 84,00</strong>
+                            </div>
+                            <button class="w-full mt-2 bg-white border border-indigo-200 text-indigo-600 text-xs py-1.5 rounded hover:bg-indigo-50 font-medium">
+                                Ver Relatório Completo
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Documentos -->
+                    <div>
+                        <h4 class="text-xs font-bold text-slate-400 uppercase mb-2">Documentos</h4>
+                        <div class="space-y-2">
+                            <a href="#" class="flex items-center gap-2 text-sm text-slate-600 hover:text-indigo-600">
+                                <i class="fas fa-file-contract"></i> Contrato de Prestação.pdf
+                            </a>
+                            <a href="#" class="flex items-center gap-2 text-sm text-slate-600 hover:text-indigo-600">
+                                <i class="fas fa-file-invoice"></i> Mensalidade (Venc. 10/12)
+                            </a>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- 4. MODAL DE PEDIDO (Exemplo Visual) -->
+            <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-xl shadow-2xl border w-[500px] hidden">
+                <!-- Conteúdo do modal de pedido com comprovante, timeline, valores... -->
+            </div>
+
+        </div>
+    </div>
+
+</body>
+</html>

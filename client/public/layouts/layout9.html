@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Layout 9 - Híbrido (Abas + Sidebar)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { bg: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+    </style>
+</head>
+<body class="bg-slate-950 h-screen flex overflow-hidden font-sans text-slate-200">
+
+    <!-- 1. Sidebar (Do Layout 5) - Navegação Principal -->
+    <aside class="w-16 bg-slate-900 border-r border-slate-800 flex flex-col items-center py-4 gap-4 z-20">
+        <!-- Logo -->
+        <div class="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold text-xl mb-4 shadow-lg shadow-indigo-500/20">
+            G
+        </div>
+
+        <!-- Menu Items -->
+        <button class="w-10 h-10 rounded-lg bg-slate-800 text-indigo-400 flex items-center justify-center shadow border border-slate-700 relative group">
+            <i class="fas fa-home"></i>
+            <span class="absolute left-12 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition whitespace-nowrap border border-slate-700 pointer-events-none">Início</span>
+        </button>
+        
+        <button class="w-10 h-10 rounded-lg hover:bg-slate-800 text-slate-500 hover:text-slate-200 flex items-center justify-center transition relative group">
+            <i class="fas fa-box"></i>
+            <span class="absolute left-12 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition whitespace-nowrap border border-slate-700 pointer-events-none">Pedidos</span>
+        </button>
+
+        <button class="w-10 h-10 rounded-lg hover:bg-slate-800 text-slate-500 hover:text-slate-200 flex items-center justify-center transition relative group">
+            <i class="fas fa-users"></i>
+            <span class="absolute left-12 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition whitespace-nowrap border border-slate-700 pointer-events-none">Clientes</span>
+        </button>
+
+        <button class="w-10 h-10 rounded-lg hover:bg-slate-800 text-slate-500 hover:text-slate-200 flex items-center justify-center transition relative group">
+            <i class="fas fa-motorcycle"></i>
+            <span class="absolute left-12 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition whitespace-nowrap border border-slate-700 pointer-events-none">Motoboys</span>
+        </button>
+
+        <div class="flex-1"></div>
+
+        <button class="w-10 h-10 rounded-lg hover:bg-slate-800 text-slate-500 hover:text-slate-200 flex items-center justify-center transition relative group">
+            <i class="fas fa-cog"></i>
+        </button>
+    </aside>
+
+    <!-- 2. Main Content Wrapper -->
+    <div class="flex-1 flex flex-col min-w-0 bg-slate-900">
+        
+        <!-- Top Bar com Abas (Do Layout 8) -->
+        <header class="h-10 bg-slate-950 border-b border-slate-800 flex items-end px-2 gap-1 select-none">
+            <!-- Aba Fixa: Dashboard -->
+            <div class="bg-slate-900 text-indigo-400 px-4 py-2 rounded-t-lg text-xs font-bold flex items-center gap-2 border-t border-x border-slate-800 cursor-default relative top-[1px] z-10">
+                <i class="fas fa-chart-pie"></i> Visão Geral
+            </div>
+            
+            <!-- Aba: Pedido #4590 -->
+            <div class="bg-slate-950 text-slate-400 px-4 py-2 rounded-t-lg text-xs font-medium flex items-center gap-2 border-t border-x border-transparent hover:bg-slate-900 hover:text-slate-200 cursor-pointer transition group">
+                <i class="fas fa-box text-orange-500"></i> #4590 - Burger King
+                <button class="w-4 h-4 rounded-full hover:bg-slate-700 flex items-center justify-center ml-1 opacity-0 group-hover:opacity-100 transition">×</button>
+            </div>
+
+            <!-- Aba: Motoboy João -->
+            <div class="bg-slate-950 text-slate-400 px-4 py-2 rounded-t-lg text-xs font-medium flex items-center gap-2 border-t border-x border-transparent hover:bg-slate-900 hover:text-slate-200 cursor-pointer transition group">
+                <i class="fas fa-motorcycle text-blue-500"></i> João Silva
+                <button class="w-4 h-4 rounded-full hover:bg-slate-700 flex items-center justify-center ml-1 opacity-0 group-hover:opacity-100 transition">×</button>
+            </div>
+
+            <!-- Botão Nova Aba -->
+            <button class="w-8 h-8 flex items-center justify-center text-slate-600 hover:text-slate-300 mb-1">
+                <i class="fas fa-plus text-xs"></i>
+            </button>
+
+            <div class="flex-1"></div>
+
+            <!-- Status do Sistema -->
+            <div class="flex items-center gap-3 px-4 mb-2">
+                <div class="flex items-center gap-2 text-xs text-slate-400 bg-slate-900 px-2 py-1 rounded-full border border-slate-800">
+                    <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                    Online
+                </div>
+                <button class="text-slate-400 hover:text-white"><i class="fas fa-bell"></i></button>
+            </div>
+        </header>
+
+        <!-- Conteúdo da Aba Ativa -->
+        <main class="flex-1 overflow-hidden flex relative">
+            
+            <!-- Área Principal (Dashboard) -->
+            <div class="flex-1 overflow-y-auto p-6">
+                
+                <!-- Header da Página -->
+                <div class="flex justify-between items-end mb-6">
+                    <div>
+                        <h1 class="text-2xl font-bold text-white">Central de Controle</h1>
+                        <p class="text-slate-400 text-sm">Sexta-feira, 22 de Novembro</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <div class="relative">
+                            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+                            <input type="text" placeholder="Buscar pedido, cliente..." class="bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg pl-9 pr-4 py-2 focus:outline-none focus:border-indigo-500 w-64">
+                        </div>
+                        <button class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-lg shadow-indigo-500/20 flex items-center gap-2">
+                            <i class="fas fa-plus"></i> Novo Pedido
+                        </button>
+                    </div>
+                </div>
+
+                <!-- KPIs (Cards Superiores) -->
+                <div class="grid grid-cols-4 gap-4 mb-6">
+                    <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-sm">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="p-2 bg-indigo-500/10 rounded-lg text-indigo-400"><i class="fas fa-cube"></i></div>
+                            <span class="text-xs font-bold text-green-400 bg-green-400/10 px-2 py-1 rounded">+12%</span>
+                        </div>
+                        <div class="text-2xl font-bold text-white">R$ 1.250</div>
+                        <div class="text-xs text-slate-400">Volume Total (Hoje)</div>
+                    </div>
+                    <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-sm">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="p-2 bg-green-500/10 rounded-lg text-green-400"><i class="fas fa-wallet"></i></div>
+                            <span class="text-xs font-bold text-slate-500">--</span>
+                        </div>
+                        <div class="text-2xl font-bold text-white">R$ 450</div>
+                        <div class="text-xs text-slate-400">Receita Fretes</div>
+                    </div>
+                    <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-sm">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="p-2 bg-blue-500/10 rounded-lg text-blue-400"><i class="fas fa-motorcycle"></i></div>
+                            <span class="text-xs font-bold text-blue-400 bg-blue-400/10 px-2 py-1 rounded">8 Online</span>
+                        </div>
+                        <div class="text-2xl font-bold text-white">15</div>
+                        <div class="text-xs text-slate-400">Entregas Realizadas</div>
+                    </div>
+                    <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-sm">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="p-2 bg-orange-500/10 rounded-lg text-orange-400"><i class="fas fa-clock"></i></div>
+                            <span class="text-xs font-bold text-red-400 bg-red-400/10 px-2 py-1 rounded">2 Atrasados</span>
+                        </div>
+                        <div class="text-2xl font-bold text-white">4</div>
+                        <div class="text-xs text-slate-400">Pedidos em Aberto</div>
+                    </div>
+                </div>
+
+                <!-- Conteúdo Principal Dividido -->
+                <div class="grid grid-cols-3 gap-6 h-[500px]">
+                    
+                    <!-- Coluna 1: Lista de Pedidos Ativos -->
+                    <div class="col-span-2 bg-slate-800 rounded-xl border border-slate-700 flex flex-col overflow-hidden">
+                        <div class="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-800/50">
+                            <h3 class="font-bold text-slate-200 flex items-center gap-2">
+                                <i class="fas fa-list text-slate-500"></i> Pedidos em Andamento
+                            </h3>
+                            <div class="flex gap-2">
+                                <button class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 px-2 py-1 rounded transition">Todos</button>
+                                <button class="text-xs bg-indigo-600 text-white px-2 py-1 rounded transition">Ativos</button>
+                                <button class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 px-2 py-1 rounded transition">Pendentes</button>
+                            </div>
+                        </div>
+                        
+                        <div class="flex-1 overflow-y-auto p-2 space-y-2">
+                            <!-- Card Pedido 1 -->
+                            <div class="bg-slate-700/30 hover:bg-slate-700/50 p-3 rounded-lg border border-slate-700/50 cursor-pointer transition group flex items-center justify-between">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-10 h-10 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center font-bold text-xs">
+                                        BK
+                                    </div>
+                                    <div>
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-bold text-slate-200">#4590 Burger King</span>
+                                            <span class="text-xs bg-yellow-500/20 text-yellow-400 px-1.5 py-0.5 rounded">Coletando</span>
+                                        </div>
+                                        <div class="text-xs text-slate-400 mt-0.5 flex items-center gap-2">
+                                            <i class="fas fa-map-marker-alt"></i> Rua das Palmeiras, 120
+                                            <span class="w-1 h-1 bg-slate-600 rounded-full"></span>
+                                            <i class="fas fa-motorcycle"></i> João Silva
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="font-bold text-slate-200">R$ 15,90</div>
+                                    <div class="text-xs text-slate-500">14:30</div>
+                                </div>
+                            </div>
+
+                            <!-- Card Pedido 2 -->
+                            <div class="bg-slate-700/30 hover:bg-slate-700/50 p-3 rounded-lg border border-slate-700/50 cursor-pointer transition group flex items-center justify-between">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-10 h-10 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-xs">
+                                        RC
+                                    </div>
+                                    <div>
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-bold text-slate-200">#4589 Rest. Chef</span>
+                                            <span class="text-xs bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded">Entregando</span>
+                                        </div>
+                                        <div class="text-xs text-slate-400 mt-0.5 flex items-center gap-2">
+                                            <i class="fas fa-map-marker-alt"></i> Av. Oceano, 500
+                                            <span class="w-1 h-1 bg-slate-600 rounded-full"></span>
+                                            <i class="fas fa-motorcycle"></i> Maria Oliveira
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="font-bold text-slate-200">R$ 22,50</div>
+                                    <div class="text-xs text-slate-500">14:15</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Coluna 2: Chat Rápido / Notificações (Drawer Fixo) -->
+                    <div class="bg-slate-800 rounded-xl border border-slate-700 flex flex-col overflow-hidden">
+                        <div class="p-4 border-b border-slate-700 bg-slate-800/50">
+                            <h3 class="font-bold text-slate-200 text-sm uppercase">Chat Operacional</h3>
+                        </div>
+                        <div class="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-900/30">
+                            <!-- Msg 1 -->
+                            <div class="flex gap-3">
+                                <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold">JS</div>
+                                <div>
+                                    <div class="flex items-baseline gap-2">
+                                        <span class="text-sm font-bold text-slate-300">João Silva</span>
+                                        <span class="text-[10px] text-slate-500">14:32</span>
+                                    </div>
+                                    <div class="bg-slate-700 text-slate-200 text-sm p-2 rounded-lg rounded-tl-none mt-1">
+                                        Cheguei no BK, o pedido ainda não tá pronto.
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Msg 2 -->
+                            <div class="flex gap-3 flex-row-reverse">
+                                <div class="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-xs font-bold">EU</div>
+                                <div class="text-right">
+                                    <div class="flex items-baseline gap-2 justify-end">
+                                        <span class="text-[10px] text-slate-500">14:33</span>
+                                        <span class="text-sm font-bold text-slate-300">Você</span>
+                                    </div>
+                                    <div class="bg-indigo-600 text-white text-sm p-2 rounded-lg rounded-tr-none mt-1">
+                                        Ok, aguarda 5 min. Se demorar mais me avisa.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-3 border-t border-slate-700 bg-slate-800">
+                            <div class="relative">
+                                <input type="text" placeholder="Enviar mensagem..." class="w-full bg-slate-900 border border-slate-600 rounded-lg pl-3 pr-10 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
+                                <button class="absolute right-2 top-1/2 -translate-y-1/2 text-indigo-400 hover:text-indigo-300">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- Drawer Lateral (Opcional - Slide Over) -->
+            <!-- Este drawer aparece quando clica em "Detalhes" sem abrir nova aba -->
+            <div class="w-80 bg-slate-900 border-l border-slate-800 shadow-2xl absolute right-0 top-0 bottom-0 transform translate-x-full transition-transform duration-300 z-30" id="detailsDrawer">
+                <!-- Conteúdo do Drawer -->
+            </div>
+
+        </main>
+    </div>
+
+</body>
+</html>

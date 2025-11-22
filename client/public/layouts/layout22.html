@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Layout 22 - Terminal / Hacker Style</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&display=swap');
+        
+        body { 
+            background-color: #000000; 
+            color: #00ff00; 
+            font-family: 'Fira Code', monospace; 
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .cursor-blink {
+            animation: blink 1s step-end infinite;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        .highlight { background-color: #003300; color: #ccffcc; }
+        .warning { color: #ffcc00; }
+        .error { color: #ff3333; }
+        .dim { color: #448844; }
+        
+        .box { border: 1px solid #004400; padding: 10px; margin-bottom: 10px; }
+        .box-title { background-color: #004400; color: #000; padding: 2px 5px; display: inline-block; margin-top: -20px; margin-left: 10px; font-weight: bold; }
+
+        a:hover { background-color: #00ff00; color: #000; text-decoration: none; cursor: pointer; }
+    </style>
+</head>
+<body class="h-screen p-4 flex flex-col overflow-hidden">
+
+    <!-- Top Status Bar -->
+    <div class="flex justify-between border-b border-[#004400] pb-2 mb-4">
+        <div>
+            <span class="font-bold">GURIRI_EXPRESS_OS v4.2.0</span> 
+            <span class="dim">[CONNECTED]</span>
+        </div>
+        <div>
+            UPTIME: 14d 03h 22m | LOAD: 0.45 | MEM: 32%
+        </div>
+    </div>
+
+    <div class="flex-1 flex gap-4 overflow-hidden">
+        
+        <!-- Left Column: System Log / Feed -->
+        <div class="w-1/3 flex flex-col box">
+            <span class="box-title">SYSTEM_LOG</span>
+            <div class="flex-1 overflow-y-auto font-mono text-xs">
+                <div class="mb-1"><span class="dim">11:42:01</span> [INFO] New order received <span class="highlight">#4590</span> from API</div>
+                <div class="mb-1"><span class="dim">11:42:05</span> [INFO] Auto-assigning driver...</div>
+                <div class="mb-1"><span class="dim">11:42:06</span> [WARN] No drivers in 2km radius. Expanding search.</div>
+                <div class="mb-1"><span class="dim">11:42:08</span> [SUCCESS] Driver <span class="highlight">JOAO_SILVA</span> accepted request.</div>
+                <div class="mb-1"><span class="dim">11:43:12</span> [INFO] Order #4588 status changed to <span class="highlight">DELIVERED</span>.</div>
+                <div class="mb-1"><span class="dim">11:44:00</span> [INFO] System backup completed.</div>
+                <div class="mb-1"><span class="dim">11:45:22</span> [ERROR] Payment gateway timeout (retry 1/3).</div>
+                <div class="mb-1"><span class="dim">11:45:25</span> [SUCCESS] Payment gateway reconnected.</div>
+                <div class="mb-1"><span class="dim">11:46:10</span> [INFO] User login: admin_user from 192.168.1.45</div>
+                <div class="mb-1"><span class="dim">11:42:01</span> [INFO] New order received <span class="highlight">#4590</span> from API</div>
+                <div class="mb-1"><span class="dim">11:42:05</span> [INFO] Auto-assigning driver...</div>
+                <div class="mb-1"><span class="dim">11:42:06</span> [WARN] No drivers in 2km radius. Expanding search.</div>
+                <div class="mb-1"><span class="dim">11:42:08</span> [SUCCESS] Driver <span class="highlight">JOAO_SILVA</span> accepted request.</div>
+                <div class="mb-1"><span class="dim">11:43:12</span> [INFO] Order #4588 status changed to <span class="highlight">DELIVERED</span>.</div>
+                <div class="mb-1"><span class="dim">11:44:00</span> [INFO] System backup completed.</div>
+                <div class="mb-1"><span class="dim">11:45:22</span> [ERROR] Payment gateway timeout (retry 1/3).</div>
+                <div class="mb-1"><span class="dim">11:45:25</span> [SUCCESS] Payment gateway reconnected.</div>
+                <div class="mb-1"><span class="dim">11:46:10</span> [INFO] User login: admin_user from 192.168.1.45</div>
+                <div class="mb-1"><span class="dim">11:46:12</span> <span class="cursor-blink">_</span></div>
+            </div>
+        </div>
+
+        <!-- Middle Column: Active Processes (Orders) -->
+        <div class="w-1/3 flex flex-col box">
+            <span class="box-title">ACTIVE_PROCESSES (ORDERS)</span>
+            <div class="flex-1 overflow-y-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-[#004400] text-[#00aa00]">
+                            <th class="py-1">PID</th>
+                            <th class="py-1">USER</th>
+                            <th class="py-1">STATUS</th>
+                            <th class="py-1 text-right">VAL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="hover:bg-[#002200] cursor-pointer">
+                            <td class="py-1">4590</td>
+                            <td class="py-1">BURGER_K</td>
+                            <td class="py-1 warning">PENDING</td>
+                            <td class="py-1 text-right">45.00</td>
+                        </tr>
+                        <tr class="hover:bg-[#002200] cursor-pointer">
+                            <td class="py-1">4589</td>
+                            <td class="py-1">PIZZA_H</td>
+                            <td class="py-1 dim">COOKING</td>
+                            <td class="py-1 text-right">62.00</td>
+                        </tr>
+                        <tr class="hover:bg-[#002200] cursor-pointer">
+                            <td class="py-1">4588</td>
+                            <td class="py-1">SUBWAY</td>
+                            <td class="py-1 highlight">DELIVERING</td>
+                            <td class="py-1 text-right">28.50</td>
+                        </tr>
+                        <tr class="hover:bg-[#002200] cursor-pointer">
+                            <td class="py-1">4587</td>
+                            <td class="py-1">MC_DONAL</td>
+                            <td class="py-1 dim">DONE</td>
+                            <td class="py-1 text-right">15.00</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="mt-2 border-t border-[#004400] pt-2">
+                <span class="dim">Total Processes:</span> 4 running, 1 sleeping
+            </div>
+        </div>
+
+        <!-- Right Column: Resources & Command -->
+        <div class="w-1/3 flex flex-col gap-4">
+            
+            <!-- Resources -->
+            <div class="box h-1/2 flex flex-col">
+                <span class="box-title">RESOURCES (DRIVERS)</span>
+                <div class="flex-1">
+                    <div class="flex justify-between mb-1">
+                        <span>JOAO_SILVA</span>
+                        <span class="highlight">[BUSY]</span>
+                    </div>
+                    <div class="w-full bg-[#002200] h-2 mb-3">
+                        <div class="bg-[#00ff00] h-full" style="width: 80%"></div>
+                    </div>
+
+                    <div class="flex justify-between mb-1">
+                        <span>CARLOS_M</span>
+                        <span class="dim">[IDLE]</span>
+                    </div>
+                    <div class="w-full bg-[#002200] h-2 mb-3">
+                        <div class="bg-[#00ff00] h-full" style="width: 10%"></div>
+                    </div>
+
+                    <div class="flex justify-between mb-1">
+                        <span>MARIA_O</span>
+                        <span class="warning">[OFFLINE]</span>
+                    </div>
+                    <div class="w-full bg-[#002200] h-2 mb-3">
+                        <div class="bg-[#440000] h-full" style="width: 100%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Command Input -->
+            <div class="box h-1/2 flex flex-col">
+                <span class="box-title">COMMAND_INPUT</span>
+                <div class="flex-1 p-2 font-mono text-sm">
+                    <div class="mb-2">Type 'help' for available commands.</div>
+                    <div class="flex">
+                        <span class="mr-2">root@guriri:~$</span>
+                        <input type="text" class="bg-transparent border-none outline-none text-[#00ff00] flex-1 font-mono" placeholder="dispatch --auto" autofocus>
+                    </div>
+                    <div class="mt-4 text-xs dim">
+                        <div>> dispatch [order_id] [driver_id]</div>
+                        <div>> status [order_id]</div>
+                        <div>> map --view-all</div>
+                        <div>> shutdown -h now</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</body>
+</html>

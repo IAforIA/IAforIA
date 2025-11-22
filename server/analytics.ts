@@ -126,6 +126,11 @@ export interface DashboardKPIs {
 /**
  * Calculate revenue for a specific date
  * Includes delivered orders only
+ * 
+ * LÓGICA FINANCEIRA CORRIGIDA:
+ * - totalRevenue = SOMA(valor do frete + valor do produto) de pedidos entregues
+ * - motoboysCost = SOMA(taxaMotoboy) - o que o motoboy recebe
+ * - profit = totalRevenue - motoboysCost - lucro da Guriri
  */
 export async function getDailyRevenue(date: Date): Promise<RevenueData> {
   const startOfDay = new Date(date);
@@ -136,7 +141,8 @@ export async function getDailyRevenue(date: Date): Promise<RevenueData> {
   
   const result = await db
     .select({
-      totalRevenue: sql<number>`COALESCE(SUM(CAST(${orders.valor} AS DECIMAL)), 0)`,
+      valorFrete: sql<number>`COALESCE(SUM(CAST(${orders.valor} AS DECIMAL)), 0)`,
+      valorProduto: sql<number>`COALESCE(SUM(CAST(${orders.produtoValorTotal} AS DECIMAL)), 0)`,
       motoboysCost: sql<number>`COALESCE(SUM(CAST(${orders.taxaMotoboy} AS DECIMAL)), 0)`,
       ordersCount: sql<number>`COUNT(*)`,
     })
@@ -149,16 +155,19 @@ export async function getDailyRevenue(date: Date): Promise<RevenueData> {
       )
     );
   
-  const data = result[0] || { totalRevenue: 0, motoboysCost: 0, ordersCount: 0 };
+  const data = result[0] || { valorFrete: 0, valorProduto: 0, motoboysCost: 0, ordersCount: 0 };
   
-  // CORREÇÃO: Profit = totalRevenue - motoboysCost (já que taxaMotoboy é o que o motoboy leva)
-  // A tabela TABELA_REPASSE garante que essa diferença seja sempre o valor correto da Guriri
-  const profit = data.totalRevenue - data.motoboysCost;
-  const margin = data.totalRevenue > 0 ? (profit / data.totalRevenue) * 100 : 0;
+  // TOTAL REVENUE = Frete + Produto (valor total cobrado do destinatário)
+  const totalRevenue = Number(data.valorFrete) + Number(data.valorProduto);
+  const motoboysCost = Number(data.motoboysCost);
+  
+  // Profit = apenas do frete (produto não gera lucro para Guriri)
+  const profit = Number(data.valorFrete) - motoboysCost;
+  const margin = totalRevenue > 0 ? (profit / totalRevenue) * 100 : 0;
   
   return {
-    totalRevenue: Number(data.totalRevenue),
-    motoboysCost: Number(data.motoboysCost),
+    totalRevenue,
+    motoboysCost,
     ordersCount: Number(data.ordersCount),
     profit,
     margin,
@@ -171,7 +180,8 @@ export async function getDailyRevenue(date: Date): Promise<RevenueData> {
 export async function getRevenueByDateRange(startDate: Date, endDate: Date): Promise<RevenueData> {
   const result = await db
     .select({
-      totalRevenue: sql<number>`COALESCE(SUM(CAST(${orders.valor} AS DECIMAL)), 0)`,
+      valorFrete: sql<number>`COALESCE(SUM(CAST(${orders.valor} AS DECIMAL)), 0)`,
+      valorProduto: sql<number>`COALESCE(SUM(CAST(${orders.produtoValorTotal} AS DECIMAL)), 0)`,
       motoboysCost: sql<number>`COALESCE(SUM(CAST(${orders.taxaMotoboy} AS DECIMAL)), 0)`,
       ordersCount: sql<number>`COUNT(*)`,
     })
@@ -184,15 +194,19 @@ export async function getRevenueByDateRange(startDate: Date, endDate: Date): Pro
       )
     );
   
-  const data = result[0] || { totalRevenue: 0, motoboysCost: 0, ordersCount: 0 };
+  const data = result[0] || { valorFrete: 0, valorProduto: 0, motoboysCost: 0, ordersCount: 0 };
   
-  // CORREÇÃO: Usa a mesma lógica - valor - taxaMotoboy = lucro Guriri
-  const profit = data.totalRevenue - data.motoboysCost;
-  const margin = data.totalRevenue > 0 ? (profit / data.totalRevenue) * 100 : 0;
+  // TOTAL REVENUE = Frete + Produto
+  const totalRevenue = Number(data.valorFrete) + Number(data.valorProduto);
+  const motoboysCost = Number(data.motoboysCost);
+  
+  // Profit = apenas do frete
+  const profit = Number(data.valorFrete) - motoboysCost;
+  const margin = totalRevenue > 0 ? (profit / totalRevenue) * 100 : 0;
   
   return {
-    totalRevenue: Number(data.totalRevenue),
-    motoboysCost: Number(data.motoboysCost),
+    totalRevenue,
+    motoboysCost,
     ordersCount: Number(data.ordersCount),
     profit,
     margin,
@@ -341,14 +355,18 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
     .from(motoboys)
     .where(eq(motoboys.online, true));
   
-  // Get pending orders stats
+  // Get pending orders stats (CORRIGIDO: inclui valor do produto)
   const pendingOrders = await db
     .select({
       count: sql<number>`COUNT(*)`,
-      totalValue: sql<number>`COALESCE(SUM(CAST(${orders.valor} AS DECIMAL)), 0)`,
+      valorFrete: sql<number>`COALESCE(SUM(CAST(${orders.valor} AS DECIMAL)), 0)`,
+      valorProduto: sql<number>`COALESCE(SUM(CAST(${orders.produtoValorTotal} AS DECIMAL)), 0)`,
     })
     .from(orders)
     .where(eq(orders.status, 'pending'));
+  
+  const pendingData = pendingOrders[0] || { count: 0, valorFrete: 0, valorProduto: 0 };
+  const pendingTotalValue = Number(pendingData.valorFrete) + Number(pendingData.valorProduto);
   
   return {
     todayRevenue: todayRevenue.totalRevenue,
@@ -357,7 +375,7 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
     monthToDateProfit: mtdRevenue.profit,
     mrr,
     activeDriversCount: Number(activeDrivers[0]?.count || 0),
-    pendingOrdersCount: Number(pendingOrders[0]?.count || 0),
-    pendingOrdersValue: Number(pendingOrders[0]?.totalValue || 0),
+    pendingOrdersCount: Number(pendingData.count),
+    pendingOrdersValue: pendingTotalValue,
   };
 }

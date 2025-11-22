@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Layout 13 - SaaS Clean (Estilo Stripe)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f7f9fc; color: #3c4257; }
+        .nav-item { color: #4f566b; font-weight: 500; font-size: 14px; }
+        .nav-item:hover { color: #1a1f36; }
+        .nav-item.active { color: #635bff; background: #e3e8ee; }
+        .card { background: white; box-shadow: 0 2px 5px rgba(60,66,87, 0.08), 0 1px 1px rgba(0,0,0,0.12); border-radius: 8px; }
+    </style>
+</head>
+<body class="h-screen flex">
+    <nav class="w-64 bg-[#f7f9fc] border-r border-[#e3e8ee] flex flex-col p-4">
+        <div class="font-bold text-[#1a1f36] text-lg mb-8 px-2">Guriri<span class="text-[#635bff]">Express</span></div>
+        <div class="space-y-1">
+            <a href="#" class="nav-item active flex items-center gap-3 px-3 py-2 rounded-md"><i class="fas fa-home"></i> Início</a>
+            <a href="#" class="nav-item flex items-center gap-3 px-3 py-2 rounded-md"><i class="fas fa-box"></i> Pedidos</a>
+            <a href="#" class="nav-item flex items-center gap-3 px-3 py-2 rounded-md"><i class="fas fa-users"></i> Clientes</a>
+            <a href="#" class="nav-item flex items-center gap-3 px-3 py-2 rounded-md"><i class="fas fa-wallet"></i> Financeiro</a>
+        </div>
+    </nav>
+    <main class="flex-1 p-8 overflow-y-auto">
+        <header class="flex justify-between items-center mb-8">
+            <h1 class="text-2xl font-semibold text-[#1a1f36]">Visão Geral</h1>
+            <button class="bg-[#635bff] hover:bg-[#5851d8] text-white px-4 py-2 rounded-md text-sm font-medium shadow-sm transition">Novo Pedido</button>
+        </header>
+        
+        <div class="grid grid-cols-3 gap-6 mb-8">
+            <div class="card p-5">
+                <div class="text-[#697386] text-xs font-semibold uppercase mb-2">Volume Hoje</div>
+                <div class="text-2xl font-semibold text-[#1a1f36]">R$ 1.240,50</div>
+            </div>
+            <div class="card p-5">
+                <div class="text-[#697386] text-xs font-semibold uppercase mb-2">Entregas Ativas</div>
+                <div class="text-2xl font-semibold text-[#1a1f36]">8</div>
+            </div>
+            <div class="card p-5">
+                <div class="text-[#697386] text-xs font-semibold uppercase mb-2">Motoboys Online</div>
+                <div class="text-2xl font-semibold text-[#1a1f36]">12</div>
+            </div>
+        </div>
+
+        <div class="card overflow-hidden">
+            <div class="px-6 py-4 border-b border-[#e3e8ee] flex justify-between items-center">
+                <h3 class="font-semibold text-[#1a1f36]">Pedidos Recentes</h3>
+                <button class="text-[#635bff] text-sm font-medium">Ver todos</button>
+            </div>
+            <table class="w-full text-sm text-left">
+                <thead class="bg-[#f7f9fc] text-[#4f566b] font-medium border-b border-[#e3e8ee]">
+                    <tr>
+                        <th class="px-6 py-3">ID</th>
+                        <th class="px-6 py-3">Status</th>
+                        <th class="px-6 py-3">Cliente</th>
+                        <th class="px-6 py-3">Valor</th>
+                        <th class="px-6 py-3">Data</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-[#e3e8ee]">
+                    <tr>
+                        <td class="px-6 py-4 font-medium">#4590</td>
+                        <td class="px-6 py-4"><span class="bg-[#cbf4c9] text-[#0e6245] px-2 py-1 rounded-full text-xs font-medium">Entregue</span></td>
+                        <td class="px-6 py-4">Burger King</td>
+                        <td class="px-6 py-4">R$ 45,00</td>
+                        <td class="px-6 py-4 text-[#697386]">Hoje, 14:30</td>
+                    </tr>
+                    <tr>
+                        <td class="px-6 py-4 font-medium">#4589</td>
+                        <td class="px-6 py-4"><span class="bg-[#fff5c2] text-[#9a6e03] px-2 py-1 rounded-full text-xs font-medium">Em Rota</span></td>
+                        <td class="px-6 py-4">Restaurante Chef</td>
+                        <td class="px-6 py-4">R$ 32,50</td>
+                        <td class="px-6 py-4 text-[#697386]">Hoje, 14:45</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+</body>
+</html>

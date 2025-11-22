@@ -8,12 +8,12 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 // Wouter fornece roteamento leve para subpáginas internas do dashboard
-import { Switch, Route, Router as NestedRouter } from "wouter";
+import { Switch, Route, Router as NestedRouter, useLocation } from "wouter";
 // Componentes reutilizáveis da UI
 import ThemeToggle from "@/components/ThemeToggle";
 import StatCard from "@/components/StatCard";
 import OrderCard from "@/components/OrderCard";
-import { Package, TruckIcon, CheckCircle, Users, ExternalLink, UserCog, Shield, Ban, ShieldCheck, XCircle, RefreshCw } from "lucide-react";
+import { Package, TruckIcon, CheckCircle, Users, ExternalLink, UserCog, Shield, Ban, ShieldCheck, XCircle, RefreshCw, MessageSquare, Map, Settings, Store, Bike, AlertTriangle, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -47,6 +47,7 @@ export default function CentralDashboard() {
   // CONTEXTO GLOBAL: useAuth provê token JWT e função de logout
   const { logout, token, user } = useAuth();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   // ESTADO LOCAL: Guarda instância WebSocket para fechar ao desmontar
   const [ws, setWs] = useState<WebSocket | null>(null);
   // ESTADO: Dialog de visualização de schedule
@@ -56,6 +57,9 @@ export default function CentralDashboard() {
   // ESTADO: Dialog de horários do cliente
   const [clientScheduleDialogOpen, setClientScheduleDialogOpen] = useState(false);
   const [selectedClientForSchedule, setSelectedClientForSchedule] = useState<{ id: string; name: string } | null>(null);
+  
+  // ESTADO: Dialog de detalhamento financeiro
+  const [financialDetailsOpen, setFinancialDetailsOpen] = useState(false);
 
   // QUERY PRINCIPAL: Busca lista completa de pedidos (cacheado por React Query)
   const { data: orders = [], refetch: refetchOrders } = useQuery<Order[]>({
@@ -355,8 +359,16 @@ export default function CentralDashboard() {
                       <StatCard title="Entregadores Ativos" value={activeDrivers} icon={Users} />
                     </div>
 
-                    {/* AI Insights de Disponibilidade */}
-                    <AvailabilityInsights motoboys={motoboys} />
+                    {/* Chat Widget Integrado */}
+                    {user && (
+                      <Card className="p-4">
+                        <ChatWidget
+                          currentUserId={user.id}
+                          currentUserName={user.name}
+                          currentUserRole={user.role as 'client' | 'motoboy' | 'central'}
+                        />
+                      </Card>
+                    )}
 
                     {/* Insights Operacionais - Planejamento de Frota */}
                     <OperationalInsights 
@@ -439,15 +451,20 @@ export default function CentralDashboard() {
                       <div className="space-y-3">
                         {orders.slice(0, 5).map((order, idx) => (
                           <div key={order.id} className="flex items-center justify-between py-2 border-b last:border-b-0">
-                            <div>
+                            <div className="flex-1">
                               <p className="text-sm font-medium">
-                                {order.status === 'pending' && 'Novo pedido criado'}
-                                {order.status === 'in_progress' && 'Pedido em andamento'}
-                                {order.status === 'delivered' && 'Entrega concluída'}
+                                {order.status === 'pending' && '🆕 Novo pedido criado'}
+                                {order.status === 'in_progress' && '🚚 Em andamento'}
+                                {order.status === 'delivered' && '✅ Entrega concluída'}
                               </p>
-                              <p className="text-xs text-muted-foreground">Pedido #{order.id}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {order.clientName} → {order.entregaBairro}, {order.entregaRua}
+                              </p>
+                              <p className="text-xs font-semibold text-green-600">
+                                R$ {((order.valor ? Number(order.valor) : 0) + (order.produtoValorTotal ? Number(order.produtoValorTotal) : 0)).toFixed(2)}
+                              </p>
                             </div>
-                            <span className="text-xs text-muted-foreground">
+                            <span className="text-xs text-muted-foreground whitespace-nowrap ml-4">
                               {new Date(order.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                             </span>
                           </div>
@@ -836,6 +853,310 @@ export default function CentralDashboard() {
                   </>
                 </Route>
 
+                {/* Sub-rota de Financeiro (path="/financial") */}
+                <Route path="/financial">
+                  <>
+                    <div className="flex items-center justify-between mb-6">
+                      <h2 className="text-2xl font-bold">💰 Gestão Financeira - Repasse Diário</h2>
+                    </div>
+
+                    {/* Filtro de Data */}
+                    <Card className="p-6 mb-6">
+                      <h3 className="text-lg font-semibold mb-4">📅 Selecionar Período</h3>
+                      <div className="flex gap-4 items-end flex-wrap">
+                        <div className="flex-1 min-w-[200px]">
+                          <label className="block text-sm font-medium mb-2">Data Inicial</label>
+                          <Input 
+                            type="date" 
+                            defaultValue={new Date().toISOString().split('T')[0]}
+                            id="start-date"
+                          />
+                        </div>
+                        <div className="flex-1 min-w-[200px]">
+                          <label className="block text-sm font-medium mb-2">Data Final</label>
+                          <Input 
+                            type="date" 
+                            defaultValue={new Date().toISOString().split('T')[0]}
+                            id="end-date"
+                          />
+                        </div>
+                        <Button className="bg-green-600 hover:bg-green-700">
+                          🔍 Filtrar
+                        </Button>
+                        <Button variant="outline" onClick={() => {
+                          const today = new Date().toISOString().split('T')[0];
+                          (document.getElementById('start-date') as HTMLInputElement).value = today;
+                          (document.getElementById('end-date') as HTMLInputElement).value = today;
+                        }}>
+                          Hoje
+                        </Button>
+                        <Button variant="outline" onClick={() => {
+                          const yesterday = new Date();
+                          yesterday.setDate(yesterday.getDate() - 1);
+                          const yesterdayStr = yesterday.toISOString().split('T')[0];
+                          (document.getElementById('start-date') as HTMLInputElement).value = yesterdayStr;
+                          (document.getElementById('end-date') as HTMLInputElement).value = yesterdayStr;
+                        }}>
+                          Ontem
+                        </Button>
+                      </div>
+                    </Card>
+
+                    {/* Resumo Geral do Período */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                      {(() => {
+                        const deliveredOrders = orders.filter(o => o.status === 'delivered');
+                        // IMPORTANTE: order.valor é o FRETE (7, 8, 10 ou 15 reais) - é o que GuiriExpress recebe
+                        const totalFrete = deliveredOrders.reduce((sum, o) => sum + Number(o.valor || 0), 0);
+                        const totalProduto = deliveredOrders.reduce((sum, o) => sum + Number(o.produtoValorTotal || 0), 0);
+                        const totalMotoboy = deliveredOrders.reduce((sum, o) => sum + Number(o.taxaMotoboy || 0), 0);
+                        // Volume de Produtos = VALOR TOTAL dos pedidos (frete + produto)
+                        const volumeTotal = totalFrete + totalProduto;
+                        const lucroGuriri = totalFrete - totalMotoboy;
+                        
+                        return (
+                          <>
+                            <Card className="p-4 bg-green-50 dark:bg-green-950">
+                              <p className="text-sm text-muted-foreground">Receita de Fretes</p>
+                              <p className="text-2xl font-bold text-green-700 dark:text-green-300">
+                                R$ {totalFrete.toFixed(2)}
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {deliveredOrders.length} entregas
+                              </p>
+                            </Card>
+                            <Card className="p-4 bg-amber-50 dark:bg-amber-950">
+                              <p className="text-sm text-muted-foreground">Pagar Motoboys</p>
+                              <p className="text-2xl font-bold text-amber-700 dark:text-amber-300">
+                                R$ {totalMotoboy.toFixed(2)}
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Repasse total
+                              </p>
+                            </Card>
+                            <Card className="p-4 bg-blue-50 dark:bg-blue-950">
+                              <p className="text-sm text-muted-foreground">Lucro Guriri</p>
+                              <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">
+                                R$ {lucroGuriri.toFixed(2)}
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Frete - Motoboy
+                              </p>
+                            </Card>
+                            <Card className="p-4 bg-purple-50 dark:bg-purple-950">
+                              <p className="text-sm text-muted-foreground">Volume de Produtos</p>
+                              <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">
+                                R$ {volumeTotal.toFixed(2)}
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Valor total dos pedidos
+                              </p>
+                            </Card>
+                          </>
+                        );
+                      })()}
+                    </div>
+
+                    {/* Relatório: Quanto Pagar para Cada Motoboy */}
+                    <Card className="p-6 mb-6">
+                      <h3 className="text-lg font-semibold mb-4 text-green-700 dark:text-green-300">
+                        💵 REPASSE PARA MOTOBOYS
+                      </h3>
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead className="border-b">
+                            <tr className="text-left">
+                              <th className="p-3">Motoboy</th>
+                              <th className="p-3 text-right">Entregas</th>
+                              <th className="p-3 text-right">Total a Pagar</th>
+                              <th className="p-3">Ações</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {(() => {
+                              // Agrupa pedidos por motoboy
+                              const motoboyOrders = orders
+                                .filter(o => o.status === 'delivered' && o.motoboyId)
+                                .reduce((acc, order) => {
+                                  const key = order.motoboyId!;
+                                  if (!acc[key]) {
+                                    acc[key] = {
+                                      motoboyId: key,
+                                      motoboyName: order.motoboyName || 'Desconhecido',
+                                      orders: [],
+                                      total: 0,
+                                    };
+                                  }
+                                  acc[key].orders.push(order);
+                                  acc[key].total += Number(order.taxaMotoboy || 0);
+                                  return acc;
+                                }, {} as Record<string, { motoboyId: string; motoboyName: string; orders: typeof orders; total: number }>);
+
+                              return Object.values(motoboyOrders).map((data) => (
+                                <tr key={data.motoboyId} className="border-b hover:bg-muted/50">
+                                  <td className="p-3 font-semibold">{data.motoboyName}</td>
+                                  <td className="p-3 text-right">{data.orders.length}</td>
+                                  <td className="p-3 text-right">
+                                    <span className="font-bold text-green-600 text-lg">
+                                      R$ {data.total.toFixed(2)}
+                                    </span>
+                                  </td>
+                                  <td className="p-3">
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      onClick={() => {
+                                        const details = data.orders.map((o, i) => 
+                                          `${i + 1}. ${new Date(o.deliveredAt!).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} - ${o.clientName} → ${o.entregaBairro} - R$ ${Number(o.taxaMotoboy).toFixed(2)}`
+                                        ).join('\n');
+                                        alert(`Detalhes - ${data.motoboyName}\n\nTotal: R$ ${data.total.toFixed(2)}\n\n${details}`);
+                                      }}
+                                    >
+                                      Ver Detalhes
+                                    </Button>
+                                  </td>
+                                </tr>
+                              ));
+                            })()}
+                          </tbody>
+                        </table>
+                      </div>
+                    </Card>
+
+                    {/* Relatório: Quanto Cobrar de Cada Cliente */}
+                    <Card className="p-6 mb-6">
+                      <h3 className="text-lg font-semibold mb-4 text-blue-700 dark:text-blue-300">
+                        🧾 REPASSE DE FRETES DOS CLIENTES
+                      </h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        💡 Cobrança: <strong>Mensalidade</strong> (1x/mês) + <strong>Repasse de Fretes</strong> (semanal ou diário)
+                      </p>
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead className="border-b">
+                            <tr className="text-left">
+                              <th className="p-3">Cliente</th>
+                              <th className="p-3 text-right">Pedidos</th>
+                              <th className="p-3 text-right">Repasse de Frete</th>
+                              <th className="p-3 text-right">Volume Produtos</th>
+                              <th className="p-3 text-right">Total Movimentado</th>
+                              <th className="p-3">Ações</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {(() => {
+                              // Agrupa pedidos por cliente
+                              const clientOrders = orders
+                                .filter(o => o.status === 'delivered' && o.clientId)
+                                .reduce((acc, order) => {
+                                  const key = order.clientId;
+                                  if (!acc[key]) {
+                                    acc[key] = {
+                                      clientId: key,
+                                      clientName: order.clientName || 'Desconhecido',
+                                      orders: [],
+                                      totalFrete: 0,
+                                      totalProduto: 0,
+                                    };
+                                  }
+                                  acc[key].orders.push(order);
+                                  acc[key].totalFrete += Number(order.valor || 0);
+                                  acc[key].totalProduto += Number(order.produtoValorTotal || 0);
+                                  return acc;
+                                }, {} as Record<string, { clientId: string; clientName: string; orders: typeof orders; totalFrete: number; totalProduto: number }>);
+
+                              return Object.values(clientOrders).map((data) => {
+                                const totalMovimentado = data.totalFrete + data.totalProduto;
+                                return (
+                                  <tr key={data.clientId} className="border-b hover:bg-muted/50">
+                                    <td className="p-3 font-semibold">{data.clientName}</td>
+                                    <td className="p-3 text-right">{data.orders.length}</td>
+                                    <td className="p-3 text-right">
+                                      <span className="font-bold text-blue-600 text-lg">
+                                        R$ {data.totalFrete.toFixed(2)}
+                                      </span>
+                                    </td>
+                                    <td className="p-3 text-right">R$ {data.totalProduto.toFixed(2)}</td>
+                                    <td className="p-3 text-right">R$ {totalMovimentado.toFixed(2)}</td>
+                                    <td className="p-3">
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm"
+                                        onClick={() => {
+                                          const details = data.orders.map((o, i) => 
+                                            `${i + 1}. ${new Date(o.deliveredAt!).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} - ${o.entregaBairro}, ${o.entregaRua} - Frete: R$ ${Number(o.valor).toFixed(2)} + Produto: R$ ${Number(o.produtoValorTotal || 0).toFixed(2)}`
+                                          ).join('\n');
+                                          alert(`Detalhes - ${data.clientName}\n\nREPASSE DE FRETE: R$ ${data.totalFrete.toFixed(2)}\nVolume de Produtos: R$ ${data.totalProduto.toFixed(2)}\nTotal Movimentado: R$ ${totalMovimentado.toFixed(2)}\n\n${details}`);
+                                        }}
+                                      >
+                                        Ver Detalhes
+                                      </Button>
+                                    </td>
+                                  </tr>
+                                );
+                              });
+                            })()}
+                          </tbody>
+                        </table>
+                      </div>
+                    </Card>
+
+                    {/* Tabela Detalhada de Todos os Pedidos */}
+                    <Card className="p-6">
+                      <h3 className="text-lg font-semibold mb-4">📋 Todos os Pedidos Entregues no Período</h3>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead className="border-b bg-muted/50">
+                            <tr className="text-left">
+                              <th className="p-2">Horário</th>
+                              <th className="p-2">Cliente</th>
+                              <th className="p-2">Motoboy</th>
+                              <th className="p-2">Endereço Entrega</th>
+                              <th className="p-2 text-right">Frete</th>
+                              <th className="p-2 text-right">Produto</th>
+                              <th className="p-2 text-right">Total</th>
+                              <th className="p-2 text-right">Motoboy Recebe</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {orders
+                              .filter(o => o.status === 'delivered')
+                              .sort((a, b) => new Date(b.deliveredAt!).getTime() - new Date(a.deliveredAt!).getTime())
+                              .map((order) => {
+                                const frete = Number(order.valor || 0);
+                                const produto = Number(order.produtoValorTotal || 0);
+                                const total = frete + produto;
+                                const motoboyRecebe = Number(order.taxaMotoboy || 0);
+                                
+                                return (
+                                  <tr key={order.id} className="border-b hover:bg-muted/30">
+                                    <td className="p-2 whitespace-nowrap">
+                                      {new Date(order.deliveredAt!).toLocaleString('pt-BR', { 
+                                        day: '2-digit', 
+                                        month: '2-digit',
+                                        hour: '2-digit', 
+                                        minute: '2-digit' 
+                                      })}
+                                    </td>
+                                    <td className="p-2">{order.clientName}</td>
+                                    <td className="p-2">{order.motoboyName}</td>
+                                    <td className="p-2">{order.entregaBairro}, {order.entregaRua}</td>
+                                    <td className="p-2 text-right">R$ {frete.toFixed(2)}</td>
+                                    <td className="p-2 text-right">R$ {produto.toFixed(2)}</td>
+                                    <td className="p-2 text-right font-semibold">R$ {total.toFixed(2)}</td>
+                                    <td className="p-2 text-right text-green-600 font-semibold">
+                                      R$ {motoboyRecebe.toFixed(2)}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </Card>
+                  </>
+                </Route>
+
                 {/* Sub-rota de Relatórios (path="/reports") */}
                 <Route path="/reports">
                   <>
@@ -843,14 +1164,18 @@ export default function CentralDashboard() {
 
                     {/* KPIs - Dados em tempo real via analytics */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                      <Card className="p-4">
-                        <p className="text-sm text-muted-foreground">Receita Hoje</p>
+                      <Card 
+                        className="p-4 cursor-pointer hover:bg-muted/50 transition-colors" 
+                        onClick={() => setFinancialDetailsOpen(true)}
+                      >
+                        <p className="text-sm text-muted-foreground">Receita Hoje 💰</p>
                         <p className="text-3xl font-bold mt-2">
                           R$ {(analyticsData?.todayRevenue ?? 0).toFixed(2)}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          Lucro: R$ {(analyticsData?.todayProfit ?? 0).toFixed(2)}
+                          Lucro Guriri: R$ {(analyticsData?.todayProfit ?? 0).toFixed(2)}
                         </p>
+                        <p className="text-xs text-blue-600 mt-2">📊 Clique para detalhes</p>
                       </Card>
                       <Card className="p-4">
                         <p className="text-sm text-muted-foreground">Receita do Mês</p>
@@ -858,17 +1183,21 @@ export default function CentralDashboard() {
                           R$ {(analyticsData?.monthToDateRevenue ?? 0).toFixed(2)}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          Lucro: R$ {(analyticsData?.monthToDateProfit ?? 0).toFixed(2)}
+                          Lucro Guriri: R$ {(analyticsData?.monthToDateProfit ?? 0).toFixed(2)}
                         </p>
                       </Card>
-                      <Card className="p-4">
-                        <p className="text-sm text-muted-foreground">Valor Pendente</p>
+                      <Card 
+                        className="p-4 cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => setFinancialDetailsOpen(true)}
+                      >
+                        <p className="text-sm text-muted-foreground">Valor Pendente ⏳</p>
                         <p className="text-3xl font-bold mt-2 text-amber-600">
                           R$ {(analyticsData?.pendingOrdersValue ?? 0).toFixed(2)}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
                           {analyticsData?.pendingOrdersCount ?? 0} pedidos em andamento
                         </p>
+                        <p className="text-xs text-blue-600 mt-2">📊 Clique para detalhes</p>
                       </Card>
                       <Card className="p-4">
                         <p className="text-sm text-muted-foreground">MRR (Mensalidades)</p>
@@ -1069,15 +1398,6 @@ export default function CentralDashboard() {
         </div>
       </div>
 
-      {/* Chat Widget - Floating bottom-right */}
-      {user && (
-        <ChatWidget
-          currentUserId={user.id}
-          currentUserName={user.name}
-          currentUserRole={user.role as 'client' | 'motoboy' | 'central'}
-        />
-      )}
-
       {/* Schedule Viewer Dialog */}
       <Dialog open={scheduleDialogOpen} onOpenChange={setScheduleDialogOpen}>
         <DialogContent className="max-w-2xl">
@@ -1119,6 +1439,131 @@ export default function CentralDashboard() {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setClientScheduleDialogOpen(false)}>
+              Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Financial Details Dialog */}
+      <Dialog open={financialDetailsOpen} onOpenChange={setFinancialDetailsOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Detalhamento Financeiro do Dia</DialogTitle>
+            <DialogDescription>
+              Breakdown completo de receitas e valores pendentes
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6">
+            {/* Pedidos Entregues Hoje */}
+            <Card className="p-4 bg-green-50 dark:bg-green-950 border-green-200">
+              <h3 className="font-semibold text-green-800 dark:text-green-200 mb-3">✅ Pedidos Entregues Hoje</h3>
+              {(() => {
+                const deliveredToday = orders.filter(o => {
+                  if (o.status !== 'delivered' || !o.deliveredAt) return false;
+                  const deliveredDate = new Date(o.deliveredAt);
+                  const today = new Date();
+                  return deliveredDate.toDateString() === today.toDateString();
+                });
+                
+                const totalFrete = deliveredToday.reduce((sum, o) => sum + Number(o.valor || 0), 0);
+                const totalProduto = deliveredToday.reduce((sum, o) => sum + Number(o.produtoValorTotal || 0), 0);
+                const totalGeral = totalFrete + totalProduto;
+                const totalMotoboy = deliveredToday.reduce((sum, o) => sum + Number(o.taxaMotoboy || 0), 0);
+                const lucroGuriri = totalFrete - totalMotoboy;
+                
+                return (
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Quantidade de pedidos:</span>
+                      <span className="font-semibold">{deliveredToday.length}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Valor Frete (cliente pagou):</span>
+                      <span className="font-semibold">R$ {totalFrete.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Valor Produtos (cliente pagou):</span>
+                      <span className="font-semibold">R$ {totalProduto.toFixed(2)}</span>
+                    </div>
+                    <div className="border-t pt-2 flex justify-between">
+                      <span className="font-semibold">RECEITA TOTAL HOJE:</span>
+                      <span className="font-bold text-lg text-green-700 dark:text-green-300">
+                        R$ {totalGeral.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-3 border-t pt-2">
+                      <div className="flex justify-between">
+                        <span>Taxa Motoboys:</span>
+                        <span>R$ {totalMotoboy.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between font-semibold text-blue-600">
+                        <span>Lucro Guriri Express:</span>
+                        <span>R$ {lucroGuriri.toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </Card>
+
+            {/* Pedidos Pendentes */}
+            <Card className="p-4 bg-amber-50 dark:bg-amber-950 border-amber-200">
+              <h3 className="font-semibold text-amber-800 dark:text-amber-200 mb-3">⏳ Pedidos Pendentes (Em Andamento)</h3>
+              {(() => {
+                const pending = orders.filter(o => o.status === 'pending' || o.status === 'in_progress');
+                
+                const totalFrete = pending.reduce((sum, o) => sum + Number(o.valor || 0), 0);
+                const totalProduto = pending.reduce((sum, o) => sum + Number(o.produtoValorTotal || 0), 0);
+                const totalGeral = totalFrete + totalProduto;
+                
+                return (
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Quantidade de pedidos:</span>
+                      <span className="font-semibold">{pending.length}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Valor Frete:</span>
+                      <span className="font-semibold">R$ {totalFrete.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Valor Produtos:</span>
+                      <span className="font-semibold">R$ {totalProduto.toFixed(2)}</span>
+                    </div>
+                    <div className="border-t pt-2 flex justify-between">
+                      <span className="font-semibold">VALOR PENDENTE:</span>
+                      <span className="font-bold text-lg text-amber-700 dark:text-amber-300">
+                        R$ {totalGeral.toFixed(2)}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      💡 Este valor será movido para "Receita Hoje" quando os pedidos forem entregues
+                    </p>
+                  </div>
+                );
+              })()}
+            </Card>
+
+            {/* Lista de Pedidos Pendentes */}
+            <div className="max-h-60 overflow-y-auto">
+              <h4 className="font-semibold mb-2 text-sm">Pedidos Pendentes Detalhados:</h4>
+              <div className="space-y-1">
+                {orders.filter(o => o.status === 'pending' || o.status === 'in_progress').map(order => (
+                  <div key={order.id} className="text-xs bg-muted p-2 rounded flex justify-between">
+                    <span>{order.clientName} → {order.entregaBairro}</span>
+                    <span className="font-semibold">
+                      R$ {((Number(order.valor || 0)) + (Number(order.produtoValorTotal || 0))).toFixed(2)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setFinancialDetailsOpen(false)}>
               Fechar
             </Button>
           </DialogFooter>

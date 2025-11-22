@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Layout 21 - Timeline / Gantt (Logistics)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background-color: #0f172a; color: #e2e8f0; font-family: 'Inter', sans-serif; }
+        .timeline-grid { background-image: linear-gradient(to right, #1e293b 1px, transparent 1px); background-size: 100px 100%; }
+        .timeline-item { transition: all 0.2s; }
+        .timeline-item:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5); z-index: 10; }
+        .avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid #0f172a; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { height: 8px; width: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden">
+
+    <!-- Header -->
+    <header class="h-16 bg-[#1e293b] border-b border-slate-700 flex items-center justify-between px-6 z-20 shadow-md">
+        <div class="flex items-center gap-4">
+            <div class="w-8 h-8 bg-indigo-500 rounded flex items-center justify-center font-bold">G</div>
+            <h1 class="font-bold text-lg tracking-wide">DISPATCH TIMELINE</h1>
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="flex bg-slate-800 rounded p-1">
+                <button class="px-3 py-1 rounded bg-indigo-600 text-white text-sm font-medium">Live</button>
+                <button class="px-3 py-1 rounded hover:bg-slate-700 text-slate-400 text-sm font-medium">1h</button>
+                <button class="px-3 py-1 rounded hover:bg-slate-700 text-slate-400 text-sm font-medium">4h</button>
+                <button class="px-3 py-1 rounded hover:bg-slate-700 text-slate-400 text-sm font-medium">Day</button>
+            </div>
+            <button class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center hover:bg-slate-600">
+                <i class="fas fa-filter text-sm"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex overflow-hidden">
+        
+        <!-- Sidebar: Resources (Drivers) -->
+        <aside class="w-64 bg-[#1e293b] border-r border-slate-700 flex flex-col z-10 shadow-xl">
+            <div class="h-12 border-b border-slate-700 flex items-center px-4 font-bold text-xs text-slate-400 uppercase tracking-wider bg-[#1e293b]">
+                Drivers (5 Active)
+            </div>
+            <div class="flex-1 overflow-y-auto">
+                <!-- Driver Row Header -->
+                <div class="h-16 border-b border-slate-700/50 flex items-center px-4 hover:bg-slate-800 cursor-pointer group">
+                    <div class="w-2 h-full bg-green-500 absolute left-0 opacity-0 group-hover:opacity-100 transition"></div>
+                    <div class="w-10 h-10 rounded-full bg-slate-600 mr-3 flex items-center justify-center text-slate-300 font-bold">JS</div>
+                    <div>
+                        <div class="font-medium text-sm">João Silva</div>
+                        <div class="text-xs text-green-400">● Online</div>
+                    </div>
+                </div>
+                <!-- Driver Row Header -->
+                <div class="h-16 border-b border-slate-700/50 flex items-center px-4 hover:bg-slate-800 cursor-pointer group">
+                    <div class="w-2 h-full bg-yellow-500 absolute left-0 opacity-0 group-hover:opacity-100 transition"></div>
+                    <div class="w-10 h-10 rounded-full bg-slate-600 mr-3 flex items-center justify-center text-slate-300 font-bold">CM</div>
+                    <div>
+                        <div class="font-medium text-sm">Carlos M.</div>
+                        <div class="text-xs text-yellow-400">● Busy</div>
+                    </div>
+                </div>
+                <!-- Driver Row Header -->
+                <div class="h-16 border-b border-slate-700/50 flex items-center px-4 hover:bg-slate-800 cursor-pointer group">
+                    <div class="w-2 h-full bg-blue-500 absolute left-0 opacity-0 group-hover:opacity-100 transition"></div>
+                    <div class="w-10 h-10 rounded-full bg-slate-600 mr-3 flex items-center justify-center text-slate-300 font-bold">MO</div>
+                    <div>
+                        <div class="font-medium text-sm">Maria O.</div>
+                        <div class="text-xs text-blue-400">● Delivering</div>
+                    </div>
+                </div>
+                 <!-- Driver Row Header -->
+                 <div class="h-16 border-b border-slate-700/50 flex items-center px-4 hover:bg-slate-800 cursor-pointer group">
+                    <div class="w-2 h-full bg-red-500 absolute left-0 opacity-0 group-hover:opacity-100 transition"></div>
+                    <div class="w-10 h-10 rounded-full bg-slate-600 mr-3 flex items-center justify-center text-slate-300 font-bold">RR</div>
+                    <div>
+                        <div class="font-medium text-sm">Rafael R.</div>
+                        <div class="text-xs text-red-400">● Offline</div>
+                    </div>
+                </div>
+            </div>
+            <!-- Unassigned Pool -->
+            <div class="h-32 border-t border-slate-700 bg-slate-800/50 p-4">
+                <div class="text-xs font-bold text-slate-400 uppercase mb-2">Unassigned Orders</div>
+                <div class="flex gap-2 overflow-x-auto pb-2">
+                    <div class="min-w-[100px] bg-slate-700 p-2 rounded border border-slate-600 cursor-grab active:cursor-grabbing">
+                        <div class="text-xs font-bold text-white">#4591</div>
+                        <div class="text-[10px] text-slate-400">McDonalds</div>
+                    </div>
+                    <div class="min-w-[100px] bg-slate-700 p-2 rounded border border-slate-600 cursor-grab active:cursor-grabbing">
+                        <div class="text-xs font-bold text-white">#4592</div>
+                        <div class="text-[10px] text-slate-400">Subway</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Timeline Area -->
+        <main class="flex-1 overflow-x-auto overflow-y-hidden relative bg-[#0f172a]" id="timeline-container">
+            
+            <!-- Time Header -->
+            <div class="h-12 border-b border-slate-700 flex min-w-[1200px] sticky top-0 bg-[#0f172a] z-10">
+                <div class="w-[100px] border-r border-slate-800 flex items-center justify-center text-xs text-slate-500">10:00</div>
+                <div class="w-[100px] border-r border-slate-800 flex items-center justify-center text-xs text-slate-500">10:15</div>
+                <div class="w-[100px] border-r border-slate-800 flex items-center justify-center text-xs text-slate-500">10:30</div>
+                <div class="w-[100px] border-r border-slate-800 flex items-center justify-center text-xs text-slate-500">10:45</div>
+                <div class="w-[100px] border-r border-slate-800 flex items-center justify-center text-xs text-slate-500">11:00</div>
+                <div class="w-[100px] border-r border-slate-800 flex items-center justify-center text-xs text-slate-500">11:15</div>
+                <div class="w-[100px] border-r border-slate-800 flex items-center justify-center text-xs text-slate-500 bg-indigo-900/20 font-bold text-indigo-400">11:30 (Now)</div>
+                <div class="w-[100px] border-r border-slate-800 flex items-center justify-center text-xs text-slate-500">11:45</div>
+                <div class="w-[100px] border-r border-slate-800 flex items-center justify-center text-xs text-slate-500">12:00</div>
+                <div class="w-[100px] border-r border-slate-800 flex items-center justify-center text-xs text-slate-500">12:15</div>
+                <div class="w-[100px] border-r border-slate-800 flex items-center justify-center text-xs text-slate-500">12:30</div>
+                <div class="w-[100px] border-r border-slate-800 flex items-center justify-center text-xs text-slate-500">12:45</div>
+            </div>
+
+            <!-- Grid Content -->
+            <div class="min-w-[1200px] relative timeline-grid h-full">
+                
+                <!-- Current Time Indicator Line -->
+                <div class="absolute top-0 bottom-0 left-[650px] w-0.5 bg-red-500 z-20 shadow-[0_0_10px_rgba(239,68,68,0.5)]">
+                    <div class="absolute -top-1 -left-1.5 w-3 h-3 rounded-full bg-red-500"></div>
+                </div>
+
+                <!-- Row 1: Joao Silva -->
+                <div class="h-16 border-b border-slate-800/50 relative flex items-center">
+                    <!-- Task Block -->
+                    <div class="timeline-item absolute left-[200px] w-[150px] h-10 bg-green-600/20 border border-green-500/50 rounded-md flex items-center px-3 cursor-pointer">
+                        <div class="w-1 h-full bg-green-500 absolute left-0 top-0 rounded-l-md"></div>
+                        <div class="text-xs">
+                            <div class="font-bold text-green-100">#4580 BK</div>
+                            <div class="text-[10px] text-green-300">Completed</div>
+                        </div>
+                    </div>
+                    <!-- Task Block -->
+                    <div class="timeline-item absolute left-[600px] w-[180px] h-10 bg-blue-600/20 border border-blue-500/50 rounded-md flex items-center px-3 cursor-pointer ring-2 ring-blue-500/30">
+                        <div class="w-1 h-full bg-blue-500 absolute left-0 top-0 rounded-l-md"></div>
+                        <div class="text-xs">
+                            <div class="font-bold text-blue-100">#4590 Pizza Hut</div>
+                            <div class="text-[10px] text-blue-300">En Route (12m left)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Row 2: Carlos M -->
+                <div class="h-16 border-b border-slate-800/50 relative flex items-center">
+                     <!-- Task Block -->
+                     <div class="timeline-item absolute left-[400px] w-[200px] h-10 bg-yellow-600/20 border border-yellow-500/50 rounded-md flex items-center px-3 cursor-pointer">
+                        <div class="w-1 h-full bg-yellow-500 absolute left-0 top-0 rounded-l-md"></div>
+                        <div class="text-xs">
+                            <div class="font-bold text-yellow-100">#4585 Subway</div>
+                            <div class="text-[10px] text-yellow-300">Pickup in progress</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Row 3: Maria O -->
+                <div class="h-16 border-b border-slate-800/50 relative flex items-center">
+                    <!-- Task Block -->
+                    <div class="timeline-item absolute left-[100px] w-[120px] h-10 bg-green-600/20 border border-green-500/50 rounded-md flex items-center px-3 cursor-pointer opacity-60">
+                        <div class="w-1 h-full bg-green-500 absolute left-0 top-0 rounded-l-md"></div>
+                        <div class="text-xs">
+                            <div class="font-bold text-green-100">#4570</div>
+                            <div class="text-[10px] text-green-300">Done</div>
+                        </div>
+                    </div>
+                     <!-- Task Block -->
+                     <div class="timeline-item absolute left-[680px] w-[200px] h-10 bg-purple-600/20 border border-purple-500/50 rounded-md flex items-center px-3 cursor-pointer border-dashed">
+                        <div class="w-1 h-full bg-purple-500 absolute left-0 top-0 rounded-l-md"></div>
+                        <div class="text-xs">
+                            <div class="font-bold text-purple-100">Scheduled #4601</div>
+                            <div class="text-[10px] text-purple-300">Future Pickup</div>
+                        </div>
+                    </div>
+                </div>
+
+                 <!-- Row 4: Rafael R -->
+                 <div class="h-16 border-b border-slate-800/50 relative flex items-center bg-stripes">
+                    <!-- Offline Block -->
+                    <div class="absolute inset-0 bg-[url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAIklEQVQIW2NkQAKrVq36zwjjgzhhYWGMYAEYB8RmROaABADeOQ8CXl/xfgAAAABJRU5ErkJggg==')] opacity-10"></div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Auto scroll to "Now"
+        document.getElementById('timeline-container').scrollLeft = 400;
+    </script>
+</body>
+</html>

@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Layout 2 - Dashboard Executivo (Foco em Gestão)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-50 h-screen flex flex-col overflow-hidden">
+
+    <!-- Header -->
+    <header class="bg-white border-b h-16 flex items-center justify-between px-8 shadow-sm">
+        <div class="flex items-center gap-4">
+            <div class="bg-blue-700 text-white p-2 rounded-lg font-bold text-xl">GE</div>
+            <h1 class="text-xl font-bold text-gray-800">Visão Executiva</h1>
+        </div>
+        <div class="flex items-center gap-4 bg-gray-100 p-1 rounded-lg">
+            <button class="px-4 py-1 bg-white shadow rounded text-sm font-medium">Hoje</button>
+            <button class="px-4 py-1 text-gray-600 text-sm font-medium hover:bg-gray-200 rounded">Ontem</button>
+            <button class="px-4 py-1 text-gray-600 text-sm font-medium hover:bg-gray-200 rounded">Semana</button>
+            <button class="px-4 py-1 text-gray-600 text-sm font-medium hover:bg-gray-200 rounded">Mês</button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="flex-1 overflow-y-auto p-8">
+        
+        <!-- Top Row: KPIs -->
+        <div class="grid grid-cols-4 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <div class="text-sm text-gray-500 mb-1">Receita de Fretes</div>
+                <div class="text-3xl font-bold text-green-700">R$ 450,00</div>
+                <div class="text-xs text-green-600 mt-2">▲ 12% vs ontem</div>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <div class="text-sm text-gray-500 mb-1">A Pagar (Motoboys)</div>
+                <div class="text-3xl font-bold text-amber-600">R$ 280,00</div>
+                <div class="text-xs text-gray-500 mt-2">62% da receita</div>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <div class="text-sm text-gray-500 mb-1">Lucro Líquido</div>
+                <div class="text-3xl font-bold text-blue-700">R$ 170,00</div>
+                <div class="text-xs text-blue-600 mt-2">Margem de 38%</div>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <div class="text-sm text-gray-500 mb-1">Volume Total (GMV)</div>
+                <div class="text-3xl font-bold text-purple-700">R$ 4.500,00</div>
+                <div class="text-xs text-gray-500 mt-2">45 pedidos</div>
+            </div>
+        </div>
+
+        <!-- Middle Row: Financial Tables -->
+        <div class="grid grid-cols-2 gap-8 mb-8">
+            
+            <!-- Client Billing -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="p-4 border-b bg-gray-50 flex justify-between items-center">
+                    <h3 class="font-bold text-gray-700">💰 Repasse de Clientes (A Receber)</h3>
+                    <button class="text-blue-600 text-sm hover:underline">Ver todos</button>
+                </div>
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 text-gray-500">
+                        <tr>
+                            <th class="p-3 text-left">Cliente</th>
+                            <th class="p-3 text-right">Pedidos</th>
+                            <th class="p-3 text-right">Valor</th>
+                            <th class="p-3 text-center">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y">
+                        <tr>
+                            <td class="p-3 font-medium">Restaurante do Chef</td>
+                            <td class="p-3 text-right">12</td>
+                            <td class="p-3 text-right font-bold text-gray-800">R$ 150,00</td>
+                            <td class="p-3 text-center"><span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs">Pendente</span></td>
+                        </tr>
+                        <tr>
+                            <td class="p-3 font-medium">Burger King</td>
+                            <td class="p-3 text-right">8</td>
+                            <td class="p-3 text-right font-bold text-gray-800">R$ 95,00</td>
+                            <td class="p-3 text-center"><span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs">Pendente</span></td>
+                        </tr>
+                        <tr>
+                            <td class="p-3 font-medium">Pizzaria Top</td>
+                            <td class="p-3 text-right">5</td>
+                            <td class="p-3 text-right font-bold text-gray-800">R$ 60,00</td>
+                            <td class="p-3 text-center"><span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">Pago</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Motoboy Payments -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="p-4 border-b bg-gray-50 flex justify-between items-center">
+                    <h3 class="font-bold text-gray-700">💵 Pagamento Motoboys (A Pagar)</h3>
+                    <button class="text-blue-600 text-sm hover:underline">Ver todos</button>
+                </div>
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 text-gray-500">
+                        <tr>
+                            <th class="p-3 text-left">Motoboy</th>
+                            <th class="p-3 text-right">Entregas</th>
+                            <th class="p-3 text-right">A Pagar</th>
+                            <th class="p-3 text-center">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y">
+                        <tr>
+                            <td class="p-3 font-medium">João Silva</td>
+                            <td class="p-3 text-right">15</td>
+                            <td class="p-3 text-right font-bold text-red-600">R$ 105,00</td>
+                            <td class="p-3 text-center"><button class="bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700">Pagar</button></td>
+                        </tr>
+                        <tr>
+                            <td class="p-3 font-medium">Maria Santos</td>
+                            <td class="p-3 text-right">12</td>
+                            <td class="p-3 text-right font-bold text-red-600">R$ 84,00</td>
+                            <td class="p-3 text-center"><button class="bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700">Pagar</button></td>
+                        </tr>
+                        <tr>
+                            <td class="p-3 font-medium">Pedro Costa</td>
+                            <td class="p-3 text-right">8</td>
+                            <td class="p-3 text-right font-bold text-red-600">R$ 56,00</td>
+                            <td class="p-3 text-center"><button class="bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700">Pagar</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Bottom Row: Recent Orders & Chat Minimized -->
+        <div class="grid grid-cols-3 gap-8">
+            <div class="col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h3 class="font-bold text-gray-700 mb-4">📦 Últimos Pedidos</h3>
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
+                        <div class="flex items-center gap-3">
+                            <span class="text-gray-500 font-mono text-xs">14:30</span>
+                            <span class="font-bold">Restaurante do Chef</span>
+                            <i class="fas fa-arrow-right text-gray-400 text-xs"></i>
+                            <span class="text-gray-600">Praia do Canto</span>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <span class="text-sm font-medium">João Silva</span>
+                            <span class="font-bold text-green-700">R$ 50,00</span>
+                            <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">Entregue</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
+                        <div class="flex items-center gap-3">
+                            <span class="text-gray-500 font-mono text-xs">14:45</span>
+                            <span class="font-bold">Burger King</span>
+                            <i class="fas fa-arrow-right text-gray-400 text-xs"></i>
+                            <span class="text-gray-600">Centro</span>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <span class="text-sm font-medium">Maria Santos</span>
+                            <span class="font-bold text-green-700">R$ 35,00</span>
+                            <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">Em Rota</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Minimized Chat -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col">
+                <div class="p-4 border-b bg-gray-50 font-bold flex justify-between">
+                    <span>💬 Assistente IA</span>
+                    <button class="text-gray-400 hover:text-gray-600"><i class="fas fa-expand"></i></button>
+                </div>
+                <div class="flex-1 p-4 bg-slate-50 overflow-y-auto text-sm">
+                    <p class="text-gray-500 text-center text-xs my-2">Hoje</p>
+                    <div class="bg-white p-2 rounded border mb-2">
+                        Relatório financeiro gerado com sucesso.
+                    </div>
+                    <div class="bg-blue-50 p-2 rounded border mb-2 text-right">
+                        Obrigado!
+                    </div>
+                </div>
+                <div class="p-3 border-t">
+                    <input type="text" placeholder="Mensagem..." class="w-full border rounded px-3 py-1 text-sm">
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>
