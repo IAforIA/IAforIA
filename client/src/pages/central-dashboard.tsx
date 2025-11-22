@@ -59,7 +59,6 @@ export default function CentralDashboard() {
   const [selectedClientForSchedule, setSelectedClientForSchedule] = useState<{ id: string; name: string } | null>(null);
   
   // ESTADO: Dialog de detalhamento financeiro
-  const [financialDetailsOpen, setFinancialDetailsOpen] = useState(false);
 
   // QUERY PRINCIPAL: Busca lista completa de pedidos (cacheado por React Query)
   const { data: orders = [], refetch: refetchOrders } = useQuery<Order[]>({
