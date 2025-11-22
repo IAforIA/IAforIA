@@ -568,6 +568,19 @@ export async function registerRoutes() {
       res.status(201).json(order);
     } catch (error: any) {
       console.error('💥 Erro ao criar pedido:', error);
+      
+      // Se for erro de validação Zod, retorna detalhes específicos
+      if (error.name === 'ZodError') {
+        const zodError = error as ZodError;
+        const firstError = zodError.errors[0];
+        const errorMessage = `${firstError.path.join('.')}: ${firstError.message}`;
+        console.error('🔴 Erro de validação Zod:', errorMessage);
+        return res.status(400).json({ 
+          error: errorMessage,
+          details: zodError.errors 
+        });
+      }
+      
       const errorMessage = process.env.NODE_ENV === 'production'
         ? 'Erro ao processar pedido'
         : (error.message || "Erro ao criar pedido");

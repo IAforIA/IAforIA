@@ -50,7 +50,8 @@ export function ClientStatusBadge({ clientId, schedules }: ClientStatusBadgeProp
   }
 
   const schedule = todaySchedules[0];
-  const isOpen = currentTime >= schedule.horaAbertura && currentTime <= schedule.horaFechamento;
+  const isOpen = schedule.horaAbertura && schedule.horaFechamento && 
+    currentTime >= schedule.horaAbertura && currentTime <= schedule.horaFechamento;
 
   if (isOpen) {
     return (
@@ -61,7 +62,7 @@ export function ClientStatusBadge({ clientId, schedules }: ClientStatusBadgeProp
   }
 
   // Check if will open later today
-  const willOpenLater = currentTime < schedule.horaAbertura;
+  const willOpenLater = schedule.horaAbertura && currentTime < schedule.horaAbertura;
 
   return (
     <Badge variant="destructive" title={willOpenLater ? `Abre às ${schedule.horaAbertura}` : "Fechado hoje"}>

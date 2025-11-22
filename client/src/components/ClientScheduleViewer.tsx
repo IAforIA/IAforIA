@@ -32,7 +32,7 @@ interface ClientScheduleEntry {
 }
 
 interface ClientScheduleViewerProps {
-  clientId: number;
+  clientId: string | number;
   clientName?: string;
 }
 

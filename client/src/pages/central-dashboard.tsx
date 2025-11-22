@@ -41,6 +41,7 @@ import { AvailabilityInsights } from "@/components/AvailabilityInsights";
 import { OperationalInsights } from "@/components/OperationalInsights";
 import { SettingsPage } from "@/components/SettingsPage";
 import { ClientStatusBadge } from "@/components/ClientStatusBadge";
+import { ClientScheduleViewer } from "@/components/ClientScheduleViewer";
 
 export default function CentralDashboard() {
   // CONTEXTO GLOBAL: useAuth provê token JWT e função de logout
@@ -51,6 +52,10 @@ export default function CentralDashboard() {
   // ESTADO: Dialog de visualização de schedule
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState<{ id: string; name: string } | null>(null);
+  
+  // ESTADO: Dialog de horários do cliente
+  const [clientScheduleDialogOpen, setClientScheduleDialogOpen] = useState(false);
+  const [selectedClientForSchedule, setSelectedClientForSchedule] = useState<{ id: string; name: string } | null>(null);
 
   // QUERY PRINCIPAL: Busca lista completa de pedidos (cacheado por React Query)
   const { data: orders = [], refetch: refetchOrders } = useQuery<Order[]>({
@@ -707,7 +712,16 @@ export default function CentralDashboard() {
                                       {new Date(client.createdAt).toLocaleDateString('pt-BR')}
                                     </td>
                                     <td className="p-4">
-                                      <Button variant="ghost" size="sm">Ver Pedidos</Button>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="sm"
+                                        onClick={() => {
+                                          setSelectedClientForSchedule({ id: client.id, name: client.name });
+                                          setClientScheduleDialogOpen(true);
+                                        }}
+                                      >
+                                        Ver Horários
+                                      </Button>
                                     </td>
                                   </tr>
                                 );
@@ -1082,6 +1096,29 @@ export default function CentralDashboard() {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setScheduleDialogOpen(false)}>
+              Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Client Schedule Viewer Dialog */}
+      <Dialog open={clientScheduleDialogOpen} onOpenChange={setClientScheduleDialogOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Horário de Funcionamento</DialogTitle>
+            <DialogDescription>
+              {selectedClientForSchedule?.name}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedClientForSchedule && (
+            <ClientScheduleViewer 
+              clientId={selectedClientForSchedule.id} 
+              clientName={selectedClientForSchedule.name}
+            />
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setClientScheduleDialogOpen(false)}>
               Fechar
             </Button>
           </DialogFooter>

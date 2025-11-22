@@ -107,7 +107,7 @@ const orderSchema = z.object({
   produtoQuantidade: z.number().positive().optional(),
   produtoPrecoUnitario: z.number().positive().optional(),
   produtoValorTotal: z.number().positive().optional(),
-  valor: z.number().min(0.01, "Selecione o valor da entrega"),
+  valor: z.number({ required_error: "Selecione o valor da entrega" }).positive("Valor deve ser positivo"),
   // STEP 1: Payment & Change fields
   formaPagamento: z.enum(["dinheiro", "cartao", "pix"], {
     required_error: "Forma de pagamento é obrigatória",
@@ -335,7 +335,7 @@ export default function ClientDashboard() {
         produtoQuantidade: undefined,
         produtoPrecoUnitario: undefined,
         produtoValorTotal: undefined,
-        valor: 7.00,
+        valor: undefined,
         // STEP 1: Reset payment fields
         formaPagamento: 'dinheiro',
         hasTroco: false,
@@ -366,7 +366,7 @@ export default function ClientDashboard() {
       produtoQuantidade: undefined,
       produtoPrecoUnitario: undefined,
       produtoValorTotal: undefined,
-      valor: 7.00,
+      valor: undefined,
       // STEP 1: Default payment values
       formaPagamento: "dinheiro",
       hasTroco: false,
