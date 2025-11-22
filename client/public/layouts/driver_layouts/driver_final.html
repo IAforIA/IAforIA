@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guriri Driver - Painel Oficial</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gray: {
+                            750: '#2d3748',
+                            850: '#1a202c',
+                            900: '#111827',
+                            950: '#0B0F19',
+                        },
+                        blue: {
+                            600: '#2563eb', // Standard Tailwind Blue
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #0B0F19; color: #ffffff; font-family: 'Inter', sans-serif; }
+        
+        /* Timeline Styles matching the reference */
+        .timeline-line {
+            position: absolute;
+            left: 24px;
+            top: 40px;
+            bottom: 20px;
+            width: 2px;
+            background-color: #374151;
+            z-index: 0;
+        }
+        
+        .glass-card {
+            background: #1f2937; /* Solid dark for better contrast as per image */
+            border: 1px solid #374151;
+            border-radius: 12px;
+        }
+
+        .status-badge-collected {
+            background-color: #2563eb;
+            color: white;
+        }
+        
+        .status-badge-pending {
+            background-color: #374151;
+            color: #9ca3af;
+        }
+
+        /* Modal Animation */
+        .modal {
+            transition: opacity 0.2s ease-in-out;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .modal.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-24 relative">
+
+    <!-- Header / Profile Section -->
+    <div class="p-6 pt-8 bg-[#111827] border-b border-gray-800">
+        <div class="flex justify-between items-start mb-6">
+            <div class="flex items-center gap-4">
+                <div class="relative group cursor-pointer" onclick="openProfileModal()">
+                    <img src="https://i.pravatar.cc/150?img=11" alt="Profile" class="w-16 h-16 rounded-full border-2 border-gray-700 object-cover">
+                    <div class="absolute bottom-0 right-0 w-4 h-4 bg-green-500 rounded-full border-2 border-[#111827]"></div>
+                    <div class="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <i class="fas fa-camera text-white"></i>
+                    </div>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-white">João Silva</h1>
+                    <p class="text-sm text-gray-400">Honda CG 160 • ABC-1234</p>
+                    <div class="flex gap-2 mt-2">
+                        <button class="bg-green-600 hover:bg-green-500 text-white text-xs px-3 py-1 rounded font-bold flex items-center gap-1">
+                            <i class="fab fa-whatsapp"></i> Central
+                        </button>
+                        <button class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1 rounded font-bold flex items-center gap-1" onclick="openProfileModal()">
+                            <i class="fas fa-user-edit"></i> Perfil
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="text-right">
+                <div class="text-xs text-gray-500 uppercase tracking-wider mb-1">Avaliação</div>
+                <div class="text-2xl font-bold text-yellow-400 flex items-center justify-end gap-1">
+                    4.9 <span class="text-xs text-gray-500 font-normal">/ 5.0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Financial Summary (Liquid) -->
+        <div class="grid grid-cols-1 gap-4">
+            <div class="glass-card p-4 relative overflow-hidden">
+                <div class="absolute top-0 right-0 p-2 opacity-10">
+                    <i class="fas fa-wallet text-6xl text-green-500"></i>
+                </div>
+                <div class="text-xs text-gray-400 uppercase tracking-wider mb-1">A Receber Hoje (Líquido)</div>
+                <div class="text-3xl font-bold text-green-400">R$ 120,00</div>
+                <div class="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                    <i class="fas fa-info-circle"></i> Taxas da Guriri Express já descontadas
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Route Section -->
+    <div class="p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-sm font-bold text-gray-400 uppercase tracking-wider">Rota Ativa (3 Pedidos)</h2>
+            <span class="bg-blue-900/30 text-blue-400 text-xs px-2 py-1 rounded border border-blue-500/30">
+                <i class="fas fa-robot mr-1"></i> Otimizada pela IA
+            </span>
+        </div>
+
+        <div class="relative pl-4">
+            <!-- Vertical Line -->
+            <div class="timeline-line"></div>
+
+            <!-- Step 1: Active/Collected -->
+            <div class="relative mb-6 pl-8">
+                <div class="absolute left-0 top-0 w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold z-10 border-4 border-[#0B0F19]">
+                    1
+                </div>
+                <div class="glass-card p-4 border-blue-500/50 shadow-[0_0_15px_rgba(37,99,235,0.1)]">
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-bold text-lg text-white">Burger King</h3>
+                        <span class="text-green-400 font-bold text-sm">R$ 15,00</span>
+                    </div>
+                    <div class="text-sm text-gray-400 mb-3">#4590 • Entrega: Rua das Palmeiras</div>
+                    <div class="flex gap-2">
+                        <button class="bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 text-sm px-3 py-2 rounded-lg font-medium border border-blue-500/30 w-full">
+                            Ver Detalhes
+                        </button>
+                        <button onclick="openLiveDocs()" class="bg-green-600 hover:bg-green-500 text-white text-sm px-3 py-2 rounded-lg font-medium w-full flex items-center justify-center gap-2">
+                            <i class="fas fa-camera"></i> Finalizar
+                        </button>
+                    </div>
+                    <div class="absolute -bottom-3 left-4 bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">
+                        COLETADO
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Pending -->
+            <div class="relative mb-6 pl-8 opacity-70">
+                <div class="absolute left-0 top-0 w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center text-gray-400 font-bold z-10 border-4 border-[#0B0F19]">
+                    2
+                </div>
+                <div class="glass-card p-4">
+                    <div class="flex justify-between items-start mb-1">
+                        <h3 class="font-bold text-lg text-gray-300">Pizza Hut</h3>
+                        <span class="text-gray-500 font-bold text-sm">R$ 12,50</span>
+                    </div>
+                    <div class="text-sm text-gray-500">#4592 • Entrega: Av. Oceano</div>
+                    <div class="mt-2 text-xs text-gray-600 font-bold uppercase">A Coletar</div>
+                </div>
+            </div>
+
+            <!-- Step 3: Pending -->
+            <div class="relative pl-8 opacity-50">
+                <div class="absolute left-0 top-0 w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center text-gray-600 font-bold z-10 border-4 border-[#0B0F19]">
+                    3
+                </div>
+                <div class="glass-card p-4 border-dashed border-gray-700 bg-transparent">
+                    <div class="flex justify-between items-start mb-1">
+                        <h3 class="font-bold text-lg text-gray-500">McDonald's</h3>
+                    </div>
+                    <div class="text-sm text-gray-600">#4595 • Aguardando Preparo</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <div class="fixed bottom-0 left-0 w-full bg-[#111827] border-t border-gray-800 p-2 z-50">
+        <div class="flex justify-around items-center">
+            <button class="flex flex-col items-center gap-1 p-2 text-blue-500">
+                <i class="fas fa-home text-xl"></i>
+                <span class="text-[10px]">Início</span>
+            </button>
+            <button class="flex flex-col items-center gap-1 p-2 text-gray-500 hover:text-white">
+                <i class="fas fa-wallet text-xl"></i>
+                <span class="text-[10px]">Ganhos</span>
+            </button>
+            
+            <!-- Central Chat Button (Prominent) -->
+            <button class="flex flex-col items-center justify-center -mt-8">
+                <div class="w-14 h-14 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-lg border-4 border-[#0B0F19]">
+                    <i class="fas fa-headset text-xl"></i>
+                </div>
+                <span class="text-[10px] text-gray-400 mt-1">Central</span>
+            </button>
+
+            <button class="flex flex-col items-center gap-1 p-2 text-gray-500 hover:text-white">
+                <i class="fas fa-bell text-xl"></i>
+                <span class="text-[10px]">Alertas</span>
+            </button>
+            <button class="flex flex-col items-center gap-1 p-2 text-gray-500 hover:text-white">
+                <i class="fas fa-user text-xl"></i>
+                <span class="text-[10px]">Perfil</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Live Docs Modal (Mandatory) -->
+    <div id="liveDocsModal" class="modal fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm">
+        <div class="bg-[#1f2937] w-full max-w-md rounded-t-2xl sm:rounded-2xl p-6 border-t sm:border border-gray-700 shadow-2xl transform transition-transform duration-300 translate-y-0">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i class="fas fa-camera text-blue-500"></i> Live Docs
+                </h2>
+                <button onclick="closeLiveDocs()" class="text-gray-400 hover:text-white">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <div class="bg-red-500/10 border border-red-500/20 rounded-lg p-3 mb-6 flex gap-3">
+                <i class="fas fa-exclamation-triangle text-red-500 mt-1"></i>
+                <p class="text-sm text-red-200">Obrigatório enviar foto do comprovante ou do pacote entregue para finalizar.</p>
+            </div>
+
+            <!-- Camera Preview Placeholder -->
+            <div class="aspect-video bg-black rounded-xl mb-6 flex flex-col items-center justify-center border-2 border-dashed border-gray-600 relative overflow-hidden group cursor-pointer">
+                <i class="fas fa-camera text-4xl text-gray-500 mb-2 group-hover:text-white transition-colors"></i>
+                <span class="text-sm text-gray-400 group-hover:text-white transition-colors">Toque para tirar foto</span>
+                
+                <!-- Simulated "Live" indicator -->
+                <div class="absolute top-3 right-3 flex items-center gap-1 bg-red-600/80 px-2 py-1 rounded text-[10px] font-bold text-white">
+                    <div class="w-2 h-2 bg-white rounded-full animate-pulse"></div> REC
+                </div>
+            </div>
+
+            <button class="w-full bg-green-600 hover:bg-green-500 text-white py-4 rounded-xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                <i class="fas fa-check-circle"></i>
+                Confirmar Entrega
+            </button>
+        </div>
+    </div>
+
+    <!-- Profile Edit Modal -->
+    <div id="profileModal" class="modal fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm">
+        <div class="bg-[#1f2937] w-full max-w-md rounded-t-2xl sm:rounded-2xl p-6 border-t sm:border border-gray-700 shadow-2xl">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-white">Editar Perfil</h2>
+                <button onclick="closeProfileModal()" class="text-gray-400 hover:text-white">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <div class="flex flex-col items-center mb-6">
+                <div class="relative">
+                    <img src="https://i.pravatar.cc/150?img=11" class="w-24 h-24 rounded-full border-4 border-gray-700 object-cover">
+                    <button class="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full border-4 border-[#1f2937]">
+                        <i class="fas fa-camera text-sm"></i>
+                    </button>
+                </div>
+                <p class="text-xs text-gray-400 mt-2">Toque para alterar foto</p>
+            </div>
+
+            <div class="space-y-4 mb-6">
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Nome Completo</label>
+                    <input type="text" value="João Silva" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-white focus:border-blue-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Veículo</label>
+                    <input type="text" value="Honda CG 160" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-white focus:border-blue-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Placa</label>
+                    <input type="text" value="ABC-1234" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-white focus:border-blue-500 focus:outline-none">
+                </div>
+            </div>
+
+            <button onclick="closeProfileModal()" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold">
+                Salvar Alterações
+            </button>
+        </div>
+    </div>
+
+    <script>
+        function openLiveDocs() {
+            document.getElementById('liveDocsModal').classList.add('active');
+        }
+
+        function closeLiveDocs() {
+            document.getElementById('liveDocsModal').classList.remove('active');
+        }
+
+        function openProfileModal() {
+            document.getElementById('profileModal').classList.add('active');
+        }
+
+        function closeProfileModal() {
+            document.getElementById('profileModal').classList.remove('active');
+        }
+    </script>
+</body>
+</html>

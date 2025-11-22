@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guriri Driver - Modelos de Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { background-color: #0f0f11; color: #ffffff; font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="min-h-screen p-8 flex flex-col items-center justify-center">
+
+    <div class="max-w-2xl w-full">
+        <h1 class="text-3xl font-bold mb-2 text-center">Modelos de Dashboard do Motoboy</h1>
+        <p class="text-gray-400 text-center mb-10">Selecione um modelo para visualizar a proposta de interface.</p>
+
+        <div class="grid gap-4">
+            <a href="driver_final_v2.html" class="block bg-green-900/20 hover:bg-green-900/40 p-6 rounded-xl border border-green-500 transition-all group relative overflow-hidden">
+                <div class="absolute top-0 right-0 bg-green-600 text-white text-xs font-bold px-3 py-1 rounded-bl-lg">NOVO</div>
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-bold text-green-400 group-hover:text-green-300">Versão Final v2 (Completa)</h2>
+                        <p class="text-gray-400 mt-1">Inclui Mapa, Histórico, Filtros e Uploads.</p>
+                    </div>
+                    <div class="text-2xl text-green-500">➔</div>
+                </div>
+            </a>
+
+            <a href="driver_focus.html" class="block bg-gray-800 hover:bg-gray-700 p-6 rounded-xl border border-gray-700 transition-all hover:border-blue-500 group">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-bold text-white group-hover:text-blue-400">Modelo 1: Foco na Ação</h2>
+                        <p class="text-gray-400 text-sm mt-1">Interface minimalista com botões grandes. Ideal para uso rápido em movimento.</p>
+                    </div>
+                    <div class="text-2xl text-gray-600 group-hover:text-blue-500">➔</div>
+                </div>
+            </a>
+
+            <a href="driver_timeline.html" class="block bg-gray-800 hover:bg-gray-700 p-6 rounded-xl border border-gray-700 transition-all hover:border-blue-500 group">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-bold text-white group-hover:text-blue-400">Modelo 2: Linha do Tempo (Timeline)</h2>
+                        <p class="text-gray-400 text-sm mt-1">Visualização vertical de tarefas passadas, presentes e futuras. Ótimo para planejamento.</p>
+                    </div>
+                    <div class="text-2xl text-gray-600 group-hover:text-blue-500">➔</div>
+                </div>
+            </a>
+
+            <a href="driver_map.html" class="block bg-gray-800 hover:bg-gray-700 p-6 rounded-xl border border-gray-700 transition-all hover:border-blue-500 group">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-bold text-white group-hover:text-blue-400">Modelo 3: Mapa Imersivo</h2>
+                        <p class="text-gray-400 text-sm mt-1">Foco total na navegação e geolocalização. Interface flutuante sobre o mapa.</p>
+                    </div>
+                    <div class="text-2xl text-gray-600 group-hover:text-blue-500">➔</div>
+                </div>
+            </a>
+
+            <a href="driver_financial.html" class="block bg-gray-800 hover:bg-gray-700 p-6 rounded-xl border border-gray-700 transition-all hover:border-blue-500 group">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-bold text-white group-hover:text-blue-400">Modelo 4: Financeiro & Metas</h2>
+                        <p class="text-gray-400 text-sm mt-1">Foco em ganhos, metas diárias e histórico. Para motoristas focados em performance.</p>
+                    </div>
+                    <div class="text-2xl text-gray-600 group-hover:text-blue-500">➔</div>
+                </div>
+            </a>
+
+            <a href="driver_hybrid.html" class="block bg-gray-800 hover:bg-gray-700 p-6 rounded-xl border border-gray-700 transition-all hover:border-blue-500 group">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-bold text-white group-hover:text-blue-400">Modelo 5: Híbrido & Comunicação</h2>
+                        <p class="text-gray-400 text-sm mt-1">Equilíbrio entre mapa e detalhes, com foco expandido em chat e resolução de problemas.</p>
+                    </div>
+                    <div class="text-2xl text-gray-600 group-hover:text-blue-500">➔</div>
+                </div>
+            </a>
+
+            <div class="my-8 border-t border-gray-800"></div>
+            <h2 class="text-2xl font-bold mb-6 text-center text-blue-400">Novos Modelos Combinados (Mapa + Híbrido)</h2>
+
+            <a href="driver_combo_sliding.html" class="block bg-gray-800 hover:bg-gray-700 p-6 rounded-xl border border-gray-700 transition-all hover:border-blue-500 group">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-bold text-white group-hover:text-blue-400">Combo 1: Painel Deslizante</h2>
+                        <p class="text-gray-400 text-sm mt-1">Mapa em tela cheia com painel inferior arrastável. O melhor dos dois mundos.</p>
+                    </div>
+                    <div class="text-2xl text-gray-600 group-hover:text-blue-500">➔</div>
+                </div>
+            </a>
+
+            <a href="driver_combo_bubbles.html" class="block bg-gray-800 hover:bg-gray-700 p-6 rounded-xl border border-gray-700 transition-all hover:border-blue-500 group">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-bold text-white group-hover:text-blue-400">Combo 2: Bolhas Flutuantes</h2>
+                        <p class="text-gray-400 text-sm mt-1">Mapa limpo com "Chat Heads" flutuantes para comunicação rápida sem sair da navegação.</p>
+                    </div>
+                    <div class="text-2xl text-gray-600 group-hover:text-blue-500">➔</div>
+                </div>
+            </a>
+
+            <a href="driver_combo_dynamic.html" class="block bg-gray-800 hover:bg-gray-700 p-6 rounded-xl border border-gray-700 transition-all hover:border-blue-500 group">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-bold text-white group-hover:text-blue-400">Combo 3: Divisão Dinâmica</h2>
+                        <p class="text-gray-400 text-sm mt-1">A tela se adapta: Mapa grande ao dirigir, Detalhes grandes ao parar.</p>
+                    </div>
+                    <div class="text-2xl text-gray-600 group-hover:text-blue-500">➔</div>
+                </div>
+            </a>
+
+            <a href="driver_combo_hud.html" class="block bg-gray-800 hover:bg-gray-700 p-6 rounded-xl border border-gray-700 transition-all hover:border-blue-500 group">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-bold text-white group-hover:text-blue-400">Combo 4: Glass HUD</h2>
+                        <p class="text-gray-400 text-sm mt-1">Interface futurista transparente sobre o mapa. Imersão total.</p>
+                    </div>
+                    <div class="text-2xl text-gray-600 group-hover:text-blue-500">➔</div>
+                </div>
+            </a>
+
+            <a href="driver_combo_tabs.html" class="block bg-gray-800 hover:bg-gray-700 p-6 rounded-xl border border-gray-700 transition-all hover:border-blue-500 group">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-bold text-white group-hover:text-blue-400">Combo 5: Mapa com Abas</h2>
+                        <p class="text-gray-400 text-sm mt-1">Navegação inferior fixa que alterna o conteúdo sobre o mapa (Rota, Chat, Ganhos).</p>
+                    </div>
+                    <div class="text-2xl text-gray-600 group-hover:text-blue-500">➔</div>
+                </div>
+            </a>
+
+            <div class="my-8 border-t border-gray-800"></div>
+            <h2 class="text-2xl font-bold mb-6 text-center text-green-400">Opção Bônus: Profissional</h2>
+
+            <a href="driver_professional.html" class="block bg-gray-800 hover:bg-gray-700 p-6 rounded-xl border border-gray-700 transition-all hover:border-blue-500 group">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-bold text-white group-hover:text-blue-400">Modelo Profissional (Clean)</h2>
+                        <p class="text-gray-400 text-sm mt-1">Layout padrão de mercado (estilo Uber/iFood). Mapa limpo em cima, ações claras embaixo. Sem invenções.</p>
+                    </div>
+                    <div class="text-2xl text-gray-600 group-hover:text-blue-500">➔</div>
+                </div>
+            </a>
+
+            <div class="my-8 border-t border-gray-800"></div>
+            <h2 class="text-2xl font-bold mb-6 text-center text-green-400">★ Modelo Final Aprovado ★</h2>
+
+            <a href="driver_final.html" class="block bg-gray-900 hover:bg-gray-800 p-6 rounded-xl border-2 border-green-500 shadow-[0_0_20px_rgba(34,197,94,0.2)] transition-all group relative overflow-hidden">
+                <div class="absolute top-0 right-0 bg-green-500 text-black text-xs font-bold px-3 py-1 rounded-bl-xl">OFICIAL</div>
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-bold text-white group-hover:text-green-400">Painel Oficial Guriri Express</h2>
+                        <p class="text-gray-400 text-sm mt-1">Baseado no design system da Central. Inclui Live Docs obrigatório, Chat Central e Ganhos Líquidos.</p>
+                    </div>
+                    <div class="text-2xl text-green-500">➔</div>
+                </div>
+            </a>
+        </div>
+        
+        <div class="mt-8 text-center">
+            <a href="../interactive_prototype.html" class="text-gray-500 hover:text-white text-sm underline">Voltar para Dashboard Central</a>
+        </div>
+    </div>
+
+</body>
+</html>
