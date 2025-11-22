@@ -102,6 +102,11 @@ const orderSchema = z.object({
   entregaCep: z.string().default("29900-000"),
   entregaComplemento: z.string().optional(),
   observacoes: z.string().optional(),
+  // Produto
+  produtoNome: z.string().optional(),
+  produtoQuantidade: z.number().positive().optional(),
+  produtoPrecoUnitario: z.number().positive().optional(),
+  produtoValorTotal: z.number().positive().optional(),
   valor: z.number().min(0.01, "Selecione o valor da entrega"),
   // STEP 1: Payment & Change fields
   formaPagamento: z.enum(["dinheiro", "cartao", "pix"], {
@@ -156,6 +161,16 @@ const DashboardContent = ({ clientOrders, totalOrders, pending, delivered, cance
           value={order.valor}
           driverName={order.motoboyName || undefined}
           onView={() => console.log('View order:', order.id)}
+          formaPagamento={order.formaPagamento}
+          hasTroco={order.hasTroco || false}
+          trocoValor={order.trocoValor || undefined}
+          complemento={order.coletaComplemento || undefined}
+          referencia={order.referencia || undefined}
+          observacoes={order.observacoes || undefined}
+          produtoNome={order.produtoNome || undefined}
+          produtoQuantidade={order.produtoQuantidade || undefined}
+          produtoPrecoUnitario={order.produtoPrecoUnitario || undefined}
+          produtoValorTotal={order.produtoValorTotal || undefined}
         />
       ))}
     </div>
@@ -280,6 +295,11 @@ export default function ClientDashboard() {
         referencia: data.referencia || '',
         entregaComplemento: data.entregaComplemento || '',
         observacoes: data.observacoes || '',
+        // Produto
+        produtoNome: data.produtoNome || null,
+        produtoQuantidade: data.produtoQuantidade || null,
+        produtoPrecoUnitario: data.produtoPrecoUnitario ? data.produtoPrecoUnitario.toFixed(2) : null,
+        produtoValorTotal: data.produtoValorTotal ? data.produtoValorTotal.toFixed(2) : null,
         valor: data.valor.toFixed(2),
         // STEP 1: Send payment data instead of hardcoding
         formaPagamento: data.formaPagamento,
@@ -311,8 +331,11 @@ export default function ClientDashboard() {
         entregaCep: '29900-000',
         entregaComplemento: '',
         observacoes: '',
+        produtoNome: '',
+        produtoQuantidade: undefined,
+        produtoPrecoUnitario: undefined,
+        produtoValorTotal: undefined,
         valor: 7.00,
-        taxaMotoboy: 7.00,
         // STEP 1: Reset payment fields
         formaPagamento: 'dinheiro',
         hasTroco: false,
@@ -339,8 +362,11 @@ export default function ClientDashboard() {
       entregaCep: "29900-000",
       entregaComplemento: "",
       observacoes: "",
+      produtoNome: "",
+      produtoQuantidade: undefined,
+      produtoPrecoUnitario: undefined,
+      produtoValorTotal: undefined,
       valor: 7.00,
-      taxaMotoboy: 7.00,
       // STEP 1: Default payment values
       formaPagamento: "dinheiro",
       hasTroco: false,
@@ -671,13 +697,115 @@ export default function ClientDashboard() {
                         </FormItem>
                       )} />
 
+                      {/* Bloco 3.5: Informações do Produto */}
+                      <div className="space-y-4 rounded-lg border-2 border-amber-500/20 p-4 bg-amber-50/50 dark:bg-amber-950/20">
+                        <h3 className="font-semibold text-lg">📦 Produto e Valores</h3>
+                        
+                        {/* Nome do Produto */}
+                        <FormField control={form.control} name="produtoNome" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Produto/Item (opcional)</FormLabel>
+                            <FormControl>
+                              <Input 
+                                {...field} 
+                                placeholder="Ex: Pizza Margherita, Bolo de Chocolate, Notebook"
+                                data-testid="input-produto-nome"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+
+                        <div className="grid grid-cols-2 gap-4">
+                          {/* Quantidade */}
+                          <FormField control={form.control} name="produtoQuantidade" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Quantidade</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  {...field} 
+                                  type="number"
+                                  min="1"
+                                  step="1"
+                                  placeholder="1"
+                                  onChange={e => {
+                                    const qtd = parseInt(e.target.value) || 0;
+                                    field.onChange(qtd);
+                                    // Auto-calcula valor total
+                                    const preco = form.getValues('produtoPrecoUnitario');
+                                    if (preco && qtd > 0) {
+                                      form.setValue('produtoValorTotal', qtd * preco);
+                                    }
+                                  }}
+                                  value={field.value || ''}
+                                  data-testid="input-produto-quantidade"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )} />
+
+                          {/* Preço Unitário */}
+                          <FormField control={form.control} name="produtoPrecoUnitario" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Preço Unitário (R$)</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  {...field} 
+                                  type="number"
+                                  min="0.01"
+                                  step="0.01"
+                                  placeholder="0.00"
+                                  onChange={e => {
+                                    const preco = parseFloat(e.target.value) || 0;
+                                    field.onChange(preco);
+                                    // Auto-calcula valor total
+                                    const qtd = form.getValues('produtoQuantidade');
+                                    if (qtd && preco > 0) {
+                                      form.setValue('produtoValorTotal', qtd * preco);
+                                    }
+                                  }}
+                                  value={field.value || ''}
+                                  data-testid="input-produto-preco-unitario"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )} />
+                        </div>
+
+                        {/* Valor Total do Produto (auto-calculado) */}
+                        <FormField control={form.control} name="produtoValorTotal" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Valor Total dos Produtos</FormLabel>
+                            <FormControl>
+                              <Input 
+                                {...field} 
+                                type="number"
+                                step="0.01"
+                                placeholder="0.00"
+                                onChange={e => field.onChange(parseFloat(e.target.value))}
+                                value={field.value || ''}
+                                data-testid="input-produto-valor-total"
+                                className="font-semibold text-lg"
+                              />
+                            </FormControl>
+                            <p className="text-sm text-muted-foreground">
+                              💡 Este é o valor que o motoboy vai cobrar do destinatário
+                            </p>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                      </div>
+
                       {/* Bloco 4: Financeiro - Valor e Pagamento */}
                       <div className="space-y-4 rounded-lg border-2 border-primary/20 p-4 bg-primary/5">
-                        <h3 className="font-semibold text-lg">💰 Valor e Pagamento</h3>
+                        <h3 className="font-semibold text-lg">💰 Frete e Forma de Pagamento</h3>
                         
                         {/* Valor da Entrega */}
                         <FormField control={form.control} name="valor" render={({ field }) => {
-                          const hasMensalidade = profile && Number(profile.mensalidade) > 0;
+                          // TODO: Buscar mensalidade do cliente do backend
+                          const hasMensalidade = false; // Temporário - precisa vir do backend
                           const valorOptions = hasMensalidade 
                             ? [
                                 { value: "7", label: "Padrão - R$ 7,00" },

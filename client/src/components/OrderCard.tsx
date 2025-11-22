@@ -27,6 +27,11 @@ interface OrderCardProps {
   complemento?: string;
   referencia?: string;
   observacoes?: string;
+  // Produto
+  produtoNome?: string | null;
+  produtoQuantidade?: number | null;
+  produtoPrecoUnitario?: string | number | null;
+  produtoValorTotal?: string | number | null;
 }
 
 export default function OrderCard({ 
@@ -44,6 +49,11 @@ export default function OrderCard({
   complemento,
   referencia,
   observacoes,
+  // Produto
+  produtoNome,
+  produtoQuantidade,
+  produtoPrecoUnitario,
+  produtoValorTotal,
 }: OrderCardProps) {
   // Helper to get payment icon
   const getPaymentIcon = () => {
@@ -102,6 +112,30 @@ export default function OrderCard({
           </div>
         )}
       </div>
+
+      {/* Produto Info */}
+      {produtoNome && (
+        <div className="mb-3 p-3 bg-amber-50 dark:bg-amber-950/20 rounded-md border border-amber-200 dark:border-amber-800">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">{produtoNome}</p>
+              {produtoQuantidade && produtoPrecoUnitario && (
+                <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                  {produtoQuantidade} × R$ {typeof produtoPrecoUnitario === 'string' ? parseFloat(produtoPrecoUnitario).toFixed(2) : produtoPrecoUnitario.toFixed(2)}
+                </p>
+              )}
+            </div>
+            {produtoValorTotal && (
+              <div className="text-right">
+                <p className="text-xs text-amber-700 dark:text-amber-300">Cobrar do destinatário</p>
+                <p className="text-lg font-bold text-amber-900 dark:text-amber-100">
+                  R$ {typeof produtoValorTotal === 'string' ? parseFloat(produtoValorTotal).toFixed(2) : produtoValorTotal.toFixed(2)}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* STEP 3: Payment Method Badge */}
       {formaPagamento && (

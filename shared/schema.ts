@@ -229,8 +229,14 @@ export const orders = pgTable("orders", {
   referencia: text("referencia"),           // Ponto de referência (ex: "Próximo ao metrô")
   observacoes: text("observacoes"),         // Observações gerais
 
+  // GRUPO 4.5: INFORMAÇÕES DO PRODUTO
+  produtoNome: text("produto_nome"),                                         // Nome/descrição do produto
+  produtoQuantidade: integer("produto_quantidade"),                           // Quantidade de itens
+  produtoPrecoUnitario: decimal("produto_preco_unitario", { precision: 10, scale: 2 }), // Preço por unidade
+  produtoValorTotal: decimal("produto_valor_total", { precision: 10, scale: 2 }),       // Quantidade × Preço Unitário
+
   // GRUPO 5: FINANCEIRO
-  valor: decimal("valor", { precision: 10, scale: 2 }).notNull(),              // Valor total do pedido
+  valor: decimal("valor", { precision: 10, scale: 2 }).notNull(),              // Valor da entrega/frete
   taxaMotoboy: decimal("taxa_motoboy", { precision: 10, scale: 2 }).notNull().default("7.00"), // Taxa do motoboy
   formaPagamento: text("forma_pagamento").notNull(),  // Ex: "Dinheiro", "Cartão", "Pix"
   hasTroco: boolean("has_troco").default(false),      // Se cliente precisa de troco

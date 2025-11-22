@@ -406,6 +406,16 @@ export default function CentralDashboard() {
                           value={order.valor}
                           driverName={order.motoboyName || undefined}
                           onView={() => console.log('View order:', order.id)}
+                          formaPagamento={order.formaPagamento}
+                          hasTroco={order.hasTroco || false}
+                          trocoValor={order.trocoValor || undefined}
+                          complemento={order.coletaComplemento || undefined}
+                          referencia={order.referencia || undefined}
+                          observacoes={order.observacoes || undefined}
+                          produtoNome={order.produtoNome || undefined}
+                          produtoQuantidade={order.produtoQuantidade || undefined}
+                          produtoPrecoUnitario={order.produtoPrecoUnitario || undefined}
+                          produtoValorTotal={order.produtoValorTotal || undefined}
                         />
                       ))}
                     </div>

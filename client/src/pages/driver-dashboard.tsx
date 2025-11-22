@@ -322,6 +322,10 @@ export default function DriverDashboard() {
                 complemento={order.coletaComplemento || undefined}
                 referencia={order.referencia || undefined}
                 observacoes={order.observacoes || undefined}
+                produtoNome={order.produtoNome || undefined}
+                produtoQuantidade={order.produtoQuantidade || undefined}
+                produtoPrecoUnitario={order.produtoPrecoUnitario || undefined}
+                produtoValorTotal={order.produtoValorTotal || undefined}
               />
               {/* Botão chama mutation de aceite e respeita loading state */}
               <Button
@@ -365,6 +369,10 @@ export default function DriverDashboard() {
                 complemento={order.coletaComplemento || undefined}
                 referencia={order.referencia || undefined}
                 observacoes={order.observacoes || undefined}
+                produtoNome={order.produtoNome || undefined}
+                produtoQuantidade={order.produtoQuantidade || undefined}
+                produtoPrecoUnitario={order.produtoPrecoUnitario || undefined}
+                produtoValorTotal={order.produtoValorTotal || undefined}
               />
               <DeliverDialog 
                 order={order} 
