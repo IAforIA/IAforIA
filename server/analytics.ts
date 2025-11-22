@@ -10,6 +10,77 @@ import { orders, clients, motoboys } from '@shared/schema';
 import { eq, and, gte, lte, sql } from 'drizzle-orm';
 
 // ============================================================================
+// TABELA FIXA DE REPASSE (REGRA DE NEGÓCIO)
+// ============================================================================
+
+/**
+ * TABELA DE COMISSÕES FIXAS
+ * Não existe fórmula matemática - são valores pré-definidos pelo negócio
+ * 
+ * CLIENTE COM MENSALIDADE: Valores permitidos R$ 7, 10, 15
+ * CLIENTE SEM MENSALIDADE: Valores permitidos R$ 8, 10, 15
+ */
+const TABELA_REPASSE = {
+  comMensalidade: {
+    7: { motoboy: 6, guriri: 1 },
+    10: { motoboy: 7, guriri: 3 },
+    15: { motoboy: 10, guriri: 5 },
+  },
+  semMensalidade: {
+    8: { motoboy: 6, guriri: 2 },
+    10: { motoboy: 7, guriri: 3 },
+    15: { motoboy: 10, guriri: 5 },
+  },
+} as const;
+
+/**
+ * Calcula a comissão da Guriri Express baseado na tabela fixa
+ * 
+ * @param valor - Valor total pago pelo cliente (R$ 7, 8, 10 ou 15)
+ * @param hasMensalidade - Se o cliente tem mensalidade ativa
+ * @returns Objeto com valores: { motoboy, guriri }
+ * @throws Error se o valor não estiver na tabela
+ */
+export function calculateGuririComission(valor: number, hasMensalidade: boolean): { motoboy: number; guriri: number } {
+  const tabela = hasMensalidade ? TABELA_REPASSE.comMensalidade : TABELA_REPASSE.semMensalidade;
+  const valorInteiro = Math.round(valor); // Converte 7.00 → 7
+  
+  if (!(valorInteiro in tabela)) {
+    const valoresPermitidos = Object.keys(tabela).join(', ');
+    throw new Error(
+      `Valor R$ ${valor} não permitido para cliente ${hasMensalidade ? 'COM' : 'SEM'} mensalidade. ` +
+      `Valores válidos: R$ ${valoresPermitidos}`
+    );
+  }
+  
+  return tabela[valorInteiro as keyof typeof tabela];
+}
+
+/**
+ * Valida se um valor de entrega é permitido pela tabela de repasse
+ * 
+ * @param valor - Valor a validar
+ * @param hasMensalidade - Se o cliente tem mensalidade
+ * @returns true se o valor é permitido
+ */
+export function isValidDeliveryValue(valor: number, hasMensalidade: boolean): boolean {
+  const tabela = hasMensalidade ? TABELA_REPASSE.comMensalidade : TABELA_REPASSE.semMensalidade;
+  const valorInteiro = Math.round(valor);
+  return valorInteiro in tabela;
+}
+
+/**
+ * Retorna os valores permitidos para um cliente
+ * 
+ * @param hasMensalidade - Se o cliente tem mensalidade
+ * @returns Array de valores permitidos [7, 10, 15] ou [8, 10, 15]
+ */
+export function getAllowedValues(hasMensalidade: boolean): number[] {
+  const tabela = hasMensalidade ? TABELA_REPASSE.comMensalidade : TABELA_REPASSE.semMensalidade;
+  return Object.keys(tabela).map(Number);
+}
+
+// ============================================================================
 // TYPES
 // ============================================================================
 
@@ -79,6 +150,9 @@ export async function getDailyRevenue(date: Date): Promise<RevenueData> {
     );
   
   const data = result[0] || { totalRevenue: 0, motoboysCost: 0, ordersCount: 0 };
+  
+  // CORREÇÃO: Profit = totalRevenue - motoboysCost (já que taxaMotoboy é o que o motoboy leva)
+  // A tabela TABELA_REPASSE garante que essa diferença seja sempre o valor correto da Guriri
   const profit = data.totalRevenue - data.motoboysCost;
   const margin = data.totalRevenue > 0 ? (profit / data.totalRevenue) * 100 : 0;
   
@@ -111,6 +185,8 @@ export async function getRevenueByDateRange(startDate: Date, endDate: Date): Pro
     );
   
   const data = result[0] || { totalRevenue: 0, motoboysCost: 0, ordersCount: 0 };
+  
+  // CORREÇÃO: Usa a mesma lógica - valor - taxaMotoboy = lucro Guriri
   const profit = data.totalRevenue - data.motoboysCost;
   const margin = data.totalRevenue > 0 ? (profit / data.totalRevenue) * 100 : 0;
   

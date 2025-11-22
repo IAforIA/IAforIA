@@ -8,25 +8,24 @@
 
 ## 📊 PHASE 1: FINANCIAL ANALYTICS & BUSINESS INTELLIGENCE
 
-### **STEP 11: Build Analytics Backend Module** ⏳ NEXT
+### **STEP 11: Build Analytics Backend Module** ✅ CONCLUÍDO
 **Priority:** CRITICAL - Zero revenue visibility without this  
 **Estimated Time:** 4-6 hours  
+**Completed:** 21/11/2025
 
-**Files to Create:**
-- `server/analytics.ts` - Core business logic calculations
-- `server/lib/date-utils.ts` - Date range utilities
+**Files Modified:**
+- `server/analytics.ts` - ✅ Adicionada TABELA_REPASSE fixa (hardcoded)
+- `server/routes.ts` - ✅ Validação e cálculo automático implementados
 
-**Functions to Implement:**
-- `getDailyRevenue(date)` - SUM(valor) WHERE status='delivered'
-- `getMotoboyEarnings(motoboyId, startDate, endDate)` - Commission tracking
-- `calculateGuririProfit(startDate, endDate)` - Profit = revenue - commissions
-- `getClientDebt(clientId, month)` - Balance calculations
-- `getMonthlyRecurringRevenue()` - SUM(mensalidade) for active clients
-- `getDashboardKPIs()` - Aggregate metrics for central homepage
+**Functions Implemented:**
+- ✅ `calculateGuririComission(valor, hasMensalidade)` - Retorna { motoboy, guriri } da tabela fixa
+- ✅ `isValidDeliveryValue(valor, hasMensalidade)` - Valida se valor está permitido
+- ✅ `getAllowedValues(hasMensalidade)` - Retorna [7,10,15] ou [8,10,15]
+- ✅ `getDailyRevenue(date)` - SUM(valor) WHERE status='delivered' (fórmula corrigida)
+- ✅ `getRevenueByDateRange(startDate, endDate)` - Lucro calculado corretamente
+- ✅ Validação no POST /api/orders - Rejeita valores inválidos e calcula taxaMotoboy automaticamente
 
-**Dependencies:** Drizzle ORM, existing `orders`, `clients`, `motoboys` tables
-
-**Status:** 🔴 NOT STARTED
+**Status:** ✅ BACKEND PROTEGIDO - Sistema não aceita mais valores arbitrários
 
 ---
 

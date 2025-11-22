@@ -26,6 +26,7 @@ import { eq } from "drizzle-orm";
 import { AIEngine } from "./ai-engine.ts";
 // Analytics: Business intelligence and financial calculations
 import * as analytics from "./analytics.ts";
+import { calculateGuririComission, isValidDeliveryValue } from "./analytics.ts";
 // bcrypt: Biblioteca para hash e comparação segura de senhas
 import bcrypt from "bcryptjs";
 // jwt: Biblioteca para criar e validar tokens JWT (JSON Web Tokens)
@@ -528,6 +529,35 @@ export async function registerRoutes() {
       // VALIDAÇÃO: Zod parse() lança ZodError se campos obrigatórios ausentes
       const validated = insertOrderSchema.parse(payload);
       
+      // VALIDAÇÃO FINANCEIRA: Verifica se o valor está na tabela de repasse
+      // Busca cliente para verificar status de mensalidade
+      const clienteData = await db.query.clients.findFirst({
+        where: (clients, { eq }) => eq(clients.id, validated.clientId),
+        columns: { mensalidade: true }
+      });
+      
+      if (!clienteData) {
+        return res.status(400).json({ error: "Cliente não encontrado" });
+      }
+      
+      const hasMensalidade = Number(clienteData.mensalidade) > 0;
+      const valorPedido = Number(validated.valor);
+      
+      // Valida se o valor está permitido pela tabela
+      if (!isValidDeliveryValue(valorPedido, hasMensalidade)) {
+        const valoresPermitidos = analytics.getAllowedValues(hasMensalidade);
+        return res.status(400).json({ 
+          error: `Valor R$ ${valorPedido.toFixed(2)} não permitido para cliente ${hasMensalidade ? 'COM' : 'SEM'} mensalidade. Valores válidos: R$ ${valoresPermitidos.join(', ')}`
+        });
+      }
+      
+      // CÁLCULO AUTOMÁTICO: Calcula taxaMotoboy baseado na tabela fixa
+      // IGNORA o que o cliente enviou - usa apenas a tabela de repasse
+      const comissao = calculateGuririComission(valorPedido, hasMensalidade);
+      validated.taxaMotoboy = comissao.motoboy.toString();
+      
+      console.log(`💰 Pedido validado: Valor R$ ${valorPedido} | Motoboy R$ ${comissao.motoboy} | Guriri R$ ${comissao.guriri}`);
+      
       // PERSISTÊNCIA: Insere pedido no banco (retorna OrderSummaryDto completo)
       const order = await storage.createOrder(validated);
       
@@ -940,20 +970,23 @@ export async function registerRoutes() {
         await storage.deleteClientSchedule(Number(schedule.id));
       }
 
-      // Se horário é 00:00 a 00:00, significa dia fechado - só deletamos e não criamos novo
-      if (horaInicio === "00:00" && horaFim === "00:00") {
-        console.log('✅ POST /api/clients/:id/schedules - Day marked as closed, schedules deleted');
-        return res.json({ message: "Dia marcado como fechado" });
-      }
+      // Determina se o dia está fechado baseado no período
+      const isFechado = periodo === "Fechado";
 
       // Create new schedule
       console.log('💾 Criando novo schedule...');
+      console.log('  - clientId:', req.params.id);
+      console.log('  - diaSemana:', diaSemana);
+      console.log('  - Fechado?', isFechado);
+      console.log('  - horaAbertura:', isFechado ? null : horaInicio);
+      console.log('  - horaFechamento:', isFechado ? null : horaFim);
+      
       const newSchedule = await storage.upsertClientSchedule({
-        clienteId: req.params.id,
+        clientId: req.params.id,
         diaSemana,
-        periodo,
-        horaInicio,
-        horaFim,
+        horaAbertura: isFechado ? null : horaInicio,
+        horaFechamento: isFechado ? null : horaFim,
+        fechado: isFechado,
       });
 
       console.log('✅ POST /api/clients/:id/schedules - Saved:', newSchedule);
@@ -1009,6 +1042,23 @@ export async function registerRoutes() {
     } catch (error) {
       console.error("Error fetching all client schedules:", error);
       res.status(500).json({ error: "Erro ao buscar horários" });
+    }
+  });
+
+  /**
+   * GET /api/schedules/all-motoboys
+   * Retorna TODOS os horários de TODOS os motoboys de uma vez
+   * ACESSO: Apenas Central
+   * PROPÓSITO: Análise operacional - planejamento de cobertura por turno
+   */
+  router.get("/api/schedules/all-motoboys", authenticateToken, requireRole('central'), async (req, res) => {
+    try {
+      const allSchedules = await storage.getAllMotoboySchedules();
+      console.log('📅 GET /api/schedules/all-motoboys - Total schedules:', allSchedules.length);
+      res.json(allSchedules);
+    } catch (error) {
+      console.error("Error fetching all motoboy schedules:", error);
+      res.status(500).json({ error: "Erro ao buscar horários de motoboys" });
     }
   });
 

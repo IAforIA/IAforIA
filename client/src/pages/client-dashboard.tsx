@@ -102,8 +102,7 @@ const orderSchema = z.object({
   entregaCep: z.string().default("29900-000"),
   entregaComplemento: z.string().optional(),
   observacoes: z.string().optional(),
-  valor: z.number().min(0.01, "Valor é obrigatório"),
-  taxaMotoboy: z.number().default(7.00),
+  valor: z.number().min(0.01, "Selecione o valor da entrega"),
   // STEP 1: Payment & Change fields
   formaPagamento: z.enum(["dinheiro", "cartao", "pix"], {
     required_error: "Forma de pagamento é obrigatória",
@@ -192,12 +191,12 @@ export default function ClientDashboard() {
 
   // QUERY: Busca horário de funcionamento do cliente
   interface ClientScheduleEntry {
-    id: number;
-    clienteId: number;
+    id: string;
+    clientId: string;
     diaSemana: number;
-    periodo: string;
-    horaInicio: string;
-    horaFim: string;
+    horaAbertura: string | null;
+    horaFechamento: string | null;
+    fechado: boolean;
   }
 
   const { data: clientSchedule = [] } = useQuery<ClientScheduleEntry[]>({
@@ -238,23 +237,28 @@ export default function ClientDashboard() {
     // Busca horários do dia atual
     const todaySchedules = clientSchedule.filter(s => s.diaSemana === currentDay);
 
-    if (todaySchedules.length === 0) {
+    if (todaySchedules.length === 0 || todaySchedules[0].fechado) {
       return {
         valid: false,
         message: 'Seu estabelecimento está FECHADO hoje. Não é possível criar pedidos em dias de folga.',
       };
     }
 
-    // Verifica se está dentro de algum dos períodos de funcionamento
-    const isWithinBusinessHours = todaySchedules.some(schedule => {
-      return currentTime >= schedule.horaInicio && currentTime <= schedule.horaFim;
-    });
-
-    if (!isWithinBusinessHours) {
-      const hours = todaySchedules.map(s => `${s.horaInicio} às ${s.horaFim}`).join(', ');
+    const schedule = todaySchedules[0];
+    if (!schedule.horaAbertura || !schedule.horaFechamento) {
       return {
         valid: false,
-        message: `Seu estabelecimento está FECHADO neste momento. Horário de funcionamento hoje: ${hours}`,
+        message: 'Horário de funcionamento não cadastrado para hoje.',
+      };
+    }
+
+    // Verifica se está dentro do horário de funcionamento
+    const isWithinBusinessHours = currentTime >= schedule.horaAbertura && currentTime <= schedule.horaFechamento;
+
+    if (!isWithinBusinessHours) {
+      return {
+        valid: false,
+        message: `Seu estabelecimento está FECHADO neste momento. Horário de funcionamento hoje: ${schedule.horaAbertura} às ${schedule.horaFechamento}`,
       };
     }
 
@@ -277,7 +281,6 @@ export default function ClientDashboard() {
         entregaComplemento: data.entregaComplemento || '',
         observacoes: data.observacoes || '',
         valor: data.valor.toFixed(2),
-        taxaMotoboy: data.taxaMotoboy.toFixed(2),
         // STEP 1: Send payment data instead of hardcoding
         formaPagamento: data.formaPagamento,
         hasTroco: data.hasTroco,
@@ -652,14 +655,14 @@ export default function ClientDashboard() {
                         )} />
                       </div>
 
-                      {/* STEP 2: General Observations */}
+                      {/* Bloco 3: Descrição do Item/Produto */}
                       <FormField control={form.control} name="observacoes" render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Observações Gerais (Opcional)</FormLabel>
+                          <FormLabel>O que você está enviando? (Descrição do Produto)</FormLabel>
                           <FormControl>
                             <textarea
                               {...field}
-                              placeholder="Ex: Ligar ao chegar, Não tocar campainha"
+                              placeholder="Ex: 1 pizza grande, Documentos, Encomenda, Roupas, etc."
                               className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                               data-testid="textarea-observacoes"
                             />
@@ -668,56 +671,76 @@ export default function ClientDashboard() {
                         </FormItem>
                       )} />
 
-                      {/* Bloco 3: valores financeiros (convertem string -> number) */}
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField control={form.control} name="valor" render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Valor do Pedido (R$)</FormLabel>
-                            <FormControl>
-                              <Input {...field} type="number" step="0.01" placeholder="7.00"
-                                onChange={e => field.onChange(parseFloat(e.target.value))}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )} />
-                        <FormField control={form.control} name="taxaMotoboy" render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Sua Taxa (R$)</FormLabel>
-                            <FormControl>
-                              <Input {...field} type="number" step="0.01" placeholder="7.00"
-                                onChange={e => field.onChange(parseFloat(e.target.value))}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )} />
-                      </div>
+                      {/* Bloco 4: Financeiro - Valor e Pagamento */}
+                      <div className="space-y-4 rounded-lg border-2 border-primary/20 p-4 bg-primary/5">
+                        <h3 className="font-semibold text-lg">💰 Valor e Pagamento</h3>
+                        
+                        {/* Valor da Entrega */}
+                        <FormField control={form.control} name="valor" render={({ field }) => {
+                          const hasMensalidade = profile && Number(profile.mensalidade) > 0;
+                          const valorOptions = hasMensalidade 
+                            ? [
+                                { value: "7", label: "Padrão - R$ 7,00" },
+                                { value: "10", label: "Média Distância - R$ 10,00" },
+                                { value: "15", label: "Longa Distância - R$ 15,00" }
+                              ]
+                            : [
+                                { value: "8", label: "Padrão - R$ 8,00" },
+                                { value: "10", label: "Média Distância - R$ 10,00" },
+                                { value: "15", label: "Longa Distância - R$ 15,00" }
+                              ];
+                          
+                          return (
+                            <FormItem>
+                              <FormLabel>Valor da Entrega (Frete)</FormLabel>
+                              <Select 
+                                onValueChange={(val) => field.onChange(parseFloat(val))} 
+                                value={field.value?.toString()}
+                              >
+                                <FormControl>
+                                  <SelectTrigger data-testid="select-valor-entrega">
+                                    <SelectValue placeholder="Selecione o valor do frete" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {valorOptions.map(option => (
+                                    <SelectItem key={option.value} value={option.value}>
+                                      {option.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <p className="text-sm text-muted-foreground mt-1">
+                                💡 Taxa do motoboy calculada automaticamente
+                              </p>
+                              <FormMessage />
+                            </FormItem>
+                          );
+                        }} />
 
-                      {/* STEP 1: Payment Method & Change */}
-                      <div className="space-y-4">
-                        <h3 className="font-semibold">Pagamento</h3>
+                        {/* Forma de Pagamento */}
                         <FormField control={form.control} name="formaPagamento" render={({ field }) => (
                           <FormItem>
                             <FormLabel>Forma de Pagamento</FormLabel>
                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                               <FormControl>
                                 <SelectTrigger data-testid="select-forma-pagamento">
-                                  <SelectValue placeholder="Selecione a forma de pagamento" />
+                                  <SelectValue placeholder="Como vai pagar?" />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                <SelectItem value="dinheiro">Dinheiro</SelectItem>
-                                <SelectItem value="cartao">Cartão</SelectItem>
-                                <SelectItem value="pix">Pix</SelectItem>
+                                <SelectItem value="dinheiro">💵 Dinheiro</SelectItem>
+                                <SelectItem value="cartao">💳 Cartão</SelectItem>
+                                <SelectItem value="pix">📱 Pix</SelectItem>
                               </SelectContent>
                             </Select>
                             <FormMessage />
                           </FormItem>
                         )} />
 
+                        {/* Troco (somente se dinheiro) */}
                         {form.watch('formaPagamento') === 'dinheiro' && (
-                          <>
+                          <div className="space-y-3 p-3 bg-background rounded-md border">
                             <FormField control={form.control} name="hasTroco" render={({ field }) => (
                               <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                                 <FormControl>
@@ -752,7 +775,7 @@ export default function ClientDashboard() {
                                 </FormItem>
                               )} />
                             )}
-                          </>
+                          </div>
                         )}
                       </div>
 
