@@ -23,12 +23,12 @@ import { Calendar, Clock, Save } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface ClientScheduleEntry {
-  id?: number;
-  clienteId: number;
+  id?: string;
+  clientId: string;
   diaSemana: number;
-  periodo: string;
-  horaInicio: string;
-  horaFim: string;
+  horaAbertura: string | null;
+  horaFechamento: string | null;
+  fechado: boolean;
 }
 
 interface DaySchedule {
@@ -87,19 +87,14 @@ export function ClientScheduleEditor({ clientId }: ClientScheduleEditorProps) {
           };
         }
 
-        // Find earliest and latest times
-        let earliest = "23:59";
-        let latest = "00:00";
-        daySchedules.forEach(s => {
-          if (s.horaInicio < earliest) earliest = s.horaInicio;
-          if (s.horaFim > latest) latest = s.horaFim;
-        });
-
+        // Check if day is closed or has hours
+        const isClosed = daySchedules[0].fechado;
+        
         return {
           diaSemana: day.value,
-          isClosed: false,
-          horaInicio: earliest,
-          horaFim: latest,
+          isClosed: isClosed,
+          horaInicio: daySchedules[0].horaAbertura || "08:00",
+          horaFim: daySchedules[0].horaFechamento || "18:00",
         };
       });
 
@@ -112,14 +107,15 @@ export function ClientScheduleEditor({ clientId }: ClientScheduleEditorProps) {
     mutationFn: async (daySchedule: DaySchedule) => {
       console.log('🔵 ClientScheduleEditor - Salvando:', daySchedule);
       
-      // Se fechado, envia horário "00:00" a "00:00" (backend irá ignorar ou tratar como fechado)
-      const horaInicio = daySchedule.isClosed ? "00:00" : daySchedule.horaInicio;
-      const horaFim = daySchedule.isClosed ? "00:00" : daySchedule.horaFim;
+      // Determina o período baseado em isClosed
+      const periodo = daySchedule.isClosed ? "Fechado" : "Integral";
+      const horaInicio = daySchedule.horaInicio;
+      const horaFim = daySchedule.horaFim;
 
       console.log('🔵 Dados a enviar:', { 
         clientId, 
         diaSemana: daySchedule.diaSemana, 
-        periodo: "Integral",
+        periodo,
         horaInicio, 
         horaFim 
       });
@@ -137,7 +133,7 @@ export function ClientScheduleEditor({ clientId }: ClientScheduleEditorProps) {
         
         const res = await apiRequest('POST', url, {
           diaSemana: daySchedule.diaSemana,
-          periodo: "Integral",
+          periodo,
           horaInicio,
           horaFim,
         });

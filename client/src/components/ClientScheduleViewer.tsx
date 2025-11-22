@@ -23,12 +23,12 @@ import { Clock, Calendar } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface ClientScheduleEntry {
-  id: number;
-  clienteId: number;
+  id: string;
+  clientId: string;
   diaSemana: number; // 0 = Domingo, 6 = Sábado
-  periodo: string; // "Manhã", "Tarde", "Noite"
-  horaInicio: string; // "08:00"
-  horaFim: string; // "12:00"
+  horaAbertura: string | null; // "08:00"
+  horaFechamento: string | null; // "18:00"
+  fechado: boolean; // true se dia está fechado
 }
 
 interface ClientScheduleViewerProps {
@@ -74,16 +74,13 @@ export function ClientScheduleViewer({ clientId, clientName }: ClientScheduleVie
     const daySchedules = schedulesByDay.get(day);
     if (!daySchedules || daySchedules.length === 0) return null;
 
-    // Find earliest opening and latest closing
-    let earliest = "23:59";
-    let latest = "00:00";
+    // Check if day is closed
+    const firstSchedule = daySchedules[0];
+    if (firstSchedule.fechado || !firstSchedule.horaAbertura || !firstSchedule.horaFechamento) {
+      return null;
+    }
 
-    daySchedules.forEach(entry => {
-      if (entry.horaInicio < earliest) earliest = entry.horaInicio;
-      if (entry.horaFim > latest) latest = entry.horaFim;
-    });
-
-    return { open: earliest, close: latest };
+    return { open: firstSchedule.horaAbertura, close: firstSchedule.horaFechamento };
   };
 
   if (isLoading) {
@@ -157,11 +154,6 @@ export function ClientScheduleViewer({ clientId, clientName }: ClientScheduleVie
                       <div className="font-medium">
                         {hours.open} - {hours.close}
                       </div>
-                      {daySchedules && daySchedules.length > 1 && (
-                        <div className="text-gray-600 dark:text-gray-400 text-[10px]">
-                          {daySchedules.map(s => s.periodo).join(", ")}
-                        </div>
-                      )}
                     </div>
                   </div>
                 ) : (

@@ -37,6 +37,8 @@ import { ChatWidget } from "@/components/ChatWidget";
 import { DriverScheduleViewer, DriverAvailabilityBadge } from "@/components/DriverScheduleViewer";
 // AI-powered availability insights
 import { AvailabilityInsights } from "@/components/AvailabilityInsights";
+// Operational planning insights
+import { OperationalInsights } from "@/components/OperationalInsights";
 import { SettingsPage } from "@/components/SettingsPage";
 import { ClientStatusBadge } from "@/components/ClientStatusBadge";
 
@@ -77,6 +79,13 @@ export default function CentralDashboard() {
   // QUERY: Busca TODOS os horários dos clientes de uma vez (otimização)
   const { data: allClientSchedules = [] } = useQuery<any[]>({
     queryKey: ['/api/schedules/all-clients'],
+    enabled: !!token,
+    refetchInterval: 60000, // Atualiza a cada 1 minuto
+  });
+
+  // QUERY: Busca TODOS os horários dos motoboys de uma vez
+  const { data: allMotoboySchedules = [] } = useQuery<any[]>({
+    queryKey: ['/api/schedules/all-motoboys'],
     enabled: !!token,
     refetchInterval: 60000, // Atualiza a cada 1 minuto
   });
@@ -343,6 +352,13 @@ export default function CentralDashboard() {
 
                     {/* AI Insights de Disponibilidade */}
                     <AvailabilityInsights motoboys={motoboys} />
+
+                    {/* Insights Operacionais - Planejamento de Frota */}
+                    <OperationalInsights 
+                      clientSchedules={allClientSchedules}
+                      motoboySchedules={allMotoboySchedules}
+                      activeMotoboys={motoboys.length}
+                    />
 
                     {/* Barra de busca de pedidos */}
                     <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -661,9 +677,9 @@ export default function CentralDashboard() {
                               </tr>
                             ) : (
                               clients.map(client => {
-                                // Filtra schedules deste cliente (compara string e número)
+                                // Filtra schedules deste cliente (usa clientId do banco)
                                 const clientSchedules = allClientSchedules.filter(s => 
-                                  s.clienteId === client.id || s.clienteId === String(client.id) || s.clientId === Number(client.id)
+                                  s.clientId === client.id || s.clientId === String(client.id)
                                 );
                                 
                                 return (

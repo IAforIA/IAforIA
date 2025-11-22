@@ -30,6 +30,7 @@ import {
   type InsertOrder,       // Tipo Zod para inserção de pedidos
   type InsertMotoboy,     // Tipo Zod para inserção de motoboys
   type InsertChatMessage, // Tipo Zod para inserção de mensagens
+  type InsertClientSchedule, // Tipo Zod para inserção de schedules de clientes
   type Motoboy,           // Tipo completo de Motoboy
   type Client             // Tipo completo de Client
 } from '@shared/schema';
@@ -658,19 +659,28 @@ class DrizzleStorage /* implements IStorage */ {
    * USADO EM: POST /api/clients/:id/schedules
    */
   async upsertClientSchedule(data: {
-    clienteId: string;
+    clientId: string;
     diaSemana: number;
-    periodo: string;
-    horaInicio: string;
-    horaFim: string;
+    horaAbertura: string | null;
+    horaFechamento: string | null;
+    fechado: boolean;
   }) {
-    const result = await db.insert(clientSchedules).values({
-      clienteId: data.clienteId,
+    console.log('🔧 upsertClientSchedule - data recebido:', JSON.stringify(data, null, 2));
+    
+    // Cria objeto tipado explicitamente com InsertClientSchedule
+    const scheduleData: InsertClientSchedule = {
+      clientId: data.clientId,
       diaSemana: data.diaSemana,
-      periodo: data.periodo,
-      horaInicio: data.horaInicio,
-      horaFim: data.horaFim,
-    }).returning();
+      horaAbertura: data.horaAbertura,
+      horaFechamento: data.horaFechamento,
+      fechado: data.fechado,
+    };
+    
+    console.log('🔧 scheduleData para insert:', JSON.stringify(scheduleData, null, 2));
+    
+    const result = await db.insert(clientSchedules).values(scheduleData).returning();
+    
+    console.log('🔧 upsertClientSchedule - result:', JSON.stringify(result[0], null, 2));
     return result[0];
   }
 
@@ -691,6 +701,16 @@ class DrizzleStorage /* implements IStorage */ {
    */
   async getAllClientSchedules() {
     return await db.select().from(clientSchedules).orderBy(clientSchedules.clientId, clientSchedules.diaSemana);
+  }
+
+  /**
+   * MÉTODO: getAllMotoboySchedules()
+   * PROPÓSITO: Busca TODOS os horários de TODOS os motoboys de uma vez
+   * USADO EM: GET /api/schedules/all-motoboys (análise operacional)
+   * RETORNA: Array completo de schedules com motoboyId e turnos
+   */
+  async getAllMotoboySchedules() {
+    return await db.select().from(motoboySchedules).orderBy(motoboySchedules.motoboyId, motoboySchedules.diaSemana);
   }
 }
 

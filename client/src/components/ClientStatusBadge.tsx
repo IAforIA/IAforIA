@@ -12,12 +12,12 @@
 import { Badge } from "@/components/ui/badge";
 
 interface ClientScheduleEntry {
-  id: number;
+  id: string;
   clientId: string;
   diaSemana: number;
-  periodo: string;
-  horaInicio: string;
-  horaFim: string;
+  horaAbertura: string | null;
+  horaFechamento: string | null;
+  fechado: boolean;
 }
 
 interface ClientStatusBadgeProps {
@@ -41,7 +41,7 @@ export function ClientStatusBadge({ clientId, schedules }: ClientStatusBadgeProp
 
   const todaySchedules = schedules.filter(s => s.diaSemana === currentDay);
 
-  if (todaySchedules.length === 0) {
+  if (todaySchedules.length === 0 || todaySchedules[0].fechado || !todaySchedules[0].horaAbertura || !todaySchedules[0].horaFechamento) {
     return (
       <Badge variant="destructive">
         FECHADO (Folga)
@@ -49,28 +49,22 @@ export function ClientStatusBadge({ clientId, schedules }: ClientStatusBadgeProp
     );
   }
 
-  const isOpen = todaySchedules.some(schedule => {
-    return currentTime >= schedule.horaInicio && currentTime <= schedule.horaFim;
-  });
+  const schedule = todaySchedules[0];
+  const isOpen = currentTime >= schedule.horaAbertura && currentTime <= schedule.horaFechamento;
 
   if (isOpen) {
-    const closingTime = todaySchedules.reduce((latest, s) => 
-      s.horaFim > latest ? s.horaFim : latest, "00:00"
-    );
     return (
-      <Badge className="bg-green-600 hover:bg-green-700" title={`Aberto até ${closingTime}`}>
+      <Badge className="bg-green-600 hover:bg-green-700" title={`Aberto até ${schedule.horaFechamento}`}>
         ABERTO
       </Badge>
     );
   }
 
-  // Find next opening time
-  const nextOpening = todaySchedules
-    .filter(s => currentTime < s.horaInicio)
-    .sort((a, b) => a.horaInicio.localeCompare(b.horaInicio))[0];
+  // Check if will open later today
+  const willOpenLater = currentTime < schedule.horaAbertura;
 
   return (
-    <Badge variant="destructive" title={nextOpening ? `Abre às ${nextOpening.horaInicio}` : "Fechado hoje"}>
+    <Badge variant="destructive" title={willOpenLater ? `Abre às ${schedule.horaAbertura}` : "Fechado hoje"}>
       FECHADO
     </Badge>
   );
