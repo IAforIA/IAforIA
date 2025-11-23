@@ -1,24 +1,21 @@
 {
-  "apps": [
-    {
-      "name": "guriri-express",
-      "script": "server/index.ts",
-      "interpreter": "node",
-      "interpreter_args": "--loader tsx",
-      "cwd": "/var/www/guriri-express/GuririExpress",
-      "instances": 2,
-      "exec_mode": "cluster",
-      "env": {
-        "NODE_ENV": "production",
-        "PORT": 5000,
-        "WS_PORT": 5001
-      },
-      "error_file": "/var/log/pm2/guriri-express-error.log",
-      "out_file": "/var/log/pm2/guriri-express-out.log",
-      "log_date_format": "YYYY-MM-DD HH:mm:ss Z",
-      "autorestart": true,
-      "max_memory_restart": "500M",
-      "watch": false
-    }
-  ]
+  "apps": [{
+    "name": "guriri-express",
+    "script": "dist/index.js",
+    "interpreter": "node",
+    "cwd": "/var/www/guriri-express",
+    "instances": 2,
+    "exec_mode": "cluster",
+    "env": {
+      "NODE_ENV": "production",
+      "PORT": 5000,
+      "WS_PORT": 5001
+    },
+    "error_file": "/var/log/pm2/guriri-express-error.log",
+    "out_file": "/var/log/pm2/guriri-express-out.log",
+    "log_date_format": "YYYY-MM-DD HH:mm:ss Z",
+    "autorestart": true,
+    "max_memory_restart": "500M",
+    "watch": false
+  }]
 }
