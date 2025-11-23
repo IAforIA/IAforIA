@@ -59,6 +59,15 @@ export function ClientStatusBadge({ clientId, schedules }: ClientStatusBadgeProp
     return hours * 60 + minutes;
   };
 
+  // Verifica se tem horários válidos
+  if (!schedule.horaAbertura || !schedule.horaFechamento) {
+    return (
+      <Badge variant="destructive">
+        FECHADO
+      </Badge>
+    );
+  }
+
   const openTime = parseTimeToMinutes(schedule.horaAbertura);
   const closeTime = parseTimeToMinutes(schedule.horaFechamento);
   const isOpen = currentTimeInMinutes >= openTime && currentTimeInMinutes <= closeTime;

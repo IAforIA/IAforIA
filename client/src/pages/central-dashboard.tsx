@@ -8,12 +8,12 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 // Wouter fornece roteamento leve para subpáginas internas do dashboard
-import { Switch, Route, Router as NestedRouter, useLocation } from "wouter";
+import { Switch, Route, Router as NestedRouter } from "wouter";
 // Componentes reutilizáveis da UI
 import ThemeToggle from "@/components/ThemeToggle";
 import StatCard from "@/components/StatCard";
 import OrderCard from "@/components/OrderCard";
-import { Package, TruckIcon, CheckCircle, Users, ExternalLink, UserCog, Shield, Ban, ShieldCheck, XCircle, RefreshCw, MessageSquare, Map, Settings, Store, Bike, AlertTriangle, DollarSign } from "lucide-react";
+import { Package, TruckIcon, CheckCircle, Users, ExternalLink, UserCog, Shield, Ban, ShieldCheck, XCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -35,6 +35,8 @@ import { resolveWebSocketUrl } from "@/lib/utils";
 import { ChatWidget } from "@/components/ChatWidget";
 // Schedule viewer for driver availability
 import { DriverScheduleViewer, DriverAvailabilityBadge } from "@/components/DriverScheduleViewer";
+// Delivery map for real-time tracking
+import { DeliveryMap } from "@/components/DeliveryMap";
 // AI-powered availability insights
 import { AvailabilityInsights } from "@/components/AvailabilityInsights";
 // Operational planning insights
@@ -47,7 +49,6 @@ export default function CentralDashboard() {
   // CONTEXTO GLOBAL: useAuth provê token JWT e função de logout
   const { logout, token, user } = useAuth();
   const { toast } = useToast();
-  const [, setLocation] = useLocation();
   // ESTADO LOCAL: Guarda instância WebSocket para fechar ao desmontar
   const [ws, setWs] = useState<WebSocket | null>(null);
   // ESTADO: Dialog de visualização de schedule
@@ -59,6 +60,20 @@ export default function CentralDashboard() {
   const [selectedClientForSchedule, setSelectedClientForSchedule] = useState<{ id: string; name: string } | null>(null);
   
   // ESTADO: Dialog de detalhamento financeiro
+  const [financialDetailsOpen, setFinancialDetailsOpen] = useState(false);
+  
+  // ESTADO: Filtros de Pedidos
+  const [orderStatusFilter, setOrderStatusFilter] = useState<string>('all');
+  const [orderClientFilter, setOrderClientFilter] = useState<string>('all');
+  const [orderMotoboyFilter, setOrderMotoboyFilter] = useState<string>('all');
+  const [orderDateFilter, setOrderDateFilter] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [orderSearchFilter, setOrderSearchFilter] = useState<string>('');
+  
+  // ESTADO: Filtros Financeiros
+  const [finStartDate, setFinStartDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [finEndDate, setFinEndDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [finMotoboyFilter, setFinMotoboyFilter] = useState<string>('all');
+  const [finClientFilter, setFinClientFilter] = useState<string>('all');
 
   // QUERY PRINCIPAL: Busca lista completa de pedidos (cacheado por React Query)
   const { data: orders = [], refetch: refetchOrders } = useQuery<Order[]>({
@@ -90,6 +105,29 @@ export default function CentralDashboard() {
     enabled: !!token,
     refetchInterval: 60000, // Atualiza a cada 1 minuto
   });
+  
+  // Log de debug
+  useEffect(() => {
+    if (allClientSchedules.length > 0) {
+      console.log('📅 Dashboard - allClientSchedules carregados:', allClientSchedules.length, allClientSchedules);
+      console.log('📅 Exemplo de schedule:', allClientSchedules[0]);
+      
+      // Testa filtro com primeiro cliente
+      if (clients.length > 0) {
+        const firstClient = clients[0];
+        const filtered = allClientSchedules.filter(s => String(s.clientId) === String(firstClient.id));
+        console.log('🔍 TESTE FILTRO:', {
+          clientId: firstClient.id,
+          clientName: firstClient.name,
+          schedulesEncontrados: filtered.length,
+          scheduleClientIds: allClientSchedules.map(s => s.clientId).slice(0, 5),
+          filteredSchedules: filtered
+        });
+      }
+    } else {
+      console.warn('⚠️ Dashboard - allClientSchedules está VAZIO!');
+    }
+  }, [allClientSchedules, clients]);
 
   // QUERY: Busca TODOS os horários dos motoboys de uma vez
   const { data: allMotoboySchedules = [] } = useQuery<any[]>({
@@ -328,148 +366,173 @@ export default function CentralDashboard() {
   return (
     // SidebarProvider aplica contextos (atalhos, largura customizada)
     <SidebarProvider style={style as React.CSSProperties}>
-      <div className="flex h-screen w-full">
+      <div className="flex h-screen w-full relative">
         {/* Sidebar fixa com navegação específica do papel "central" */}
         <AppSidebar role="central" />
-        <div className="flex flex-col flex-1">
-          <header className="flex items-center justify-between p-4 border-b bg-background">
+        <div className="flex flex-col flex-1 relative z-0">
+          <header className="flex items-center justify-between p-3 sm:p-4 border-b bg-background sticky top-0 z-20">
             <div className="flex items-center gap-2">
               <SidebarTrigger data-testid="button-sidebar-toggle" />
-              <h1 className="text-xl font-semibold" data-testid="text-page-title">Dashboard Central</h1>
+              <h1 className="text-base sm:text-lg md:text-xl font-semibold truncate" data-testid="text-page-title">Dashboard Central</h1>
             </div>
             <div className="flex items-center gap-2">
               <ThemeToggle />
-              <Button variant="outline" onClick={logout} data-testid="button-logout">Sair</Button>
+              <Button variant="outline" onClick={logout} data-testid="button-logout" className="text-xs sm:text-sm px-2 sm:px-4">
+                <span className="hidden sm:inline">Sair</span>
+                <span className="sm:hidden">✕</span>
+              </Button>
             </div>
           </header>
 
-          <main className="flex-1 overflow-auto p-6">
-            <div className="max-w-7xl mx-auto space-y-6">
+          <main className="flex-1 overflow-auto p-3 sm:p-4 md:p-6 relative z-0">
+            <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
               <NestedRouter base="/central">
                 <Switch>
                 {/* Rota Principal do Dashboard (path="/") */}
                 <Route path="/">
                   <>
-                    {/* Grid de KPIs principais */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                      <StatCard title="Total Pedidos" value={totalOrders} icon={Package} />
-                      <StatCard title="Em Andamento" value={inProgress} icon={TruckIcon} />
-                      <StatCard title="Concluídos" value={delivered} icon={CheckCircle} />
-                      <StatCard title="Entregadores Ativos" value={activeDrivers} icon={Users} />
+                    {/* LAYOUT REORGANIZADO: 2 colunas - Mapa grande à esquerda, Schedules à direita */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-4 sm:mb-6 relative">
+                      {/* COLUNA 1: Mapa de Entregas (2/3 da largura) - PRIORIDADE MÁXIMA */}
+                      <div className="lg:col-span-2 relative z-0 order-2 lg:order-1">
+                        <DeliveryMap 
+                          clients={clients}
+                          orders={orders}
+                          motoboys={motoboys}
+                        />
+                      </div>
+
+                      {/* COLUNA 2: Schedules e Status (1/3 da largura) */}
+                      <div className="space-y-4 order-1 lg:order-2">
+                        {/* KPIs Compactos */}
+                        <Card className="p-3 sm:p-4">
+                          <h3 className="text-xs sm:text-sm font-semibold mb-2 sm:mb-3">Status Rápido</h3>
+                          <div className="space-y-1.5 sm:space-y-2">
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs text-muted-foreground">Pedidos Hoje</span>
+                              <span className="font-bold text-sm sm:text-base">{totalOrders}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs text-muted-foreground">Em Rota</span>
+                              <span className="font-bold text-sm sm:text-base text-amber-600">{inProgress}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs text-muted-foreground">Entregues</span>
+                              <span className="font-bold text-sm sm:text-base text-green-600">{delivered}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs text-muted-foreground">Motoboys Ativos</span>
+                              <span className="font-bold text-sm sm:text-base text-blue-600">{activeDrivers}</span>
+                            </div>
+                          </div>
+                        </Card>
+
+                        {/* Schedules dos Clientes */}
+                        <Card className="p-3 sm:p-4">
+                          <h3 className="text-xs sm:text-sm font-semibold mb-2 sm:mb-3">📍 Clientes - Horários</h3>
+                          <div className="space-y-2 max-h-[200px] sm:max-h-[240px] overflow-y-auto">
+                            {clients.slice(0, 8).map((client) => {
+                              const schedule = allClientSchedules.find(s => s.clientId === client.id);
+                              return (
+                                <div key={client.id} className="flex items-center justify-between py-1 border-b last:border-b-0">
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-xs font-medium truncate">{client.name}</p>
+                                    {schedule && (
+                                      <p className="text-[10px] text-muted-foreground">
+                                        {schedule.horaAbertura} - {schedule.horaFechamento}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <ClientStatusBadge clientId={client.id} schedules={allClientSchedules} />
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </Card>
+
+                        {/* Schedules dos Motoboys */}
+                        <Card className="p-4">
+                          <h3 className="text-sm font-semibold mb-3">🏍️ Motoboys - Disponibilidade</h3>
+                          <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                            {motoboys.slice(0, 6).map((motoboy) => {
+                              const schedule = allMotoboySchedules.find(s => s.motoboyId === motoboy.id);
+                              return (
+                                <div key={motoboy.id} className="flex items-center justify-between py-1 border-b last:border-b-0">
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-xs font-medium truncate">{motoboy.name}</p>
+                                    {schedule && (
+                                      <p className="text-[10px] text-muted-foreground">
+                                        {schedule.horaInicio} - {schedule.horaFim}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <DriverAvailabilityBadge motoboyId={motoboy.id} />
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </Card>
+                      </div>
                     </div>
 
-                    {/* Chat Widget Integrado */}
+                    {/* Atividade Recente - Compacta */}
+                    <Card className="p-4 mb-6">
+                      <h3 className="text-sm font-semibold mb-3">⚡ Últimos Pedidos</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {orders.slice(0, 6).map((order) => (
+                          <div key={order.id} className="p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-xs font-semibold">
+                                {order.status === 'pending' && '🆕'}
+                                {order.status === 'in_progress' && '🚚'}
+                                {order.status === 'delivered' && '✅'}
+                                {' '}{order.clientName}
+                              </span>
+                              <span className="text-[10px] text-muted-foreground">
+                                {new Date(order.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </div>
+                            <p className="text-[10px] text-muted-foreground mb-1">
+                              → {order.entregaBairro}
+                            </p>
+                            <p className="text-xs font-bold text-green-600">
+                              R$ {((order.valor ? Number(order.valor) : 0) + (order.produtoValorTotal ? Number(order.produtoValorTotal) : 0)).toFixed(2)}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </Card>
+
+                    {/* Chat Widget - Funcional e Organizado */}
                     {user && (
-                      <Card className="p-4">
-                        <ChatWidget
-                          currentUserId={user.id}
-                          currentUserName={user.name}
-                          currentUserRole={user.role as 'client' | 'motoboy' | 'central'}
-                        />
+                      <Card className="p-6 mb-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-lg font-semibold">💬 Central de Comunicação</h3>
+                          <Badge variant="outline" className="text-xs">
+                            Tempo Real
+                          </Badge>
+                        </div>
+                        <div className="h-[600px] border rounded-lg overflow-hidden bg-muted/20">
+                          <ChatWidget
+                            currentUserId={user.id}
+                            currentUserName={user.name}
+                            currentUserRole={user.role as 'client' | 'motoboy' | 'central'}
+                            embedded={true}
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-3">
+                          💡 Gerencie conversas com clientes e motoboys em tempo real. 
+                          Clique nas threads para ver o histórico completo de cada conversa.
+                        </p>
                       </Card>
                     )}
 
-                    {/* Insights Operacionais - Planejamento de Frota */}
+                    {/* Insights Operacionais - Mantido mas mais compacto */}
                     <OperationalInsights 
                       clientSchedules={allClientSchedules}
                       motoboySchedules={allMotoboySchedules}
                       activeMotoboys={motoboys.length}
                     />
-
-                    {/* Barra de busca de pedidos */}
-                    <div className="flex items-center justify-between gap-4 flex-wrap">
-                      <h2 className="text-lg font-semibold">Pedidos Recentes</h2>
-                      <div className="flex gap-2 flex-1 max-w-md">
-                        <Input
-                          placeholder="Buscar por endereço, cliente..."
-                          className="flex-1"
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          data-testid="input-search-orders"
-                        />
-                        {searchQuery && (
-                          <Button 
-                            variant="outline" 
-                            onClick={() => setSearchQuery('')}
-                            data-testid="button-clear-search"
-                          >
-                            Limpar
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Cards resumidos dos pedidos mais recentes */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {orders.filter(order => {
-                        if (!searchQuery.trim()) return true;
-                        const query = searchQuery.toLowerCase();
-                        return (
-                          order.coletaRua?.toLowerCase().includes(query) ||
-                          order.coletaBairro?.toLowerCase().includes(query) ||
-                          order.entregaRua?.toLowerCase().includes(query) ||
-                          order.entregaBairro?.toLowerCase().includes(query) ||
-                          order.clientId?.toString().includes(query) ||
-                          order.id?.toString().includes(query)
-                        );
-                      }).slice(0, 6).map((order) => (
-                        <OrderCard
-                          key={order.id}
-                          id={order.id}
-                          origin={`${order.coletaRua}, ${order.coletaNumero} - ${order.coletaBairro}`}
-                          destination={`${order.entregaRua}, ${order.entregaNumero} - ${order.entregaBairro}`}
-                          status={order.status as OrderStatus}
-                          value={order.valor}
-                          driverName={order.motoboyName || undefined}
-                          onView={() => console.log('View order:', order.id)}
-                          formaPagamento={order.formaPagamento}
-                          hasTroco={order.hasTroco || false}
-                          trocoValor={order.trocoValor || undefined}
-                          complemento={order.coletaComplemento || undefined}
-                          referencia={order.referencia || undefined}
-                          observacoes={order.observacoes || undefined}
-                          produtoNome={order.produtoNome || undefined}
-                          produtoQuantidade={order.produtoQuantidade || undefined}
-                          produtoPrecoUnitario={order.produtoPrecoUnitario || undefined}
-                          produtoValorTotal={order.produtoValorTotal || undefined}
-                        />
-                      ))}
-                    </div>
-
-                    {/* Placeholder amigável quando não há pedidos */}
-                    {orders.length === 0 && (
-                      <Card className="p-12 text-center">
-                        <Package className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-                        <p className="text-muted-foreground">Nenhum pedido cadastrado</p>
-                      </Card>
-                    )}
-
-                    {/* Linha do tempo simples mostrando últimos eventos */}
-                    <Card className="p-6">
-                      <h3 className="text-lg font-semibold mb-4">Atividade Recente</h3>
-                      <div className="space-y-3">
-                        {orders.slice(0, 5).map((order, idx) => (
-                          <div key={order.id} className="flex items-center justify-between py-2 border-b last:border-b-0">
-                            <div className="flex-1">
-                              <p className="text-sm font-medium">
-                                {order.status === 'pending' && '🆕 Novo pedido criado'}
-                                {order.status === 'in_progress' && '🚚 Em andamento'}
-                                {order.status === 'delivered' && '✅ Entrega concluída'}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {order.clientName} → {order.entregaBairro}, {order.entregaRua}
-                              </p>
-                              <p className="text-xs font-semibold text-green-600">
-                                R$ {((order.valor ? Number(order.valor) : 0) + (order.produtoValorTotal ? Number(order.produtoValorTotal) : 0)).toFixed(2)}
-                              </p>
-                            </div>
-                            <span className="text-xs text-muted-foreground whitespace-nowrap ml-4">
-                              {new Date(order.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </Card>
                   </>
                 </Route>
 
@@ -482,124 +545,183 @@ export default function CentralDashboard() {
                 <Route path="/orders">
                   <>
                     <div className="flex items-center justify-between mb-6">
-                      <h2 className="text-2xl font-bold">Gestão de Pedidos</h2>
-                      <Button>
-                        <Package className="w-4 h-4 mr-2" />
-                        Novo Pedido
-                      </Button>
+                      <h2 className="text-2xl font-bold">📦 Gestão de Pedidos</h2>
                     </div>
 
-                    {/* Filters */}
+                    {/* Filtros Simplificados e Práticos */}
                     <Card className="p-4 mb-6">
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <Input placeholder="Buscar por ID ou cliente..." />
-                        <select 
-                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                          aria-label="Filtrar por status"
-                        >
-                          <option value="">Todos os status</option>
-                          <option value="pending">Pendente</option>
-                          <option value="in_progress">Em Andamento</option>
-                          <option value="delivered">Entregue</option>
-                        </select>
-                        <select 
-                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                          aria-label="Filtrar por motoboy"
-                        >
-                          <option value="">Todos os motoboys</option>
-                          {motoboys.map(m => (
-                            <option key={m.id} value={m.id}>{m.name}</option>
-                          ))}
-                        </select>
-                        <Button variant="outline">Limpar Filtros</Button>
+                      <h3 className="text-sm font-semibold mb-3">🔍 Filtros</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+                        {/* Filtro por Data */}
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block">Data</label>
+                          <Input 
+                            type="date" 
+                            className="text-sm dark:text-foreground dark:bg-background dark:[color-scheme:dark]"
+                            value={orderDateFilter}
+                            onChange={(e) => setOrderDateFilter(e.target.value)}
+                          />
+                        </div>
+
+                        {/* Filtro por Cliente */}
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block">Cliente</label>
+                          <Select value={orderClientFilter} onValueChange={setOrderClientFilter}>
+                            <SelectTrigger className="text-sm">
+                              <SelectValue placeholder="Todos" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">Todos os clientes</SelectItem>
+                              {clients.map(c => (
+                                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Filtro por Motoboy */}
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block">Motoboy</label>
+                          <Select value={orderMotoboyFilter} onValueChange={setOrderMotoboyFilter}>
+                            <SelectTrigger className="text-sm">
+                              <SelectValue placeholder="Todos" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">Todos os motoboys</SelectItem>
+                              {motoboys.map(m => (
+                                <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Filtro por Status */}
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block">Status</label>
+                          <Select value={orderStatusFilter} onValueChange={setOrderStatusFilter}>
+                            <SelectTrigger className="text-sm">
+                              <SelectValue placeholder="Todos" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">Todos</SelectItem>
+                              <SelectItem value="pending">Pendente</SelectItem>
+                              <SelectItem value="in_progress">Em Andamento</SelectItem>
+                              <SelectItem value="delivered">Entregue</SelectItem>
+                              <SelectItem value="cancelled">Cancelado</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Busca por texto */}
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block">Buscar</label>
+                          <Input 
+                            placeholder="Nome, bairro..."
+                            className="text-sm"
+                            value={orderSearchFilter}
+                            onChange={(e) => setOrderSearchFilter(e.target.value)}
+                          />
+                        </div>
                       </div>
                     </Card>
 
-                    {/* Orders Table */}
-                    <Card>
+                    {/* Tabela de Pedidos */}
+                    <Card className="p-4">
                       <div className="overflow-x-auto">
                         <table className="w-full">
                           <thead className="border-b">
-                            <tr>
-                              <th className="text-left p-4 font-semibold">ID</th>
-                              <th className="text-left p-4 font-semibold">Cliente</th>
-                              <th className="text-left p-4 font-semibold">Origem</th>
-                              <th className="text-left p-4 font-semibold">Destino</th>
-                              <th className="text-left p-4 font-semibold">Motoboy</th>
-                              <th className="text-left p-4 font-semibold">Valor</th>
-                              <th className="text-left p-4 font-semibold">Status</th>
-                              <th className="text-left p-4 font-semibold">Comprovante</th>
-                              <th className="text-left p-4 font-semibold">Data</th>
-                              <th className="text-left p-4 font-semibold">Ações</th>
+                            <tr className="text-left">
+                              <th className="p-3 text-xs font-semibold">Horário</th>
+                              <th className="p-3 text-xs font-semibold">Cliente</th>
+                              <th className="p-3 text-xs font-semibold">Motoboy</th>
+                              <th className="p-3 text-xs font-semibold">Origem</th>
+                              <th className="p-3 text-xs font-semibold">Destino</th>
+                              <th className="p-3 text-xs font-semibold text-right">Valor</th>
+                              <th className="p-3 text-xs font-semibold">Status</th>
+                              <th className="p-3 text-xs font-semibold">Ações</th>
                             </tr>
                           </thead>
                           <tbody>
-                            {orders.map(order => (
+                            {orders.filter(order => {
+                              // Filtro de status
+                              if (orderStatusFilter !== 'all' && order.status !== orderStatusFilter) return false;
+                              // Filtro de cliente
+                              if (orderClientFilter !== 'all' && order.clientId !== orderClientFilter) return false;
+                              // Filtro de motoboy
+                              if (orderMotoboyFilter !== 'all' && order.motoboyId !== orderMotoboyFilter) return false;
+                              // Filtro de data
+                              if (orderDateFilter) {
+                                const orderDate = new Date(order.createdAt).toISOString().split('T')[0];
+                                if (orderDate !== orderDateFilter) return false;
+                              }
+                              // Filtro de busca textual
+                              if (orderSearchFilter) {
+                                const search = orderSearchFilter.toLowerCase();
+                                const matchesClient = order.clientName?.toLowerCase().includes(search);
+                                const matchesMotoboy = order.motoboyName?.toLowerCase().includes(search);
+                                const matchesOrigin = order.coletaBairro?.toLowerCase().includes(search);
+                                const matchesDest = order.entregaBairro?.toLowerCase().includes(search);
+                                if (!matchesClient && !matchesMotoboy && !matchesOrigin && !matchesDest) return false;
+                              }
+                              return true;
+                            }).map((order) => (
                               <tr key={order.id} className="border-b hover:bg-muted/50">
-                                <td className="p-4 font-mono text-sm">#{order.id.slice(0, 8)}</td>
-                                <td className="p-4">{order.clientName}</td>
-                                <td className="p-4 text-sm">{order.coletaBairro}</td>
-                                <td className="p-4 text-sm">{order.entregaBairro}</td>
-                                <td className="p-4">{order.motoboyName || '-'}</td>
-                                <td className="p-4">R$ {parseFloat(order.valor).toFixed(2)}</td>
-                                <td className="p-4">
-                                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                <td className="p-3 text-xs whitespace-nowrap">
+                                  {new Date(order.createdAt).toLocaleString('pt-BR', { 
+                                    day: '2-digit', 
+                                    month: '2-digit',
+                                    hour: '2-digit', 
+                                    minute: '2-digit' 
+                                  })}
+                                </td>
+                                <td className="p-3 text-xs font-medium">{order.clientName}</td>
+                                <td className="p-3 text-xs">{order.motoboyName || '-'}</td>
+                                <td className="p-3 text-xs">{order.coletaBairro}</td>
+                                <td className="p-3 text-xs">{order.entregaBairro}</td>
+                                <td className="p-3 text-xs text-right font-semibold">
+                                  R$ {((order.valor ? Number(order.valor) : 0) + (order.produtoValorTotal ? Number(order.produtoValorTotal) : 0)).toFixed(2)}
+                                </td>
+                                <td className="p-3">
+                                  <span className={`text-[10px] px-2 py-1 rounded-full ${
                                     order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                                     order.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
                                     order.status === 'delivered' ? 'bg-green-100 text-green-800' :
                                     'bg-gray-100 text-gray-800'
                                   }`}>
                                     {order.status === 'pending' && 'Pendente'}
-                                    {order.status === 'in_progress' && 'Em Andamento'}
+                                    {order.status === 'in_progress' && 'Em Rota'}
                                     {order.status === 'delivered' && 'Entregue'}
                                     {order.status === 'cancelled' && 'Cancelado'}
                                   </span>
                                 </td>
-                                <td className="p-4">
-                                  {order.proofUrl ? (
-                                    <a href={order.proofUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-500 hover:underline">
-                                      Ver <ExternalLink className="w-3 h-3" />
-                                    </a>
-                                  ) : (
-                                    <span className="text-muted-foreground text-sm">-</span>
-                                  )}
-                                </td>
-                                <td className="p-4 text-sm">
-                                  {new Date(order.createdAt).toLocaleDateString('pt-BR')}
-                                </td>
-                                <td className="p-4">
-                                  <div className="flex gap-2">
+                                <td className="p-3">
+                                  <div className="flex gap-1">
                                     {order.status !== 'delivered' && order.status !== 'cancelled' && (
                                       <>
                                         <Button 
                                           size="sm" 
                                           variant="outline"
+                                          className="text-xs h-7 px-2"
                                           onClick={() => {
                                             setSelectedOrderForReassign(order.id);
                                             setReassignDialogOpen(true);
                                           }}
-                                          disabled={reassignOrderMutation.isPending}
                                         >
-                                          <RefreshCw className="w-3 h-3 mr-1" />
                                           Reatribuir
                                         </Button>
                                         <Button 
                                           size="sm" 
                                           variant="destructive"
+                                          className="text-xs h-7 px-2"
                                           onClick={() => {
-                                            if (confirm('Tem certeza que deseja cancelar este pedido?')) {
+                                            if (confirm('Cancelar pedido?')) {
                                               cancelOrderMutation.mutate(order.id);
                                             }
                                           }}
-                                          disabled={cancelOrderMutation.isPending}
                                         >
-                                          <XCircle className="w-3 h-3 mr-1" />
                                           Cancelar
                                         </Button>
                                       </>
-                                    )}
-                                    {(order.status === 'delivered' || order.status === 'cancelled') && (
-                                      <span className="text-muted-foreground text-sm">-</span>
                                     )}
                                   </div>
                                 </td>
@@ -673,10 +795,15 @@ export default function CentralDashboard() {
                   <>
                     <div className="flex items-center justify-between mb-6">
                       <h2 className="text-2xl font-bold">Gestão de Clientes</h2>
-                      <Button>
-                        <Users className="w-4 h-4 mr-2" />
-                        Novo Cliente
-                      </Button>
+                      <div className="flex gap-2 items-center">
+                        <Badge variant="outline" className="text-xs">
+                          {allClientSchedules.length} horários carregados
+                        </Badge>
+                        <Button>
+                          <Users className="w-4 h-4 mr-2" />
+                          Novo Cliente
+                        </Button>
+                      </div>
                     </div>
 
                     {/* Search */}
@@ -708,9 +835,9 @@ export default function CentralDashboard() {
                               </tr>
                             ) : (
                               clients.map(client => {
-                                // Filtra schedules deste cliente (usa clientId do banco)
+                                // Filtra schedules deste cliente - garantir comparação de strings
                                 const clientSchedules = allClientSchedules.filter(s => 
-                                  s.clientId === client.id || s.clientId === String(client.id)
+                                  String(s.clientId) === String(client.id)
                                 );
                                 
                                 return (
@@ -719,7 +846,16 @@ export default function CentralDashboard() {
                                     <td className="p-4">{client.phone}</td>
                                     <td className="p-4">{client.email}</td>
                                     <td className="p-4">
-                                      <ClientStatusBadge clientId={client.id} schedules={clientSchedules} />
+                                      <button
+                                        title="Ver horários do cliente"
+                                        onClick={() => {
+                                          setSelectedClientForSchedule({ id: client.id, name: client.name });
+                                          setClientScheduleDialogOpen(true);
+                                        }}
+                                        className="cursor-pointer hover:opacity-80 transition-opacity"
+                                      >
+                                        <ClientStatusBadge clientId={client.id} schedules={clientSchedules} />
+                                      </button>
                                     </td>
                                     <td className="p-4">
                                       {orders.filter(o => o.clientId === client.id).length}
@@ -861,31 +997,58 @@ export default function CentralDashboard() {
 
                     {/* Filtro de Data */}
                     <Card className="p-6 mb-6">
-                      <h3 className="text-lg font-semibold mb-4">📅 Selecionar Período</h3>
+                      <h3 className="text-lg font-semibold mb-4">📅 Selecionar Período e Filtros</h3>
                       <div className="flex gap-4 items-end flex-wrap">
                         <div className="flex-1 min-w-[200px]">
                           <label className="block text-sm font-medium mb-2">Data Inicial</label>
                           <Input 
                             type="date" 
-                            defaultValue={new Date().toISOString().split('T')[0]}
-                            id="start-date"
+                            className="dark:text-foreground dark:bg-background dark:[color-scheme:dark]"
+                            value={finStartDate}
+                            onChange={(e) => setFinStartDate(e.target.value)}
                           />
                         </div>
                         <div className="flex-1 min-w-[200px]">
                           <label className="block text-sm font-medium mb-2">Data Final</label>
                           <Input 
                             type="date" 
-                            defaultValue={new Date().toISOString().split('T')[0]}
-                            id="end-date"
+                            className="dark:text-foreground dark:bg-background dark:[color-scheme:dark]"
+                            value={finEndDate}
+                            onChange={(e) => setFinEndDate(e.target.value)}
                           />
                         </div>
-                        <Button className="bg-green-600 hover:bg-green-700">
-                          🔍 Filtrar
-                        </Button>
+                        <div className="flex-1 min-w-[200px]">
+                          <label className="block text-sm font-medium mb-2">Motoboy</label>
+                          <Select value={finMotoboyFilter} onValueChange={setFinMotoboyFilter}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Todos" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">Todos os motoboys</SelectItem>
+                              {motoboys.map(m => (
+                                <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="flex-1 min-w-[200px]">
+                          <label className="block text-sm font-medium mb-2">Cliente</label>
+                          <Select value={finClientFilter} onValueChange={setFinClientFilter}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Todos" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">Todos os clientes</SelectItem>
+                              {clients.map(c => (
+                                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
                         <Button variant="outline" onClick={() => {
                           const today = new Date().toISOString().split('T')[0];
-                          (document.getElementById('start-date') as HTMLInputElement).value = today;
-                          (document.getElementById('end-date') as HTMLInputElement).value = today;
+                          setFinStartDate(today);
+                          setFinEndDate(today);
                         }}>
                           Hoje
                         </Button>
@@ -893,8 +1056,8 @@ export default function CentralDashboard() {
                           const yesterday = new Date();
                           yesterday.setDate(yesterday.getDate() - 1);
                           const yesterdayStr = yesterday.toISOString().split('T')[0];
-                          (document.getElementById('start-date') as HTMLInputElement).value = yesterdayStr;
-                          (document.getElementById('end-date') as HTMLInputElement).value = yesterdayStr;
+                          setFinStartDate(yesterdayStr);
+                          setFinEndDate(yesterdayStr);
                         }}>
                           Ontem
                         </Button>
@@ -904,7 +1067,23 @@ export default function CentralDashboard() {
                     {/* Resumo Geral do Período */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                       {(() => {
-                        const deliveredOrders = orders.filter(o => o.status === 'delivered');
+                        // Aplicar filtros
+                        const deliveredOrders = orders.filter(o => {
+                          if (o.status !== 'delivered') return false;
+                          
+                          // Filtro de data
+                          const orderDate = new Date(o.deliveredAt || o.createdAt).toISOString().split('T')[0];
+                          if (orderDate < finStartDate || orderDate > finEndDate) return false;
+                          
+                          // Filtro de motoboy
+                          if (finMotoboyFilter !== 'all' && o.motoboyId !== finMotoboyFilter) return false;
+                          
+                          // Filtro de cliente
+                          if (finClientFilter !== 'all' && o.clientId !== finClientFilter) return false;
+                          
+                          return true;
+                        });
+                        
                         // IMPORTANTE: order.valor é o FRETE (7, 8, 10 ou 15 reais) - é o que GuiriExpress recebe
                         const totalFrete = deliveredOrders.reduce((sum, o) => sum + Number(o.valor || 0), 0);
                         const totalProduto = deliveredOrders.reduce((sum, o) => sum + Number(o.produtoValorTotal || 0), 0);
@@ -973,9 +1152,23 @@ export default function CentralDashboard() {
                           </thead>
                           <tbody>
                             {(() => {
-                              // Agrupa pedidos por motoboy
+                              // Agrupa pedidos por motoboy com filtros aplicados
                               const motoboyOrders = orders
-                                .filter(o => o.status === 'delivered' && o.motoboyId)
+                                .filter(o => {
+                                  if (o.status !== 'delivered' || !o.motoboyId) return false;
+                                  
+                                  // Filtro de data
+                                  const orderDate = new Date(o.deliveredAt || o.createdAt).toISOString().split('T')[0];
+                                  if (orderDate < finStartDate || orderDate > finEndDate) return false;
+                                  
+                                  // Filtro de motoboy
+                                  if (finMotoboyFilter !== 'all' && o.motoboyId !== finMotoboyFilter) return false;
+                                  
+                                  // Filtro de cliente
+                                  if (finClientFilter !== 'all' && o.clientId !== finClientFilter) return false;
+                                  
+                                  return true;
+                                })
                                 .reduce((acc, order) => {
                                   const key = order.motoboyId!;
                                   if (!acc[key]) {
@@ -1044,9 +1237,23 @@ export default function CentralDashboard() {
                           </thead>
                           <tbody>
                             {(() => {
-                              // Agrupa pedidos por cliente
+                              // Agrupa pedidos por cliente com filtros aplicados
                               const clientOrders = orders
-                                .filter(o => o.status === 'delivered' && o.clientId)
+                                .filter(o => {
+                                  if (o.status !== 'delivered' || !o.clientId) return false;
+                                  
+                                  // Filtro de data
+                                  const orderDate = new Date(o.deliveredAt || o.createdAt).toISOString().split('T')[0];
+                                  if (orderDate < finStartDate || orderDate > finEndDate) return false;
+                                  
+                                  // Filtro de motoboy
+                                  if (finMotoboyFilter !== 'all' && o.motoboyId !== finMotoboyFilter) return false;
+                                  
+                                  // Filtro de cliente
+                                  if (finClientFilter !== 'all' && o.clientId !== finClientFilter) return false;
+                                  
+                                  return true;
+                                })
                                 .reduce((acc, order) => {
                                   const key = order.clientId;
                                   if (!acc[key]) {
@@ -1157,118 +1364,6 @@ export default function CentralDashboard() {
                 </Route>
 
                 {/* Sub-rota de Relatórios (path="/reports") */}
-                <Route path="/reports">
-                  <>
-                    <h2 className="text-2xl font-bold mb-6">Relatórios e Análises</h2>
-
-                    {/* KPIs - Dados em tempo real via analytics */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                      <Card 
-                        className="p-4 cursor-pointer hover:bg-muted/50 transition-colors" 
-                        onClick={() => setFinancialDetailsOpen(true)}
-                      >
-                        <p className="text-sm text-muted-foreground">Receita Hoje 💰</p>
-                        <p className="text-3xl font-bold mt-2">
-                          R$ {(analyticsData?.todayRevenue ?? 0).toFixed(2)}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Lucro Guriri: R$ {(analyticsData?.todayProfit ?? 0).toFixed(2)}
-                        </p>
-                        <p className="text-xs text-blue-600 mt-2">📊 Clique para detalhes</p>
-                      </Card>
-                      <Card className="p-4">
-                        <p className="text-sm text-muted-foreground">Receita do Mês</p>
-                        <p className="text-3xl font-bold mt-2 text-green-600">
-                          R$ {(analyticsData?.monthToDateRevenue ?? 0).toFixed(2)}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Lucro Guriri: R$ {(analyticsData?.monthToDateProfit ?? 0).toFixed(2)}
-                        </p>
-                      </Card>
-                      <Card 
-                        className="p-4 cursor-pointer hover:bg-muted/50 transition-colors"
-                        onClick={() => setFinancialDetailsOpen(true)}
-                      >
-                        <p className="text-sm text-muted-foreground">Valor Pendente ⏳</p>
-                        <p className="text-3xl font-bold mt-2 text-amber-600">
-                          R$ {(analyticsData?.pendingOrdersValue ?? 0).toFixed(2)}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {analyticsData?.pendingOrdersCount ?? 0} pedidos em andamento
-                        </p>
-                        <p className="text-xs text-blue-600 mt-2">📊 Clique para detalhes</p>
-                      </Card>
-                      <Card className="p-4">
-                        <p className="text-sm text-muted-foreground">MRR (Mensalidades)</p>
-                        <p className="text-3xl font-bold mt-2 text-blue-600">
-                          R$ {(analyticsData?.mrr ?? 0).toFixed(2)}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Receita recorrente mensal
-                        </p>
-                      </Card>
-                    </div>
-
-                    {/* Performance por Motoboy */}
-                    <Card className="p-6 mb-6">
-                      <h3 className="text-lg font-semibold mb-4">Performance dos Motoboys</h3>
-                      <div className="space-y-4">
-                        {motoboys.map(motoboy => {
-                          const motoboyOrders = orders.filter(o => o.motoboyId === motoboy.id);
-                          const delivered = motoboyOrders.filter(o => o.status === 'delivered').length;
-                          const inProgress = motoboyOrders.filter(o => o.status === 'in_progress').length;
-                          
-                          return (
-                            <div key={motoboy.id} className="flex items-center justify-between p-4 border rounded-lg">
-                              <div>
-                                <p className="font-medium">{motoboy.name}</p>
-                                <p className="text-sm text-muted-foreground">
-                                  {motoboyOrders.length} pedidos no total
-                                </p>
-                              </div>
-                              <div className="flex gap-6 text-sm">
-                                <div>
-                                  <span className="text-muted-foreground">Entregues:</span>{' '}
-                                  <span className="font-semibold text-green-600">{delivered}</span>
-                                </div>
-                                <div>
-                                  <span className="text-muted-foreground">Em andamento:</span>{' '}
-                                  <span className="font-semibold text-blue-600">{inProgress}</span>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </Card>
-
-                    {/* Pedidos por Status */}
-                    <Card className="p-6">
-                      <h3 className="text-lg font-semibold mb-4">Distribuição por Status</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="p-4 bg-yellow-50 dark:bg-yellow-950 rounded-lg">
-                          <p className="text-sm text-yellow-800 dark:text-yellow-200">Pendentes</p>
-                          <p className="text-2xl font-bold text-yellow-900 dark:text-yellow-100 mt-2">
-                            {orders.filter(o => o.status === 'pending').length}
-                          </p>
-                        </div>
-                        <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg">
-                          <p className="text-sm text-blue-800 dark:text-blue-200">Em Andamento</p>
-                          <p className="text-2xl font-bold text-blue-900 dark:text-blue-100 mt-2">
-                            {orders.filter(o => o.status === 'in_progress').length}
-                          </p>
-                        </div>
-                        <div className="p-4 bg-green-50 dark:bg-green-950 rounded-lg">
-                          <p className="text-sm text-green-800 dark:text-green-200">Entregues</p>
-                          <p className="text-2xl font-bold text-green-900 dark:text-green-100 mt-2">
-                            {orders.filter(o => o.status === 'delivered').length}
-                          </p>
-                        </div>
-                      </div>
-                    </Card>
-                  </>
-                </Route>
-
                 {/* Sub-rota de Usuários (path="/users") - STEP 4 */}
                 <Route path="/users">
                   <>
@@ -1434,6 +1529,7 @@ export default function CentralDashboard() {
             <ClientScheduleViewer 
               clientId={selectedClientForSchedule.id} 
               clientName={selectedClientForSchedule.name}
+              schedules={allClientSchedules.filter(s => String(s.clientId) === String(selectedClientForSchedule.id))}
             />
           )}
           <DialogFooter>

@@ -12,9 +12,27 @@ server/dist # Adicionado: Garante que os arquivos JS compilados do backend sejam
 .env.production
 !.env.example
 
+# Uploads (arquivos enviados pelos usuários)
+uploads/
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.pdf
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+/var/log/pm2/
+
 # Arquivos temporários e do sistema
 .DS_Store
 *.tar.gz
+.vscode/
+.idea/
 
 # Configuração do Vite/TypeScript
 vite.config.ts.*

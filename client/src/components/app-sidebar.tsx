@@ -31,7 +31,6 @@ const menuItems = {
     { title: "Entregadores", url: "/central/drivers", icon: TruckIcon },
     { title: "Usuários", url: "/central/users", icon: UserCog },
     { title: "Live Docs", url: "/central/live-docs", icon: FileText },
-    { title: "Relatórios", url: "/central/reports", icon: BarChart3 },
     { title: "Configurações", url: "/central/settings", icon: Settings },
   ],
   client: [

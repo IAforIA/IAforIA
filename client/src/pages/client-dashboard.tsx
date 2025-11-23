@@ -142,7 +142,7 @@ type OrderFormData = z.infer<typeof orderSchema>;
 const DashboardContent = ({ clientOrders, totalOrders, pending, delivered, cancelled }: any) => (
   <>
     {/* Indicadores principais (StatCard) */}
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
       <StatCard title="Total Pedidos" value={totalOrders} icon={Package} />
       <StatCard title="Aguardando" value={pending} icon={Clock} />
       <StatCard title="Concluídos" value={delivered} icon={CheckCircle} />
@@ -150,7 +150,7 @@ const DashboardContent = ({ clientOrders, totalOrders, pending, delivered, cance
     </div>
 
     {/* Cards de pedidos mais recentes do cliente */}
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
       {clientOrders.slice(0, 9).map((order: Order) => (
         <OrderCard
           key={order.id}
@@ -198,11 +198,21 @@ export default function ClientDashboard() {
     queryKey: ['/api/orders'],
   });
 
-  const { data: profile, isPending: isProfileLoading } = useQuery<ClientProfileDto>({
+  const { data: profile, isPending: isProfileLoading, error: profileError } = useQuery<ClientProfileDto>({
     queryKey: ['/api/me/profile'],
     enabled: Boolean(user?.id),
     retry: false,
   });
+
+  // Log profile loading state for debugging
+  useEffect(() => {
+    if (profileError) {
+      console.error('❌ Erro ao carregar perfil:', profileError);
+    }
+    if (profile) {
+      console.log('✅ Perfil carregado:', profile);
+    }
+  }, [profile, profileError]);
 
   // QUERY: Busca horário de funcionamento do cliente
   interface ClientScheduleEntry {
@@ -342,6 +352,14 @@ export default function ClientDashboard() {
         trocoValor: undefined,
       });
     },
+    onError: (error: any) => {
+      console.error('💥 Erro ao criar pedido:', error);
+      toast({
+        title: "Erro ao criar pedido",
+        description: error.message || "Ocorreu um erro ao processar seu pedido. Tente novamente.",
+        variant: "destructive",
+      });
+    },
   });
 
   // FORM: React Hook Form + Zod, com defaults amigáveis
@@ -456,14 +474,14 @@ export default function ClientDashboard() {
 
   return (
     <SidebarProvider style={style as React.CSSProperties}>
-      <div className="flex h-screen w-full">
+      <div className="flex h-screen w-full overflow-hidden">
         {/* Sidebar com navegação específica do cliente */}
         <AppSidebar role="client" />
         <div className="flex flex-col flex-1">
-          <header className="flex items-center justify-between p-4 border-b bg-background">
+          <header className="flex items-center justify-between p-3 sm:p-4 border-b bg-background sticky top-0 z-10">
             <div className="flex items-center gap-2">
-              <SidebarTrigger data-testid="button-sidebar-toggle" />
-              <h1 className="text-xl font-semibold" data-testid="text-page-title">Meus Pedidos</h1>
+              <SidebarTrigger data-testid="button-sidebar-toggle" className="lg:hidden" />
+              <h1 className="text-base sm:text-lg md:text-xl font-semibold" data-testid="text-page-title">Meus Pedidos</h1>
             </div>
             <div className="flex items-center gap-2">
               {/* Modal controlado para criação de pedidos */}
@@ -473,20 +491,40 @@ export default function ClientDashboard() {
                     data-testid="button-new-order"
                     disabled={isProfileLoading || !profile}
                     title={isProfileLoading ? "Carregando endereço fixo" : (!profile ? "Finalize seu cadastro para liberar pedidos" : undefined)}
+                    className="text-xs sm:text-sm md:text-base px-3 sm:px-4"
                   >
-                    Novo Pedido
+                    <span className="hidden sm:inline">Novo Pedido</span>
+                    <span className="sm:hidden">Novo</span>
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+                <DialogContent className="max-w-md sm:max-w-lg md:max-w-2xl lg:max-w-3xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto w-full sm:w-auto">
                   <DialogHeader>
-                    <DialogTitle>Criar Novo Pedido</DialogTitle>
+                    <DialogTitle className="text-lg sm:text-xl">Criar Novo Pedido</DialogTitle>
                   </DialogHeader>
                   {/* Form provider injeta RHF context para todos os FormField */}
                   {isProfileLoading && (
                     <p className="text-sm text-muted-foreground">Carregando endereço fixo cadastrado...</p>
                   )}
+                  {!isProfileLoading && !profile && (
+                    <div className="rounded-lg border border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20 p-4">
+                      <p className="text-sm text-yellow-800 dark:text-yellow-200 font-medium">⚠️ Perfil não encontrado</p>
+                      <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">
+                        Você precisa ativar o "Endereço manual" abaixo para criar pedidos sem perfil cadastrado.
+                      </p>
+                    </div>
+                  )}
                   <Form {...form}>
                     <form onSubmit={form.handleSubmit((data) => {
+                      // Check if profile is required
+                      if (!profile && !data.coletaOverride) {
+                        toast({
+                          title: "Perfil não encontrado",
+                          description: "Você precisa cadastrar seu endereço no perfil ou ativar o modo manual para criar pedidos.",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+                      
                       // Validate business hours before submission
                       const validation = validateBusinessHours();
                       if (!validation.valid) {
@@ -498,7 +536,18 @@ export default function ClientDashboard() {
                         return;
                       }
                       createOrderMutation.mutate(data);
-                    })} className="space-y-4">
+                    }, (errors) => {
+                      // Handle validation errors
+                      console.error('❌ Erros de validação:', errors);
+                      const firstError = Object.values(errors)[0];
+                      if (firstError) {
+                        toast({
+                          title: "Erro de validação",
+                          description: firstError.message || "Verifique os campos obrigatórios",
+                          variant: "destructive",
+                        });
+                      }
+                    })} className="space-y-3 sm:space-y-4">
                       <FormField
                         control={form.control}
                         name="coletaOverride"
@@ -911,7 +960,7 @@ export default function ClientDashboard() {
                       <Button
                         type="submit"
                         className="w-full"
-                        disabled={createOrderMutation.isPending || isProfileLoading || !profile}
+                        disabled={createOrderMutation.isPending || isProfileLoading}
                         data-testid="button-submit-order"
                       >
                         {createOrderMutation.isPending ? "Criando Pedido..." : "Criar Pedido"}
@@ -922,12 +971,15 @@ export default function ClientDashboard() {
               </Dialog>
               {/* Preferência de tema por usuário */}
               <ThemeToggle />
-              <Button variant="outline" onClick={logout} data-testid="button-logout">Sair</Button>
+              <Button variant="outline" onClick={logout} data-testid="button-logout" className="text-xs sm:text-sm px-2 sm:px-4">
+                <span className="hidden sm:inline">Sair</span>
+                <span className="sm:hidden">✕</span>
+              </Button>
             </div>
           </header>
 
-          <main className="flex-1 overflow-auto p-6">
-            <div className="max-w-7xl mx-auto space-y-6">
+          <main className="flex-1 overflow-auto p-3 sm:p-4 md:p-6">
+            <div className="max-w-7xl mx-auto space-y-4 sm:space-y-5 md:space-y-6">
               {/* NestedRouter limita escopo das rotas ao /client */}
               <NestedRouter base="/client">
                 <RouterSwitch>
@@ -951,38 +1003,40 @@ export default function ClientDashboard() {
                         <p>Nenhuma entrega finalizada ainda.</p>
                       </div>
                     ) : (
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Data</TableHead>
-                            <TableHead>Origem</TableHead>
-                            <TableHead>Destino</TableHead>
-                            <TableHead>Valor</TableHead>
-                            <TableHead>Motoboy</TableHead>
-                            <TableHead>Comprovante</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {deliveredOrders.map((order) => (
-                            <TableRow key={order.id}>
-                              <TableCell>{new Date(order.createdAt).toLocaleDateString()}</TableCell>
-                              <TableCell className="max-w-[200px] truncate" title={`${order.coletaRua}, ${order.coletaNumero}`}>{order.coletaRua}, {order.coletaNumero}</TableCell>
-                              <TableCell className="max-w-[200px] truncate" title={`${order.entregaRua}, ${order.entregaNumero}`}>{order.entregaRua}, {order.entregaNumero}</TableCell>
-                              <TableCell>R$ {Number(order.valor).toFixed(2)}</TableCell>
-                              <TableCell>{order.motoboyName || '-'}</TableCell>
-                              <TableCell>
-                                {order.proofUrl ? (
-                                  <a href={order.proofUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-500 hover:underline">
-                                    Ver <ExternalLink className="w-3 h-3" />
-                                  </a>
-                                ) : (
-                                  <span className="text-muted-foreground text-sm">Pendente</span>
-                                )}
-                              </TableCell>
+                      <div className="overflow-x-auto -mx-4 sm:mx-0">
+                        <Table className="min-w-[600px]">
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="whitespace-nowrap">Data</TableHead>
+                              <TableHead className="whitespace-nowrap">Origem</TableHead>
+                              <TableHead className="whitespace-nowrap">Destino</TableHead>
+                              <TableHead className="whitespace-nowrap">Valor</TableHead>
+                              <TableHead className="whitespace-nowrap">Motoboy</TableHead>
+                              <TableHead className="whitespace-nowrap">Comprovante</TableHead>
                             </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+                          </TableHeader>
+                          <TableBody>
+                            {deliveredOrders.map((order) => (
+                              <TableRow key={order.id}>
+                                <TableCell className="whitespace-nowrap">{new Date(order.createdAt).toLocaleDateString()}</TableCell>
+                                <TableCell className="max-w-[150px] sm:max-w-[200px] truncate" title={`${order.coletaRua}, ${order.coletaNumero}`}>{order.coletaRua}, {order.coletaNumero}</TableCell>
+                                <TableCell className="max-w-[150px] sm:max-w-[200px] truncate" title={`${order.entregaRua}, ${order.entregaNumero}`}>{order.entregaRua}, {order.entregaNumero}</TableCell>
+                                <TableCell className="whitespace-nowrap">R$ {Number(order.valor).toFixed(2)}</TableCell>
+                                <TableCell className="whitespace-nowrap">{order.motoboyName || '-'}</TableCell>
+                                <TableCell>
+                                  {order.proofUrl ? (
+                                    <a href={order.proofUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-500 hover:underline whitespace-nowrap">
+                                      Ver <ExternalLink className="w-3 h-3" />
+                                    </a>
+                                  ) : (
+                                    <span className="text-muted-foreground text-sm">Pendente</span>
+                                  )}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
                     )}
                   </Card>
                 </Route>
@@ -992,10 +1046,10 @@ export default function ClientDashboard() {
 
                 {/* Sub-rota de Horário de Funcionamento (path="/schedule") */}
                 <Route path="/schedule">
-                  <div className="space-y-6">
+                  <div className="space-y-4 sm:space-y-6">
                     <div>
-                      <h2 className="text-2xl font-bold mb-2">Horário de Funcionamento</h2>
-                      <p className="text-muted-foreground">Configure quando seu estabelecimento está aberto para receber pedidos</p>
+                      <h2 className="text-xl sm:text-2xl font-bold mb-2">Horário de Funcionamento</h2>
+                      <p className="text-sm sm:text-base text-muted-foreground">Configure quando seu estabelecimento está aberto para receber pedidos</p>
                     </div>
                     {user && (
                       <ClientScheduleEditor clientId={user.id} />

@@ -317,7 +317,7 @@ export default function DriverDashboard() {
                 value={order.valor}
                 // STEP 3: Pass payment & address info
                 formaPagamento={order.formaPagamento}
-                hasTroco={order.hasTroco}
+                hasTroco={order.hasTroco ?? undefined}
                 trocoValor={order.trocoValor}
                 complemento={order.coletaComplemento || undefined}
                 referencia={order.referencia || undefined}
@@ -364,7 +364,7 @@ export default function DriverDashboard() {
                 value={order.valor}
                 // STEP 3: Pass payment & address info
                 formaPagamento={order.formaPagamento}
-                hasTroco={order.hasTroco}
+                hasTroco={order.hasTroco ?? undefined}
                 trocoValor={order.trocoValor}
                 complemento={order.coletaComplemento || undefined}
                 referencia={order.referencia || undefined}

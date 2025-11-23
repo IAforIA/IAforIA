@@ -1,8 +1,8 @@
 import { neon } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-http';
-import { users } from '../shared/schema';
+import { users } from '../../shared/schema';
 import { eq } from 'drizzle-orm';
-import * as schema from '../shared/schema';
+import * as schema from '../../shared/schema';
 import 'dotenv/config';
 
 const db = drizzle(neon(process.env.DATABASE_URL!), { schema });

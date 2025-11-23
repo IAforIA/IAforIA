@@ -1049,11 +1049,10 @@ export async function registerRoutes() {
   router.get("/api/schedules/all-clients", authenticateToken, requireRole('central'), async (req, res) => {
     try {
       const allSchedules = await storage.getAllClientSchedules();
-      console.log('📅 GET /api/schedules/all-clients - Total schedules:', allSchedules.length);
-      console.log('📅 Sample schedule:', allSchedules[0]);
+      console.log('📅 GET /api/schedules/all-clients - Retornando', allSchedules.length, 'schedules');
       res.json(allSchedules);
     } catch (error) {
-      console.error("Error fetching all client schedules:", error);
+      console.error("❌ Error fetching all client schedules:", error);
       res.status(500).json({ error: "Erro ao buscar horários" });
     }
   });

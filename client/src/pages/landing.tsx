@@ -207,15 +207,15 @@ export default function Landing() {
 
         <div className="relative z-10 container mx-auto px-4 grid md:grid-cols-2 gap-12 items-center">
           <motion.div 
-            className="text-white"
+            className="text-white text-center md:text-left"
             initial={{ opacity: 0, x: -50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
           >
-            <h1 className="text-5xl md:text-6xl font-bold mb-6" data-testid="text-hero-title">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-4 sm:mb-6" data-testid="text-hero-title">
               Conectando Empresas e Entregadores
             </h1>
-            <p className="text-xl text-white/90 mb-6">
+            <p className="text-lg sm:text-xl text-white/90 mb-6">
               A plataforma B2B completa para gerenciar suas entregas com eficiência e transparência
             </p>
           </motion.div>

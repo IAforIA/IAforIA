@@ -32,11 +32,12 @@ interface ChatWidgetProps {
   currentUserId: string;
   currentUserName: string;
   currentUserRole: 'client' | 'motoboy' | 'central';
+  embedded?: boolean; // Se true, renderiza inline sem botão flutuante
 }
 
-export function ChatWidget({ currentUserId, currentUserName, currentUserRole }: ChatWidgetProps) {
+export function ChatWidget({ currentUserId, currentUserName, currentUserRole, embedded = false }: ChatWidgetProps) {
   const isCentral = currentUserRole === 'central';
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(embedded ? true : false); // Embedded sempre aberto
   const [isMinimized, setIsMinimized] = useState(false);
   const [message, setMessage] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<ChatCategory | null>(null);
@@ -230,36 +231,36 @@ export function ChatWidget({ currentUserId, currentUserName, currentUserRole }: 
     }
   };
 
-  // Renderiza botão flutuante quando fechado
-  if (!isOpen) {
+  // Renderiza botão flutuante quando fechado (não se aplica a embedded)
+  if (!isOpen && !embedded) {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-6 py-3 shadow-lg transition-all hover:scale-105"
+        className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 flex items-center gap-1.5 sm:gap-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-4 py-2.5 sm:px-6 sm:py-3 shadow-lg transition-all hover:scale-105"
       >
-        <MessageCircle className="h-5 w-5" />
-        <span className="font-medium">Chat</span>
+        <MessageCircle className="h-4 w-4 sm:h-5 sm:w-5" />
+        <span className="font-medium text-sm sm:text-base">Chat</span>
       </button>
     );
   }
 
-  // Renderiza widget minimizado
-  if (isMinimized) {
+  // Renderiza widget minimizado (não se aplica a embedded)
+  if (isMinimized && !embedded) {
     return (
-      <div className="fixed bottom-6 right-6 z-50 bg-card border rounded-lg shadow-lg">
-        <div className="flex items-center justify-between p-3 border-b">
-          <div className="flex items-center gap-2">
-            <MessageCircle className="h-4 w-4" />
-            <span className="font-medium text-sm">Chat</span>
+      <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 bg-card border rounded-lg shadow-lg max-w-[calc(100vw-2rem)] sm:max-w-none">
+        <div className="flex items-center justify-between p-2.5 sm:p-3 border-b">
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+            <MessageCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+            <span className="font-medium text-xs sm:text-sm truncate">Chat</span>
             {selectedCategory && (
-              <Badge variant="secondary" className="text-xs">
-                {selectedCategory === 'status_entrega' && '🚚 Status'}
-                {selectedCategory === 'suporte' && '💬 Suporte'}
-                {selectedCategory === 'problema' && '⚠️ Problema'}
+              <Badge variant="secondary" className="text-xs flex-shrink-0">
+                {selectedCategory === 'status_entrega' && '🚚'}
+                {selectedCategory === 'suporte' && '💬'}
+                {selectedCategory === 'problema' && '⚠️'}
               </Badge>
             )}
           </div>
-          <div className="flex gap-1">
+          <div className="flex gap-0.5 sm:gap-1 flex-shrink-0">
             <Button
               variant="ghost"
               size="icon"
@@ -283,8 +284,12 @@ export function ChatWidget({ currentUserId, currentUserName, currentUserRole }: 
   }
 
   // Renderiza widget aberto
+  const containerClasses = embedded
+    ? "w-full h-full bg-card border rounded-lg shadow-sm flex flex-col"
+    : "fixed inset-4 sm:inset-auto sm:bottom-6 sm:right-6 z-50 sm:w-96 sm:h-[500px] md:w-[420px] md:h-[550px] bg-card border rounded-lg shadow-2xl flex flex-col";
+
   return (
-    <div className="fixed bottom-6 right-6 z-50 w-96 h-[500px] bg-card border rounded-lg shadow-2xl flex flex-col">
+    <div className={containerClasses}>
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b bg-primary text-primary-foreground rounded-t-lg">
         <div className="flex items-center gap-2">
@@ -308,24 +313,26 @@ export function ChatWidget({ currentUserId, currentUserName, currentUserRole }: 
             {selectedCategory === 'problema' && '⚠️ Reportar Problema'}
           </span>
         </div>
-        <div className="flex gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6 text-primary-foreground hover:bg-primary/80"
-            onClick={() => setIsMinimized(true)}
-          >
-            <Minus className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6 text-primary-foreground hover:bg-primary/80"
-            onClick={() => setIsOpen(false)}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
+        {!embedded && (
+          <div className="flex gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 text-primary-foreground hover:bg-primary/80"
+              onClick={() => setIsMinimized(true)}
+            >
+              <Minus className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 text-primary-foreground hover:bg-primary/80"
+              onClick={() => setIsOpen(false)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Lista de Threads (apenas Central) */}

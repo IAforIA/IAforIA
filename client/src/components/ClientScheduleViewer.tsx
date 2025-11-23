@@ -34,6 +34,7 @@ interface ClientScheduleEntry {
 interface ClientScheduleViewerProps {
   clientId: string | number;
   clientName?: string;
+  schedules?: ClientScheduleEntry[]; // Pode receber schedules prontos
 }
 
 const DIAS_SEMANA = [
@@ -46,14 +47,18 @@ const DIAS_SEMANA = [
   "Sábado"
 ];
 
-export function ClientScheduleViewer({ clientId, clientName }: ClientScheduleViewerProps) {
-  const { data: schedules, isLoading } = useQuery<ClientScheduleEntry[]>({
+export function ClientScheduleViewer({ clientId, clientName, schedules: propsSchedules }: ClientScheduleViewerProps) {
+  // Se recebeu schedules via props, usa eles; senão busca da API
+  const { data: fetchedSchedules, isLoading } = useQuery<ClientScheduleEntry[]>({
     queryKey: ["client-schedules", clientId],
     queryFn: async () => {
       const res = await apiRequest('GET', `/api/clients/${clientId}/schedules`, {});
       return res.json();
     },
+    enabled: !propsSchedules, // Só busca se não recebeu via props
   });
+
+  const schedules = propsSchedules || fetchedSchedules;
 
   // Get current day for highlighting
   const currentDay = new Date().getDay();
@@ -83,7 +88,8 @@ export function ClientScheduleViewer({ clientId, clientName }: ClientScheduleVie
     return { open: firstSchedule.horaAbertura, close: firstSchedule.horaFechamento };
   };
 
-  if (isLoading) {
+  // Se tem schedules via props, não está loading
+  if (isLoading && !propsSchedules) {
     return (
       <Card>
         <CardHeader>

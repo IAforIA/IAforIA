@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Dashboard V2</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: white;
+        }
+        .card {
+            background: rgba(30, 30, 35, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 30px;
+            margin: 20px 0;
+        }
+        h1 {
+            text-align: center;
+            color: #60a5fa;
+        }
+        .test-info {
+            background: rgba(59, 130, 246, 0.1);
+            border-left: 4px solid #60a5fa;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .link {
+            display: block;
+            background: linear-gradient(135deg, #60a5fa, #3b82f6);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            text-decoration: none;
+            text-align: center;
+            font-weight: bold;
+            margin: 10px 0;
+            transition: transform 0.2s;
+        }
+        .link:hover {
+            transform: scale(1.05);
+        }
+        .credentials {
+            background: rgba(16, 185, 129, 0.1);
+            border-left: 4px solid #10b981;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        code {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🧪 Teste do Dashboard V2</h1>
+        
+        <div class="test-info">
+            <h3>📋 Checklist de Testes</h3>
+            <ol>
+                <li>Faça login com usuário <strong>central</strong></li>
+                <li>Verifique se os <strong>KPI cards</strong> aparecem com glassmorphism</li>
+                <li>Confirme que o <strong>mapa de Guriri</strong> carrega corretamente</li>
+                <li>Teste se os <strong>filtros do mapa</strong> (clientes, motoboys, pedidos) funcionam</li>
+                <li>Verifique se a <strong>lista de pedidos</strong> aparece com o novo visual</li>
+                <li>Confirme que os <strong>dados são os mesmos</strong> do dashboard original</li>
+            </ol>
+        </div>
+
+        <div class="credentials">
+            <h3>🔑 Credenciais de Teste</h3>
+            <p><strong>Usuário Central:</strong> <code>admin@central.com</code> / <code>senha123</code></p>
+            <p><strong>Nota:</strong> Você precisará fazer login primeiro na página inicial</p>
+        </div>
+
+        <a href="http://localhost:5000" class="link">
+            🏠 Ir para Landing Page (Login)
+        </a>
+
+        <a href="http://localhost:5000/central-v2" class="link">
+            ✨ Dashboard V2 (Glassmorphism + Mapa)
+        </a>
+
+        <a href="http://localhost:5000/central" class="link">
+            📊 Dashboard Original (Comparação)
+        </a>
+
+        <div class="test-info">
+            <h3>🎯 O Que Esperar</h3>
+            <ul>
+                <li><strong>Visual:</strong> Background com gradiente azul, cards com efeito glass</li>
+                <li><strong>Mapa:</strong> Região de Guriri (ES) com pins coloridos</li>
+                <li><strong>Pins Azuis:</strong> Clientes (pontos de coleta)</li>
+                <li><strong>Pins Verdes:</strong> Motoboys online</li>
+                <li><strong>Pins Vermelhos:</strong> Pedidos ativos (destinos)</li>
+                <li><strong>Tempo Real:</strong> Dados atualizados via WebSocket a cada 5s</li>
+            </ul>
+        </div>
+
+        <div class="test-info">
+            <h3>⚠️ Observações</h3>
+            <p>O mapa só mostrará pins se houver dados com coordenadas de latitude/longitude no banco de dados. Caso o mapa apareça vazio, é porque ainda não há dados geográficos cadastrados.</p>
+            <p>Para popular dados de teste, execute a migration SQL em <code>migrations/add_geolocation.sql</code> e adicione coordenadas manualmente ou via API.</p>
+        </div>
+    </div>
+</body>
+</html>

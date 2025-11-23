@@ -1,7 +1,7 @@
 import OrderForm from '../OrderForm';
 
 export default function OrderFormExample() {
-  const handleSubmit = (data: any) => {
+  const handleSubmit = (data: { origin: string; destination: string; description: string; value: string }) => {
     console.log('Order submitted:', data);
   };
 
