@@ -91,6 +91,7 @@ function mapClientToProfile(client: Client): ClientProfileDto {
     documentType: client.documentType as DocumentType, // Cast de text para "PF" | "PJ"
     documentNumber: client.documentNumber,
     ie: client.ie,
+    mensalidade: client.mensalidade ? Number(client.mensalidade) : 0, // Conversao Decimal para number
     address: {
       cep: client.cep,
       rua: client.rua,

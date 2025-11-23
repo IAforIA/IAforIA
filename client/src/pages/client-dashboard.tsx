@@ -853,8 +853,8 @@ export default function ClientDashboard() {
                         
                         {/* Valor da Entrega */}
                         <FormField control={form.control} name="valor" render={({ field }) => {
-                          // TODO: Buscar mensalidade do cliente do backend
-                          const hasMensalidade = false; // Temporário - precisa vir do backend
+                          // Verifica se cliente tem mensalidade (valor maior que 0)
+                          const hasMensalidade = profile?.mensalidade && profile.mensalidade > 0;
                           const valorOptions = hasMensalidade 
                             ? [
                                 { value: "7", label: "Padrão - R$ 7,00" },

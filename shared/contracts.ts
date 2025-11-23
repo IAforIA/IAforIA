@@ -211,6 +211,7 @@ export interface ClientProfileDto {
   documentType: DocumentType; // "PF" | "PJ"
   documentNumber: string;
   ie?: string | null; // Inscrição Estadual (apenas PJ)
+  mensalidade: number; // Valor da mensalidade (0 = sem mensalidade)
   address: {
     cep: string;
     rua: string;
