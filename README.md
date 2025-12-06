@@ -57,6 +57,14 @@ npm install
 
    Isso criará 3 usuários de teste e gravará um CSV com as credenciais em `.output/`.
 
+5. **Popule horários dos motoboys (opcional):**
+
+   ```bash
+   npx tsx server/scripts/seed-motoboy-schedules.ts
+   ```
+
+   Gera as escalas semanais (manhã/tarde/noite) para todos os motoboys cadastrados, usadas pela Central para ver disponibilidade e pelos badges "Disponível"/"Próximo turno" na UI.
+
 ### Desenvolvimento
 
 ```bash
@@ -70,6 +78,24 @@ Isso inicia:
 - **Vite HMR** servindo o frontend React
 
 Acesse `http://localhost:5000` e faça login com as credenciais do seed.
+
+---
+
+## 🪵 Logs, Debug e Build Guard
+
+- Cada requisição recebe `X-Request-Id` e é logada no formato estruturado (`logs/app.log`, `logs/error.log`). Em erros, o `requestId` também retorna no JSON para rastrear no log.
+- Para builds: `npm run build:ci` roda `npm run build` + `npm run check:bundle` e falha se algum chunk gzip > 550 kB.
+- Dev: `npm run dev` (API + Vite), Prod: `npm run build` e `npm start`.
+- Health checks: `GET /health` (liveness) e `GET /ready` (readiness com ping no banco).
+
+---
+
+## 🗓️ Escalas de Motoboys
+
+- Endpoints: `GET /api/motoboys/:id/schedules` e `POST /api/motoboys/:id/schedules` (central ou o próprio motoboy).
+- Seed rápido: `npx tsx server/scripts/seed-motoboy-schedules.ts` preenche 7 dias por motoboy com turnos manhã/tarde/noite.
+- UI: badges de disponibilidade mostram "Disponível", "Próximo turno (hora)" ou "Folga hoje" conforme a escala do dia; o modal "Ver schedule" sempre refaz o fetch ao abrir para refletir atualizações.
+- Driver Settings: a seção de documentos do motoboy agora exibe links para CNH e comprovante já enviados.
 
 ---
 
@@ -142,9 +168,13 @@ railway up
 # Build (valida tipagem e bundle)
 npm run build
 
-# Testes de integração (a implementar)
-npm test
+# Suite de serviços + hooks (Vitest + jsdom)
+npm run test
 ```
+
+- Os testes cobrem os serviços puros (`client/src/services`) e os hooks derivados (`client/src/hooks`).
+- Utilize `npm run test -- --watch` durante o desenvolvimento para feedback contínuo.
+- Consulte `docs/architecture/testing-strategy.md` para orientações de cobertura e exemplos de fixtures.
 
 ---
 

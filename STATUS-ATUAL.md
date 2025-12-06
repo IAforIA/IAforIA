@@ -1,7 +1,7 @@
 # STATUS ATUAL DO PROJETO GURIRI EXPRESS
 
-**Data:** 15 de Novembro de 2025  
-**Última atualização:** 17:10 PM
+**Data:** 06 de Dezembro de 2025  
+**Última atualização:** 16:20 PM
 
 ## ✅ SISTEMA FUNCIONANDO
 
@@ -51,7 +51,14 @@ Get-Process -Name node -ErrorAction SilentlyContinue | Stop-Process -Force
 
 ---
 
-## 🗄️ BANCO DE DADOS
+## 🔧 ÚLTIMAS MODIFICAÇÕES (06/12)
+
+- **Escalas dos motoboys seedadas:** `npx tsx server/scripts/seed-motoboy-schedules.ts` executado; tabela `motoboySchedules` com 127 entradas para todos os motoboys cadastrados.
+- **Disponibilidade mais clara na Central:** badges agora mostram "Disponível", "Próximo turno" ou "Folga hoje" conforme a escala do dia; o modal de schedule refaz o fetch ao abrir.
+- **Configurações do motoboy:** bloco de documentos sempre visível e exibe links para CNH e comprovante de residência já enviados.
+- **Rotas de schedules:** backend expõe `GET/POST /api/motoboys/:id/schedules` para Central e para o próprio motoboy manter sua escala.
+
+## 🔧 ÚLTIMAS MODIFICAÇÕES (15/11)
 
 ### Configuração
 
@@ -62,6 +69,8 @@ Get-Process -Name node -ErrorAction SilentlyContinue | Stop-Process -Force
 ```text
 [REDACTED - SEE ENVIRONMENT VARIABLES]
 ```
+
+- **Escalas populadas:** tabela `motoboySchedules` com 127 registros (seed executado em 06/12 via `server/scripts/seed-motoboy-schedules.ts`).
 
 ### Usuários Importados (39 total)
 
@@ -135,6 +144,8 @@ Todos com senha: `[REDACTED]`
 6. **shared/schema.ts** — Adicionada coluna `coleta_override` com default `false` e schema de inserção estendido.
 7. **client/src/pages/client-dashboard.tsx** — Dashboard do cliente consome `/api/me/profile`, bloqueia coleta e envia `coletaOverride` quando necessário.
 8. **docs/ETAPA06-ESCOPO.md** — Novo escopo detalha objetivos, componentes impactados e critérios de aceite da etapa.
+9. **docs/architecture/*.md** — Adicionados `system-overview`, `frontend-architecture` e `testing-strategy` descrevendo a nova separação em adapters → services → hooks e o plano de testes com Vitest.
+10. **docs/api/** — Estrutura reconstruída com o gerador DocGoat (`npm run docs:api`) lendo `docs/postman/GuririExpress.postman_collection.json`. A versão anterior foi arquivada em `docs/api-legacy/` para referência.
 
 ---
 
