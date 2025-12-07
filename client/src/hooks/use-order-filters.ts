@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Order } from "@shared/schema";
 import { normalizeOrders } from "@/adapters/order-adapter";
 import { filterOrders } from "@/services/orders";
@@ -22,14 +22,19 @@ interface UseOrderFiltersResult {
 }
 
 export function useOrderFilters(orders: Order[]): UseOrderFiltersResult {
+  const normalizedOrders = useMemo<NormalizedOrder[]>(() => normalizeOrders(orders), [orders]);
+  const initialDateFilter = normalizedOrders[0]?.createdDateString ?? "";
+
   const [orderStatusFilter, setOrderStatusFilter] = useState<OrderStatusFilter>("all");
   const [orderClientFilter, setOrderClientFilter] = useState<OrderFilters["clientId"]>("all");
   const [orderMotoboyFilter, setOrderMotoboyFilter] = useState<OrderFilters["motoboyId"]>("all");
   const [orderPaymentFilter, setOrderPaymentFilter] = useState<OrderFilters["paymentMethod"]>("all");
-  const [orderDateFilter, setOrderDateFilter] = useState<OrderFilters["date"]>("");
+  const [orderDateFilter, setOrderDateFilter] = useState<OrderFilters["date"]>(initialDateFilter);
   const [orderSearchFilter, setOrderSearchFilter] = useState<OrderFilters["search"]>("");
 
-  const normalizedOrders = useMemo<NormalizedOrder[]>(() => normalizeOrders(orders), [orders]);
+  useEffect(() => {
+    setOrderDateFilter(normalizedOrders[0]?.createdDateString ?? "");
+  }, [normalizedOrders]);
 
   const filters = useMemo<OrderFilters>(
     () => ({
