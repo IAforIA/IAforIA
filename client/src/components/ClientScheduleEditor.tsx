@@ -67,7 +67,7 @@ export function ClientScheduleEditor({ clientId }: ClientScheduleEditorProps) {
   const { data: existingSchedules, isLoading } = useQuery<ClientScheduleEntry[]>({
     queryKey: ["client-schedules", clientId],
     queryFn: async () => {
-      const res = await apiRequest('GET', `/api/clients/${clientId}/schedules`, {});
+        const res = await apiRequest('GET', `/api/clients/${clientId}/schedules`);
       return res.json();
     },
   });

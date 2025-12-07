@@ -1,0 +1,32 @@
+{
+  "description": "SRE Event Schema for fine-tuning validation",
+  "version": "1.0",
+  "tipos_incidente": [
+    "memory_leak",
+    "alto_consumo_cpu",
+    "worker_crash",
+    "deadlock_detectado",
+    "latencia_critica",
+    "database_connection_pool_esgotado",
+    "dependencia_externa_falhou",
+    "cache_corrompido",
+    "disco_cheio",
+    "timeout_excessivo"
+  ],
+  "acoes_validas": [
+    "restart_worker",
+    "clear_cache",
+    "adjust_timeout",
+    "enable_degraded_mode",
+    "reroute_requests",
+    "increase_connection_pool",
+    "force_garbage_collection",
+    "restart_service",
+    "switch_to_backup",
+    "throttle_endpoint",
+    "release_resources",
+    "escalate_to_security",
+    "escalate_to_compliance"
+  ],
+  "componentes": ["api", "database", "cache", "worker", "cpu", "memory", "storage"]
+}

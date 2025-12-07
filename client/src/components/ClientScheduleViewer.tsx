@@ -52,7 +52,7 @@ export function ClientScheduleViewer({ clientId, clientName, schedules: propsSch
   const { data: fetchedSchedules, isLoading } = useQuery<ClientScheduleEntry[]>({
     queryKey: ["client-schedules", clientId],
     queryFn: async () => {
-      const res = await apiRequest('GET', `/api/clients/${clientId}/schedules`, {});
+      const res = await apiRequest('GET', `/api/clients/${clientId}/schedules`);
       return res.json();
     },
     enabled: !propsSchedules, // Só busca se não recebeu via props

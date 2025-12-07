@@ -1,4 +1,5 @@
 import { ChatMessage as ChatMessageType } from "@shared/schema";
+import { getSenderId, getReceiverId, getSenderName, getSenderRole, isPublicMessage } from "../../../shared/message-utils";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Sparkles } from "lucide-react";
@@ -20,10 +21,13 @@ export function ChatMessage({
   onAISuggestion,
   loadingAISuggestion 
 }: ChatMessageProps) {
-  const isOwnMessage = message.fromId === currentUserId;
-  const isPublic = !message.toId;
+  const isOwnMessage = getSenderId(message as any) === currentUserId;
+  const isPublic = isPublicMessage(message as any);
   const isCentral = currentUserRole === 'central';
-  const canSuggestAI = isCentral && !message.isFromCentral && !isOwnMessage;
+  // Determine whether the message originated from the central role
+  const messageSenderRole = getSenderRole(message as any);
+  const isMessageFromCentral = messageSenderRole === 'central';
+  const canSuggestAI = isCentral && !isMessageFromCentral && !isOwnMessage;
 
   // Role badge colors
   const roleColors = {
@@ -49,12 +53,12 @@ export function ChatMessage({
       <div className="flex items-center gap-2 mb-1 px-1">
         <span className={cn(
           "text-xs px-2 py-0.5 rounded-full font-medium",
-          roleColors[message.fromRole as keyof typeof roleColors] || "bg-gray-100 text-gray-800"
+          roleColors[getSenderRole(message as any) as keyof typeof roleColors] || "bg-gray-100 text-gray-800"
         )}>
-          {roleLabels[message.fromRole as keyof typeof roleLabels] || message.fromRole}
+          {roleLabels[(getSenderRole(message as any) ?? '') as keyof typeof roleLabels] || (getSenderRole(message as any) ?? '')}
         </span>
         <span className="text-xs text-muted-foreground font-medium">
-          {message.fromName}
+          {getSenderName(message as any)}
         </span>
         {isPublic && (
           <span className="text-xs text-muted-foreground italic">
@@ -95,7 +99,7 @@ export function ChatMessage({
             variant="outline"
             size="sm"
             className="self-start gap-2"
-            onClick={() => onAISuggestion(message.message, message.category as ChatCategory, message.fromId)}
+            onClick={() => onAISuggestion((message as any).message, (message as any).category as ChatCategory, getSenderId(message as any) ?? '')}
             disabled={loadingAISuggestion}
           >
             <Sparkles className="h-3 w-3" />

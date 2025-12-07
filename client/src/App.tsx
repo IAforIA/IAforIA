@@ -25,15 +25,15 @@ import { Toaster } from "@/components/ui/toaster";
 // TooltipProvider: Provider para tooltips funcionarem (shadcn/ui)
 import { TooltipProvider } from "@/components/ui/tooltip";
 // useState, useEffect: Hooks do React para estado e efeitos colaterais
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense, lazy } from "react";
 
 // PÁGINAS: Componentes de cada rota
-import Landing from "@/pages/landing";
-import CentralDashboard from "@/pages/central-dashboard";
-import ClientDashboard from "@/pages/client-dashboard";
-import DriverDashboard from "@/pages/driver-dashboard";
-import TestSimple from "@/pages/test-simple";
-import NotFound from "@/pages/not-found";
+const Landing = lazy(() => import("@/pages/landing"));
+const CentralDashboard = lazy(() => import("@/pages/central-dashboard"));
+const ClientDashboard = lazy(() => import("@/pages/client-dashboard"));
+const DriverDashboard = lazy(() => import("@/pages/driver-dashboard"));
+const TestSimple = lazy(() => import("@/pages/test-simple"));
+const NotFound = lazy(() => import("@/pages/not-found"));
 
 // AUTENTICAÇÃO: Context e hook personalizado
 import { AuthContext, useAuth, type AuthUser } from "@/hooks/use-auth";
@@ -97,40 +97,42 @@ function ProtectedRoute({ component: Component, role }: { component: React.Compo
  */
 function Router() {
   return (
-    <Switch>
-      {/* ROTAS PÚBLICAS */}
-      <Route path="/" component={Landing} />
-      <Route path="/test" component={TestSimple} />
+    <Suspense fallback={<div className="flex h-screen items-center justify-center text-sm text-muted-foreground">Carregando...</div>}>
+      <Switch>
+        {/* ROTAS PÚBLICAS */}
+        <Route path="/" component={Landing} />
+        <Route path="/test" component={TestSimple} />
 
-      {/* ROTAS PROTEGIDAS: CENTRAL */}
-      {/* Rota base */}
-      <Route path="/central">
-        <ProtectedRoute component={CentralDashboard} role="central" />
-      </Route>
-      {/* Subrotas (ex: /central/orders, /central/drivers) */}
-      <Route path="/central/:rest*">
-        <ProtectedRoute component={CentralDashboard} role="central" />
-      </Route>
+        {/* ROTAS PROTEGIDAS: CENTRAL */}
+        {/* Rota base */}
+        <Route path="/central">
+          <ProtectedRoute component={CentralDashboard} role="central" />
+        </Route>
+        {/* Subrotas (ex: /central/orders, /central/drivers) */}
+        <Route path="/central/:rest*">
+          <ProtectedRoute component={CentralDashboard} role="central" />
+        </Route>
 
-      {/* ROTAS PROTEGIDAS: CLIENTE */}
-      <Route path="/client">
-        <ProtectedRoute component={ClientDashboard} role="client" />
-      </Route>
-      <Route path="/client/:rest*">
-        <ProtectedRoute component={ClientDashboard} role="client" />
-      </Route>
+        {/* ROTAS PROTEGIDAS: CLIENTE */}
+        <Route path="/client">
+          <ProtectedRoute component={ClientDashboard} role="client" />
+        </Route>
+        <Route path="/client/:rest*">
+          <ProtectedRoute component={ClientDashboard} role="client" />
+        </Route>
 
-      {/* ROTAS PROTEGIDAS: MOTOBOY */}
-      <Route path="/driver">
-        <ProtectedRoute component={DriverDashboard} role="motoboy" />
-      </Route>
-      <Route path="/driver/:rest*">
-        <ProtectedRoute component={DriverDashboard} role="motoboy" />
-      </Route>
+        {/* ROTAS PROTEGIDAS: MOTOBOY */}
+        <Route path="/driver">
+          <ProtectedRoute component={DriverDashboard} role="motoboy" />
+        </Route>
+        <Route path="/driver/:rest*">
+          <ProtectedRoute component={DriverDashboard} role="motoboy" />
+        </Route>
 
-      {/* ROTA FALLBACK: 404 Not Found */}
-      <Route component={NotFound} />
-    </Switch>
+        {/* ROTA FALLBACK: 404 Not Found */}
+        <Route component={NotFound} />
+      </Switch>
+    </Suspense>
   );
 }
 
@@ -309,7 +311,8 @@ export default function App() {
         id: data.id,        // UUID do usuário
         name: data.name,    // Nome para exibição
         role: data.role,    // Role para RBAC
-        phone: data.phone   // Telefone opcional
+        phone: data.phone,  // Telefone opcional
+        email: data.email,  // Email para exibição em configurações
       };
 
       // ATUALIZAÇÃO: Estados do React

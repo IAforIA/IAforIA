@@ -1,5 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes.ts"; // Usa extensão explícita para evitar carregar build antigo
+import { registerRoutes } from "./routes/index.ts"; // Usa extensão explícita para evitar carregar build antigo
 import { setupVite, serveStatic, log } from "./vite.ts";
 
 const app = express();

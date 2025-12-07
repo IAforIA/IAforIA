@@ -43,7 +43,15 @@
 3. Usar firewall em ambiente de desenvolvimento
 4. Executar `npm audit` periodicamente
 
+## Controles Recentes
+
+- **Request ID**: todas as requisições recebem `X-Request-Id` e são logadas de forma estruturada (`logs/app.log`, `logs/error.log`); erros retornam o ID para correlação.
+- **Headers/Helmet**: Helmet permanece ativo; CORS segue allowlist por `ALLOWED_ORIGINS` (production bloqueia origens não listadas).
+- **Build Guard**: `npm run build:ci` inclui `check:bundle` para impedir bundles excessivos em deploys.
+- **Health/Ready**: `/health` (liveness) e `/ready` (readiness com ping no banco) para automação/monitoramento.
+
 ## Última Verificação
+
 - Data: 21 de Novembro de 2025
 - Vulnerabilidades em Produção: **0**
 - Vulnerabilidades em Dev (baixo risco): 4

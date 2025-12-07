@@ -138,12 +138,7 @@ export default function Landing() {
     try {
       // CORREÇÃO: Passando 'email' para a função login
       const success = await login(email, password);
-      if (success) {
-        toast({
-          title: "Login bem-sucedido!",
-          description: "Redirecionando...",
-        });
-      } else {
+      if (!success) {
         toast({
           title: "Erro ao fazer login",
           // CORREÇÃO: Mensagem mais clara

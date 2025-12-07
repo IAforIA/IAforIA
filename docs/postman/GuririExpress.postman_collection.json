@@ -1,0 +1,477 @@
+{
+  "info": {
+    "name": "Guriri Express API v1.0",
+    "_postman_id": "guriri-express-v1",
+    "description": "B2B Delivery Platform - Complete API Reference\n\n**Base URL:** `{{API_URL}}/api/v1`\n**Authentication:** Bearer Token (JWT)\n\n**Roles:**\n- `client`: Business customers (restaurants, shops)\n- `motoboy`: Delivery drivers\n- `central`: Admin/dispatch operators\n\n**Rate Limits:**\n- Login: 100 req/15min per IP\n- Register: 3 req/15min per IP\n- General API: 100 req/min per IP\n- Chat: Custom limits per role",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{TOKEN}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "API_URL",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "TOKEN",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "POST Register Client (PF/PJ)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.environment.set('TOKEN', response.token);",
+                  "    pm.environment.set('USER_ID', response.user.id);",
+                  "    console.log('Token saved:', response.token);",
+                  "}",
+                  "",
+                  "pm.test('Status code is 201', () => {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Response has token', () => {",
+                  "    pm.expect(pm.response.json()).to.have.property('token');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"documentType\": \"PF\",\n  \"cpf\": \"12345678901\",\n  \"name\": \"Pizzaria Bella\",\n  \"email\": \"contato@pizzariabella.com\",\n  \"password\": \"senha123\",\n  \"phone\": \"27999887766\",\n  \"street\": \"Rua das Flores\",\n  \"number\": \"500\",\n  \"neighborhood\": \"Centro\",\n  \"city\": \"Guarapari\",\n  \"state\": \"ES\",\n  \"zipCode\": \"29200000\",\n  \"subscriptionPlan\": \"COM_MENSALIDADE\"\n}"
+            },
+            "url": {
+              "raw": "{{API_URL}}/api/v1/auth/register",
+              "host": ["{{API_URL}}"],
+              "path": ["api", "v1", "auth", "register"]
+            },
+            "description": "Complete onboarding for PF (individual) or PJ (company) clients.\n\n**Rate Limit:** 3 requests per 15 minutes\n\n**Validation:**\n- CPF: exactly 11 digits (no mask)\n- CNPJ: exactly 14 digits\n- IE: required only for `documentType=PJ`\n- Password: min 6 characters\n\n**Auto-creates:**\n1. User account (role: `client`)\n2. Client profile with registered address\n3. JWT token for immediate login"
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{API_URL}}/api/v1/auth/register"
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n  \"user\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"name\": \"Pizzaria Bella\",\n    \"email\": \"contato@pizzariabella.com\",\n    \"role\": \"client\",\n    \"status\": \"active\"\n  }\n}"
+            },
+            {
+              "name": "400 Bad Request - Invalid Data",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{API_URL}}/api/v1/auth/register"
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"error\": \"Validation failed\",\n  \"details\": [\n    {\n      \"field\": \"cpf\",\n      \"message\": \"CPF deve conter exatamente 11 dígitos\"\n    }\n  ]\n}"
+            },
+            {
+              "name": "409 Conflict - Email Already Exists",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{API_URL}}/api/v1/auth/register"
+                }
+              },
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"error\": \"EMAIL_IN_USE\",\n  \"message\": \"Email já cadastrado no sistema\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "POST Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.environment.set('TOKEN', response.token);",
+                  "    pm.environment.set('USER_ID', response.user.id);",
+                  "    pm.environment.set('USER_ROLE', response.user.role);",
+                  "}",
+                  "",
+                  "pm.test('Status is 200', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Has token and user', () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('token');",
+                  "    pm.expect(json).to.have.property('user');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"contato@pizzariabella.com\",\n  \"password\": \"senha123\"\n}"
+            },
+            "url": {
+              "raw": "{{API_URL}}/api/v1/auth/login",
+              "host": ["{{API_URL}}"],
+              "path": ["api", "v1", "auth", "login"]
+            },
+            "description": "Authenticate user with email and password.\n\n**Rate Limit:** 100 requests per 15 minutes\n\n**Returns:**\n- JWT token (expires in 24h)\n- User profile (without password)\n\n**Security:**\n- Password compared with bcrypt hash\n- Token signed with JWT_SECRET"
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDAiLCJlbWFpbCI6ImNvbnRhdG9AcGl6emFyaWFiZWxsYS5jb20iLCJyb2xlIjoiY2xpZW50IiwiaWF0IjoxNzAwMDAwMDAwLCJleHAiOjE3MDAwODY0MDB9.signature\",\n  \"user\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"name\": \"Pizzaria Bella\",\n    \"email\": \"contato@pizzariabella.com\",\n    \"role\": \"client\",\n    \"phone\": \"27999887766\",\n    \"status\": \"active\"\n  }\n}"
+            },
+            {
+              "name": "400 Bad Request",
+              "status": "Bad Request",
+              "code": 400,
+              "body": "{\n  \"error\": \"Email e senha são obrigatórios\"\n}"
+            },
+            {
+              "name": "401 Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "body": "{\n  \"error\": \"Credenciais inválidas\"\n}"
+            }
+          ]
+        }
+      ],
+      "description": "User authentication and registration endpoints"
+    },
+    {
+      "name": "Orders",
+      "item": [
+        {
+          "name": "POST Create Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const order = pm.response.json();",
+                  "    pm.environment.set('ORDER_ID', order.id);",
+                  "}",
+                  "",
+                  "pm.test('Order created', () => {",
+                  "    pm.response.to.have.status(201);",
+                  "    pm.expect(pm.response.json()).to.have.property('id');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"entregaRua\": \"Av. Atlântica\",\n  \"entregaNumero\": \"1500\",\n  \"entregaBairro\": \"Praia do Morro\",\n  \"entregaCep\": \"29216000\",\n  \"entregaComplemento\": \"Casa azul\",\n  \"valor\": \"15.00\",\n  \"formaPagamento\": \"pix\",\n  \"descricao\": \"Pizza margherita + refrigerante\",\n  \"coletaOverride\": false\n}"
+            },
+            "url": {
+              "raw": "{{API_URL}}/api/v1/orders",
+              "host": ["{{API_URL}}"],
+              "path": ["api", "v1", "orders"]
+            },
+            "description": "Create new delivery order.\n\n**Auth Required:** Yes (client or central)\n**Rate Limit:** 100 req/min\n\n**Auto-Fill Behavior:**\n- When `coletaOverride=false`: pickup address filled from client profile\n- Server calculates `taxaMotoboy` based on TABELA_REPASSE\n\n**Allowed Values (depends on subscription):**\n- WITH subscription: R$ 15, 20, 30 (commission: R$ 9, 12, 18)\n- WITHOUT subscription: R$ 20, 25, 30, 35 (commission: R$ 12, 14, 16, 18)\n\n**WebSocket Event:** Broadcasts `new_order` to all connected users"
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"id\": \"order-uuid-123\",\n  \"clientId\": \"client-uuid\",\n  \"clientName\": \"Pizzaria Bella\",\n  \"status\": \"pending\",\n  \"coletaRua\": \"Rua das Flores\",\n  \"coletaNumero\": \"500\",\n  \"coletaBairro\": \"Centro\",\n  \"entregaRua\": \"Av. Atlântica\",\n  \"entregaNumero\": \"1500\",\n  \"entregaBairro\": \"Praia do Morro\",\n  \"entregaCep\": \"29216000\",\n  \"valor\": \"15.00\",\n  \"taxaMotoboy\": \"9.00\",\n  \"formaPagamento\": \"pix\",\n  \"descricao\": \"Pizza margherita + refrigerante\",\n  \"createdAt\": \"2024-11-24T10:30:00Z\"\n}"
+            },
+            {
+              "name": "400 Invalid Value",
+              "status": "Bad Request",
+              "code": 400,
+              "body": "{\n  \"error\": \"Valor R$ 25.00 não permitido para cliente SEM mensalidade. Valores válidos: R$ 15, 20, 30\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "GET List Orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{API_URL}}/api/v1/orders",
+              "host": ["{{API_URL}}"],
+              "path": ["api", "v1", "orders"]
+            },
+            "description": "List orders filtered by role:\n\n**Client:** Only their own orders\n**Motoboy:** Orders assigned to them or pending\n**Central:** All orders\n\n**Returns:** Array of order objects with nested client/motoboy data"
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "body": "[\n  {\n    \"id\": \"order-1\",\n    \"status\": \"pending\",\n    \"valor\": \"15.00\",\n    \"taxaMotoboy\": \"9.00\",\n    \"client\": {\n      \"name\": \"Pizzaria Bella\",\n      \"phone\": \"27999887766\"\n    },\n    \"createdAt\": \"2024-11-24T10:30:00Z\"\n  }\n]"
+            }
+          ]
+        },
+        {
+          "name": "POST Accept Order (Motoboy)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{API_URL}}/api/v1/orders/{{ORDER_ID}}/accept",
+              "host": ["{{API_URL}}"],
+              "path": ["api", "v1", "orders", "{{ORDER_ID}}", "accept"]
+            },
+            "description": "Motoboy accepts pending order.\n\n**Auth:** motoboy or central\n**Validations:**\n- Order must be `pending` status\n- If called by motoboy: auto-assigns to them\n- If called by central: requires `motoboyId` in body\n\n**WebSocket:** Broadcasts `order_accepted` event"
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "code": 200,
+              "body": "{\n  \"id\": \"order-1\",\n  \"status\": \"in_progress\",\n  \"motoboyId\": \"motoboy-uuid\",\n  \"motoboyName\": \"João Silva\",\n  \"acceptedAt\": \"2024-11-24T10:45:00Z\"\n}"
+            },
+            {
+              "name": "400 Already Accepted",
+              "code": 400,
+              "body": "{\n  \"error\": \"Pedido já foi aceito por outro motoboy\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "POST Deliver Order",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{API_URL}}/api/v1/orders/{{ORDER_ID}}/deliver",
+              "host": ["{{API_URL}}"],
+              "path": ["api", "v1", "orders", "{{ORDER_ID}}", "deliver"]
+            },
+            "description": "Mark order as delivered.\n\n**Auth:** motoboy (assigned) or central\n**Validation:** Order must be `in_progress`\n**WebSocket:** Broadcasts `order_delivered`"
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "code": 200,
+              "body": "{\n  \"id\": \"order-1\",\n  \"status\": \"delivered\",\n  \"deliveredAt\": \"2024-11-24T11:15:00Z\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Chat & AI",
+      "item": [
+        {
+          "name": "GET Chat Messages",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{API_URL}}/api/v1/chat",
+              "host": ["{{API_URL}}"],
+              "path": ["api", "v1", "chat"]
+            },
+            "description": "Retrieve chat messages filtered by RBAC.\n\n**Filters:**\n- Client: Only messages where they are sender/receiver\n- Motoboy: Messages involving them + general broadcasts\n- Central: All messages (full visibility)\n\n**Returns:** Ordered by timestamp DESC (newest first)"
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "code": 200,
+              "body": "[\n  {\n    \"id\": \"msg-1\",\n    \"senderId\": \"user-1\",\n    \"senderName\": \"Pizzaria Bella\",\n    \"receiverId\": \"motoboy-1\",\n    \"receiverName\": \"João Silva\",\n    \"content\": \"Pedido saiu para entrega?\",\n    \"timestamp\": \"2024-11-24T10:50:00Z\",\n    \"read\": false\n  }\n]"
+            }
+          ]
+        },
+        {
+          "name": "POST Send Message",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverId\": \"motoboy-uuid-123\",\n  \"content\": \"Pedido chegou. Obrigado!\",\n  \"orderId\": \"order-uuid-456\"\n}"
+            },
+            "url": {
+              "raw": "{{API_URL}}/api/v1/chat",
+              "host": ["{{API_URL}}"],
+              "path": ["api", "v1", "chat"]
+            },
+            "description": "Send chat message with 3-layer intelligent filtering.\n\n**AI Filters Applied:**\n1. **Spam Detection:** Blocks repetitive/malicious content\n2. **Profanity Filter:** Censors offensive language\n3. **Context Validation:** Ensures message relevance to order\n\n**Rate Limits (by role):**\n- Client: 30 msg/hour\n- Motoboy: 50 msg/hour\n- Central: Unlimited\n\n**WebSocket:** Broadcasts `chat_message` to receiver"
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "code": 201,
+              "body": "{\n  \"id\": \"msg-new\",\n  \"senderId\": \"client-1\",\n  \"receiverId\": \"motoboy-1\",\n  \"content\": \"Pedido chegou. Obrigado!\",\n  \"orderId\": \"order-456\",\n  \"timestamp\": \"2024-11-24T11:00:00Z\",\n  \"filtered\": false,\n  \"aiProcessing\": {\n    \"spamScore\": 0.05,\n    \"profanityDetected\": false,\n    \"contextRelevant\": true\n  }\n}"
+            },
+            {
+              "name": "429 Rate Limit",
+              "code": 429,
+              "body": "{\n  \"error\": \"Limite de mensagens excedido. Tente novamente em 15 minutos.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "POST AI Suggestion",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"threadId\": \"thread-uuid-123\"\n}"
+            },
+            "url": {
+              "raw": "{{API_URL}}/api/v1/chat/ai-suggest",
+              "host": ["{{API_URL}}"],
+              "path": ["api", "v1", "chat", "ai-suggest"]
+            },
+            "description": "Generate AI-powered response suggestion for chat thread.\n\n**Auth:** Central only\n**AI Model:** GPT-4 Turbo\n**Context:** Last 10 messages of thread\n**Cost Tracking:** Logged in usage_stats table\n\n**Returns:**\n- Suggested response text\n- Confidence score\n- Token usage"
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "code": 200,
+              "body": "{\n  \"suggestion\": \"Seu pedido está a caminho! Previsão de chegada em 15 minutos.\",\n  \"confidence\": 0.92,\n  \"usage\": {\n    \"promptTokens\": 150,\n    \"completionTokens\": 25,\n    \"totalCost\": 0.0023\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "item": [
+        {
+          "name": "GET Dashboard KPIs (Central)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{API_URL}}/api/v1/analytics/dashboard",
+              "host": ["{{API_URL}}"],
+              "path": ["api", "v1", "analytics", "dashboard"]
+            },
+            "description": "Central dashboard Key Performance Indicators.\n\n**Auth:** Central only\n**Metrics:**\n- Total orders (today, this month)\n- Revenue breakdown\n- Active motoboys count\n- Average delivery time\n- Top performing drivers\n- Pending orders count"
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "code": 200,
+              "body": "{\n  \"today\": {\n    \"totalOrders\": 45,\n    \"revenue\": \"675.00\",\n    \"averageDeliveryTime\": \"28min\"\n  },\n  \"thisMonth\": {\n    \"totalOrders\": 1230,\n    \"revenue\": \"18450.00\",\n    \"topMotoboy\": {\n      \"name\": \"João Silva\",\n      \"deliveries\": 87\n    }\n  },\n  \"activeMotoboys\": 12,\n  \"pendingOrders\": 3\n}"
+            }
+          ]
+        },
+        {
+          "name": "GET Motoboy Earnings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{API_URL}}/api/v1/analytics/motoboy/:id?start=2024-11-01&end=2024-11-30",
+              "host": ["{{API_URL}}"],
+              "path": ["api", "v1", "analytics", "motoboy", ":id"],
+              "query": [
+                {
+                  "key": "start",
+                  "value": "2024-11-01"
+                },
+                {
+                  "key": "end",
+                  "value": "2024-11-30"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{USER_ID}}"
+                }
+              ]
+            },
+            "description": "Calculate motoboy earnings for date range.\n\n**Auth:** Motoboy (own data) or Central (any)\n**Query Params:**\n- `start`: ISO date (YYYY-MM-DD)\n- `end`: ISO date (YYYY-MM-DD)\n\n**Calculation:**\nSum of `taxaMotoboy` from all delivered orders in period"
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "code": 200,
+              "body": "{\n  \"motoboyId\": \"motoboy-1\",\n  \"motoboyName\": \"João Silva\",\n  \"period\": {\n    \"start\": \"2024-11-01\",\n    \"end\": \"2024-11-30\"\n  },\n  \"deliveries\": 87,\n  \"totalEarnings\": \"783.00\",\n  \"averagePerDelivery\": \"9.00\"\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

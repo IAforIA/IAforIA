@@ -1,11 +1,18 @@
 import { useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
-import type { Client, Order, Motoboy } from '@shared/schema';
+import type { Client, Motoboy } from '@shared/schema';
+
+type MotoboyLocation = {
+  motoboyId: string;
+  latitude: number;
+  longitude: number;
+  timestamp: string | Date;
+};
 
 interface DeliveryMapProps {
   clients: Client[];
-  orders: Order[];
   motoboys: Motoboy[];
+  motoboyLocations: MotoboyLocation[];
 }
 
 // Coordenadas de Guriri, São Mateus - ES
@@ -35,7 +42,7 @@ const CLIENT_LOCATIONS: Record<string, { lat: number; lng: number }> = {
   "BASE 10 PLUS": { lat: -18.7165, lng: -39.8495 },
 };
 
-export function DeliveryMap({ clients, orders, motoboys }: DeliveryMapProps) {
+export function DeliveryMap({ clients, motoboys, motoboyLocations }: DeliveryMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
@@ -119,33 +126,28 @@ export function DeliveryMap({ clients, orders, motoboys }: DeliveryMapProps) {
         }
       });
 
-      // Adiciona marcadores de motoboys em entrega
-      const activeOrders = orders.filter(o => o.status === 'in_progress');
-      activeOrders.forEach(order => {
-        // Posiciona motoboy próximo ao destino (simulado)
-        if (order.clientName && CLIENT_LOCATIONS[order.clientName] && mapRef.current) {
-          const clientLoc = CLIENT_LOCATIONS[order.clientName];
-          // Offset para simular movimento
-          const lat = clientLoc.lat + (Math.random() - 0.5) * 0.005;
-          const lng = clientLoc.lng + (Math.random() - 0.5) * 0.005;
-          
-          const marker = L.marker([lat, lng], { icon: motoboyIcon })
-            .addTo(mapRef.current)
-            .bindPopup(`
-              <div style="font-family: system-ui; padding: 4px;">
-                <strong style="color: #3b82f6;">🏍️ ${order.motoboyName}</strong><br/>
-                <small>Em rota para <strong>${order.clientName}</strong></small><br/>
-                <small style="color: #6b7280;">📦 ${order.entregaBairro}</small>
-              </div>
-            `);
-          markersRef.current.push(marker);
-        }
+      // Adiciona marcadores de motoboys com base em GPS real
+      const motoboyById = new Map(motoboys.map(m => [m.id, m]));
+
+      motoboyLocations.forEach(location => {
+        if (!mapRef.current) return;
+        const driver = motoboyById.get(location.motoboyId);
+        const marker = L.marker([location.latitude, location.longitude], { icon: motoboyIcon })
+          .addTo(mapRef.current)
+          .bindPopup(`
+            <div style="font-family: system-ui; padding: 4px;">
+              <strong style="color: #3b82f6;">🏍️ ${driver?.name || 'Motoboy'}</strong><br/>
+              <small>${driver?.phone || 'Sem telefone'}</small><br/>
+              <small style="color: #6b7280;">Atualizado em ${new Date(location.timestamp).toLocaleTimeString('pt-BR')}</small>
+            </div>
+          `);
+        markersRef.current.push(marker);
       });
     };
 
     loadMap();
 
-    // Atualiza posições a cada 10 segundos
+    // Atualiza posições a cada 10 segundos para fallback quando WebSocket não chegar
     const interval = setInterval(loadMap, 10000);
 
     return () => {
@@ -155,7 +157,7 @@ export function DeliveryMap({ clients, orders, motoboys }: DeliveryMapProps) {
         mapRef.current = null;
       }
     };
-  }, [clients, orders, motoboys]);
+  }, [clients, motoboys, motoboyLocations]);
 
   return (
     <Card className="p-0 h-full overflow-hidden relative z-0">

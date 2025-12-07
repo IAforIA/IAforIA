@@ -44,6 +44,10 @@ export function DriverScheduleViewer({ motoboyId, motoboyName, compact = false }
   const { data: schedules = [], isLoading } = useQuery<Schedule[]>({
     queryKey: [`/api/motoboys/${motoboyId}/schedules`],
     enabled: !!motoboyId,
+    // Always refresh when opening the modal to avoid stale empty caches after seeding/edits
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: false,
   });
 
   // Calcula estatísticas
@@ -234,6 +238,9 @@ export function DriverAvailabilityBadge({ motoboyId }: { motoboyId: string }) {
   const { data: schedules = [] } = useQuery<Schedule[]>({
     queryKey: [`/api/motoboys/${motoboyId}/schedules`],
     enabled: !!motoboyId,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: false,
   });
 
   const currentDay = new Date().getDay();
@@ -248,13 +255,51 @@ export function DriverAvailabilityBadge({ motoboyId }: { motoboyId: string }) {
     return <Badge variant="outline" className="text-xs">Sem schedule</Badge>;
   }
 
-  return isAvailable ? (
-    <Badge className="bg-green-500 text-white text-xs">
-      ✓ Disponível
-    </Badge>
-  ) : (
+  if (isAvailable) {
+    return (
+      <Badge className="bg-green-500 text-white text-xs">
+        ✓ Disponível
+      </Badge>
+    );
+  }
+
+  // Show upcoming or off info instead of generic unavailable to reduce confusion
+  if (todaySchedule) {
+    const shiftOrder: Array<{ key: keyof Schedule; start: number; label: string }> = [
+      { key: 'turnoManha', start: 6, label: '06h' },
+      { key: 'turnoTarde', start: 12, label: '12h' },
+      { key: 'turnoNoite', start: 18, label: '18h' },
+    ];
+
+    const activeShiftsToday = shiftOrder.filter(s => todaySchedule[s.key]);
+    const upcoming = activeShiftsToday.find(s => currentHour < s.start);
+
+    if (upcoming) {
+      return (
+        <Badge variant="secondary" className="text-xs text-muted-foreground">
+          Próximo turno {upcoming.label}
+        </Badge>
+      );
+    }
+
+    if (activeShiftsToday.length > 0) {
+      return (
+        <Badge variant="secondary" className="text-xs text-muted-foreground">
+          Turno de hoje encerrado
+        </Badge>
+      );
+    }
+
+    return (
+      <Badge variant="secondary" className="text-xs text-muted-foreground">
+        Folga hoje
+      </Badge>
+    );
+  }
+
+  return (
     <Badge variant="secondary" className="text-xs text-muted-foreground">
-      Indisponível
+      Folga hoje
     </Badge>
   );
 }

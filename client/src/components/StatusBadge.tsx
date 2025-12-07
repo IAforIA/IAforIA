@@ -21,7 +21,15 @@ const statusConfig = {
 
 export default function StatusBadge({ status }: StatusBadgeProps) {
   const config = statusConfig[status];
-  
+
+  if (!config) {
+    return (
+      <Badge className="bg-gray-200 text-gray-800" data-testid={`badge-status-unknown`}>
+        Desconhecido
+      </Badge>
+    );
+  }
+
   // Mantemos data-testid para facilitar testes end-to-end
   return (
     <Badge className={config.className} data-testid={`badge-status-${status}`}>

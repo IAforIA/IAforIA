@@ -43,3 +43,17 @@ migrations/
 
 # Relatorios e credenciais gerados dinamicamente
 .output/
+
+# Dados e artefatos grandes
+datasets/
+dataset-generator/outputs/
+attached_assets/generated_images/
+uploads/
+txt/
+
+# Protótipos e metadados locais
+prototipos/
+.agent/
+
+# Arquivos de credenciais acidentais
+credenciais-*.ts

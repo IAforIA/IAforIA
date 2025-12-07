@@ -58,6 +58,9 @@
             <button onclick="testLogin()">Test Login</button>
             <button onclick="window.location.href='/'">Go to App</button>
         </div>
+        <p style="margin-top:1rem; font-size:0.85rem; color:#eee;">
+            Use apenas credenciais de teste geradas via CLI/variáveis de ambiente. Nunca deixe emails ou senhas fixos neste arquivo.
+        </p>
         <div id="output"></div>
     </div>
 
@@ -76,15 +79,19 @@
         }
 
         async function testLogin() {
-            output.innerHTML = 'Testing login with central user...';
+            const email = prompt('Informe o email de teste (use variáveis de ambiente/CLI)');
+            const password = email ? prompt('Informe a senha temporária correspondente') : null;
+            if (!email || !password) {
+                output.innerHTML = 'Login cancelado. Gere credenciais seguras antes de testar.';
+                return;
+            }
+
+            output.innerHTML = 'Testing login with provided test credentials...';
             try {
                 const res = await fetch('/api/auth/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        email: 'central.dev@guriri.local',
-                        password: 'cent-l7V3ZRdIsobx'
-                    })
+                    body: JSON.stringify({ email, password })
                 });
                 const data = await res.json();
                 if (res.ok) {

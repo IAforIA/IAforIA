@@ -4,7 +4,8 @@ export type AuthUser = {
   id: string; 
   name: string; 
   role: 'client' | 'motoboy' | 'central'; 
-  phone?: string 
+  phone?: string;
+  email?: string;
 };
 
 export type AuthContextType = {

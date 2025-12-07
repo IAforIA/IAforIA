@@ -1,0 +1,28 @@
+{
+  "description": "Security Event Schema for fine-tuning validation",
+  "version": "3.0",
+  "tipos_incidente": [
+    "brute_force_detectado",
+    "credential_stuffing",
+    "ddos_pattern",
+    "comportamento_suspeito",
+    "desvio_latencia",
+    "desvio_taxa_erro",
+    "desvio_trafego",
+    "falha_dependencia_externa",
+    "anomalia_multi_janela"
+  ],
+  "acoes_validas": [
+    "aplicar_rate_limit",
+    "bloquear_ip",
+    "notificar_time_seguranca",
+    "ativar_modo_degradado",
+    "marcar_dependencia_como_inconsistente",
+    "criar_pr_seguranca",
+    "validate_user_fingerprint",
+    "require_additional_verification",
+    "escalate_to_compliance",
+    "escalate_to_fraud"
+  ],
+  "severidades": ["baixa", "media", "alta", "critica"]
+}

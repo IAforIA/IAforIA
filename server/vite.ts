@@ -44,6 +44,11 @@ export async function setupVite(app: Express, server: Server) {
   app.use("*", async (req, res, next) => {
     const url = req.originalUrl;
 
+    // Skip Vite HTML transform for Chrome devtools discovery path
+    if (url.startsWith("/.well-known/")) {
+      return res.status(404).json({ error: "Not found" });
+    }
+
     try {
       const clientTemplatePath = path.resolve(
         normalizedDirname,
@@ -57,6 +62,7 @@ export async function setupVite(app: Express, server: Server) {
       const page = await vite.transformIndexHtml(url, template);
       res.status(200).set({ "Content-Type": "text/html" }).end(page);
     } catch (e) {
+      console.error("[vite-html-transform] Failed to render", { url, error: e });
       vite.ssrFixStacktrace(e as Error);
       next(e);
     }

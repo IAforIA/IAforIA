@@ -1,0 +1,29 @@
+{
+  "description": "Anti-Fraud Event Schema for fine-tuning validation",
+  "version": "1.0",
+  "tipos_fraude": [
+    "chargeback_abusivo",
+    "fraude_cartao",
+    "conta_falsa",
+    "multitentativas_suspeitas",
+    "abuso_cupom",
+    "pedido_duplicado",
+    "manipulacao_localizacao",
+    "estabelecimento_fraudando",
+    "lavagem_dinheiro"
+  ],
+  "acoes_validas": [
+    "bloquear_usuario_temporario",
+    "bloquear_usuario_permanente",
+    "exigir_verificacao_adicional",
+    "marcar_pedido_como_risco",
+    "alertar_ceo_ai",
+    "registrar_evidencia",
+    "congelar_transacao",
+    "solicitar_documento",
+    "escalar_para_compliance",
+    "notificar_autoridades"
+  ],
+  "risk_score_range": [0, 100],
+  "confidence_range": [0, 1]
+}

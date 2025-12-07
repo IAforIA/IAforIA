@@ -1,0 +1,31 @@
+{
+  "description": "Compliance Event Schema for fine-tuning validation",
+  "version": "1.0",
+  "tipos_violacao": [
+    "acesso_nao_autorizado",
+    "privacidade_usuario",
+    "decisao_nao_etica",
+    "excesso_autoridade",
+    "patch_automatico_inseguro",
+    "log_sensivel_exposto",
+    "dados_nao_anonimizados",
+    "violacao_politica"
+  ],
+  "acoes_validas": [
+    "auditar_log",
+    "reverter_decisao",
+    "solicitar_aprovacao_humana",
+    "bloquear_acao_ai",
+    "registrar_violacao",
+    "alertar_administrador",
+    "arquivar_evidencia",
+    "notificar_dpo",
+    "escalar_para_legal"
+  ],
+  "modulos_origem": ["security", "sre", "fraud", "ceo", "agent-zero", "analytics"],
+  "regras_criticas": [
+    "NUNCA acessar VPS/PM2/NGINX",
+    "SEMPRE anonimizar dados pessoais",
+    "REQUER aprovação humana para decisões críticas"
+  ]
+}

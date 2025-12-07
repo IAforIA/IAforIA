@@ -15,7 +15,7 @@
  * - Confirmação de senha obrigatória
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -27,6 +27,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
+import type { ClientProfileDto } from "@shared/contracts";
+import type { Motoboy } from "@shared/schema";
 
 // Schema for profile info (name, phone)
 const profileInfoSchema = z.object({
@@ -52,12 +54,46 @@ const passwordChangeSchema = z.object({
 type PasswordChangeData = z.infer<typeof passwordChangeSchema>;
 
 interface SettingsPageProps {
-  user: { id: string; name: string; phone?: string; email?: string } | null;
+  user: { id: string; name: string; phone?: string; email?: string; role?: 'client' | 'motoboy' | 'central' } | null;
+  clientProfile?: ClientProfileDto | null;
+  motoboyProfile?: Motoboy | null;
 }
 
-export function SettingsPage({ user }: SettingsPageProps) {
+export function SettingsPage({ user, clientProfile, motoboyProfile }: SettingsPageProps) {
   const { toast } = useToast();
   const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [isUploadingClientDoc, setIsUploadingClientDoc] = useState(false);
+  const [isUploadingLicense, setIsUploadingLicense] = useState(false);
+  const [isUploadingResidence, setIsUploadingResidence] = useState(false);
+  const [isUpdatingMotoboy, setIsUpdatingMotoboy] = useState(false);
+  const [clientAddress, setClientAddress] = useState(() => clientProfile?.address);
+  const [motoboyAddress, setMotoboyAddress] = useState(() => ({
+    cep: motoboyProfile?.cep ?? '',
+    numero: motoboyProfile?.numero ?? '',
+    rua: motoboyProfile?.rua ?? '',
+    bairro: motoboyProfile?.bairro ?? '',
+    complemento: motoboyProfile?.complemento ?? '',
+    referencia: motoboyProfile?.referencia ?? '',
+  }));
+  const [isCepLoading, setIsCepLoading] = useState(false);
+  const [isMotoboyCepLoading, setIsMotoboyCepLoading] = useState(false);
+
+  useEffect(() => {
+    if (clientProfile) setClientAddress(clientProfile.address);
+  }, [clientProfile]);
+
+  useEffect(() => {
+    if (motoboyProfile) {
+      setMotoboyAddress({
+        cep: motoboyProfile.cep ?? '',
+        numero: motoboyProfile.numero ?? '',
+        rua: motoboyProfile.rua ?? '',
+        bairro: motoboyProfile.bairro ?? '',
+        complemento: motoboyProfile.complemento ?? '',
+        referencia: motoboyProfile.referencia ?? '',
+      });
+    }
+  }, [motoboyProfile]);
 
   // Form for profile info
   const profileForm = useForm<ProfileInfoData>({
@@ -125,6 +161,140 @@ export function SettingsPage({ user }: SettingsPageProps) {
       });
     },
   });
+
+  // Mutation for client address/docs update
+  const updateClientMutation = useMutation({
+    mutationFn: async (data: Partial<ClientProfileDto>) => {
+      const res = await apiRequest('PATCH', `/api/clients/me`, data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/me/profile'] });
+      toast({ title: "Cadastro atualizado", description: "Dados do cliente salvos com sucesso." });
+    },
+    onError: (error: any) => {
+      toast({ title: "Erro ao atualizar cadastro", description: error.message || "Tente novamente.", variant: "destructive" });
+    }
+  });
+
+  const handleClientDocUpload = async (file?: File | null) => {
+    if (!file) return;
+    setIsUploadingClientDoc(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('/api/upload/client-doc', { method: 'POST', body: formData });
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({}));
+        throw new Error(error.error || 'Falha ao enviar documento');
+      }
+      toast({ title: 'Documento enviado', description: 'Arquivo salvo com sucesso.' });
+      queryClient.invalidateQueries({ queryKey: ['/api/me/profile'] });
+    } catch (error: any) {
+      toast({ title: 'Erro no upload', description: error.message || 'Tente novamente.', variant: 'destructive' });
+    } finally {
+      setIsUploadingClientDoc(false);
+    }
+  };
+
+  const handleMotoboyDocUpload = async (file: File | null, tipo: 'license' | 'residence') => {
+    if (!file) return;
+    if (tipo === 'license') setIsUploadingLicense(true); else setIsUploadingResidence(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('tipo', tipo);
+      const res = await fetch('/api/upload/motoboy-doc', { method: 'POST', body: formData });
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({}));
+        throw new Error(error.error || 'Falha ao enviar documento');
+      }
+      toast({ title: 'Documento enviado', description: 'Arquivo salvo com sucesso.' });
+    } catch (error: any) {
+      toast({ title: 'Erro no upload', description: error.message || 'Tente novamente.', variant: 'destructive' });
+    } finally {
+      if (tipo === 'license') setIsUploadingLicense(false); else setIsUploadingResidence(false);
+    }
+  };
+
+  const handleMotoboyFieldUpdate = async (patch: Partial<Motoboy>) => {
+    setIsUpdatingMotoboy(true);
+    try {
+      const res = await apiRequest('PATCH', '/api/motoboys/me', patch);
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({}));
+        throw new Error(error.error || 'Falha ao atualizar dados');
+      }
+      toast({ title: 'Dados atualizados', description: 'Informações do motoboy salvas.' });
+      queryClient.invalidateQueries({ queryKey: ['/api/motoboys/me'] });
+    } catch (error: any) {
+      toast({ title: 'Erro ao atualizar', description: error.message || 'Tente novamente.', variant: 'destructive' });
+    } finally {
+      setIsUpdatingMotoboy(false);
+    }
+  };
+
+  const normalizeCep = (value: string) => value.replace(/\D/g, '').slice(0, 8);
+
+  const applyClientAddressFromCep = async (cepRaw: string) => {
+    const cep = normalizeCep(cepRaw);
+    if (cep.length !== 8) return;
+    setIsCepLoading(true);
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      const data = await res.json();
+      if (data.erro) throw new Error('CEP não encontrado');
+      const next = {
+        cep: data.cep || cepRaw,
+        rua: data.logradouro || '',
+        bairro: data.bairro || '',
+        numero: clientAddress?.numero || '',
+        complemento: clientAddress?.complemento || '',
+        referencia: clientAddress?.referencia || '',
+      };
+      setClientAddress((prev) => ({ ...prev, ...next }));
+      updateClientMutation.mutate({
+        cep: next.cep,
+        rua: next.rua,
+        bairro: next.bairro,
+      });
+      toast({ title: 'Endereço preenchido pelo CEP', description: 'Revise número e complemento.' });
+    } catch (error: any) {
+      toast({ title: 'CEP inválido', description: error.message || 'Não foi possível buscar o CEP.', variant: 'destructive' });
+    } finally {
+      setIsCepLoading(false);
+    }
+  };
+
+  const applyMotoboyAddressFromCep = async (cepRaw: string) => {
+    const cep = normalizeCep(cepRaw);
+    if (cep.length !== 8) return;
+    setIsMotoboyCepLoading(true);
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      const data = await res.json();
+      if (data.erro) throw new Error('CEP não encontrado');
+      const next = {
+        cep: data.cep || cepRaw,
+        rua: data.logradouro || '',
+        bairro: data.bairro || '',
+        numero: motoboyAddress?.numero || '',
+        complemento: motoboyAddress?.complemento || '',
+        referencia: motoboyAddress?.referencia || '',
+      };
+      setMotoboyAddress((prev) => (prev ? { ...prev, ...next } : next));
+      await handleMotoboyFieldUpdate({
+        cep: next.cep,
+        rua: next.rua,
+        bairro: next.bairro,
+      });
+      toast({ title: 'Endereço preenchido pelo CEP', description: 'Revise número e complemento.' });
+    } catch (error: any) {
+      toast({ title: 'CEP inválido', description: error.message || 'Não foi possível buscar o CEP.', variant: 'destructive' });
+    } finally {
+      setIsMotoboyCepLoading(false);
+    }
+  };
 
   if (!user) {
     return (
@@ -278,6 +448,223 @@ export function SettingsPage({ user }: SettingsPageProps) {
           </p>
         )}
       </Card>
+
+      {user?.role === 'client' && clientProfile && clientAddress && (
+        <Card className="p-6 max-w-3xl mt-6 space-y-4">
+          <h3 className="text-lg font-semibold">Dados do Cliente</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium">Email</label>
+              <Input value={clientProfile.email} disabled className="bg-muted" />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Tipo de documento</label>
+              <Input value={clientProfile.documentType} disabled className="bg-muted" />
+            </div>
+            <div>
+              <label className="text-sm font-medium">CPF/CNPJ</label>
+              <Input value={clientProfile.documentNumber} disabled className="bg-muted" />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Inscrição Estadual (opcional)</label>
+              <Input
+                defaultValue={clientProfile.ie ?? ''}
+                onBlur={(e) => updateClientMutation.mutate({ ie: e.target.value })}
+                placeholder="ISENTO / 123456"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">CEP</label>
+              <Input
+                value={clientAddress.cep}
+                onChange={(e) => setClientAddress({ ...clientAddress, cep: e.target.value })}
+                onBlur={(e) => applyClientAddressFromCep(e.target.value)}
+                placeholder="00000-000"
+                title="CEP"
+                disabled={isCepLoading}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Número</label>
+              <Input
+                value={clientAddress.numero}
+                onChange={(e) => setClientAddress({ ...clientAddress, numero: e.target.value })}
+                onBlur={(e) => updateClientMutation.mutate({ numero: e.target.value })}
+                placeholder="123"
+                title="Número"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Rua / Avenida</label>
+              <Input
+                value={clientAddress.rua}
+                onChange={(e) => setClientAddress({ ...clientAddress, rua: e.target.value })}
+                onBlur={(e) => updateClientMutation.mutate({ rua: e.target.value })}
+                placeholder="Av. Guriri"
+                title="Rua"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Bairro</label>
+              <Input
+                value={clientAddress.bairro}
+                onChange={(e) => setClientAddress({ ...clientAddress, bairro: e.target.value })}
+                onBlur={(e) => updateClientMutation.mutate({ bairro: e.target.value })}
+                placeholder="Centro"
+                title="Bairro"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Complemento</label>
+              <Input
+                value={clientAddress.complemento ?? ''}
+                onChange={(e) => setClientAddress({ ...clientAddress, complemento: e.target.value })}
+                onBlur={(e) => updateClientMutation.mutate({ complemento: e.target.value })}
+                placeholder="Sala 2 / Bloco"
+                title="Complemento"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Referência</label>
+              <Input
+                value={clientAddress.referencia ?? ''}
+                onChange={(e) => setClientAddress({ ...clientAddress, referencia: e.target.value })}
+                onBlur={(e) => updateClientMutation.mutate({ referencia: e.target.value })}
+                placeholder="Ao lado da praça"
+                title="Referência"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Licença / documento da empresa</label>
+            <input
+              type="file"
+              accept="image/*,application/pdf"
+              onChange={(e) => handleClientDocUpload(e.target.files?.[0])}
+              disabled={isUploadingClientDoc}
+              title="Upload do documento da empresa"
+            />
+            <p className="text-xs text-muted-foreground">Envie o comprovante de registro (CNPJ ou CPF).</p>
+          </div>
+        </Card>
+      )}
+
+      {user?.role === 'motoboy' && (
+        <Card className="p-6 max-w-2xl mt-6 space-y-4">
+          <h3 className="text-lg font-semibold">Documentos do Motoboy</h3>
+          {user.email && (
+            <div>
+              <label className="text-sm font-medium">Email</label>
+              <Input value={user.email} disabled className="bg-muted" />
+            </div>
+          )}
+
+          {motoboyProfile && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">CEP</label>
+                <Input
+                  value={motoboyAddress.cep}
+                  onChange={(e) => setMotoboyAddress({ ...motoboyAddress, cep: e.target.value })}
+                  onBlur={(e) => applyMotoboyAddressFromCep(e.target.value)}
+                  placeholder="00000-000"
+                  title="CEP do endereço"
+                  disabled={isUpdatingMotoboy || isMotoboyCepLoading}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Número</label>
+                <Input
+                  value={motoboyAddress.numero}
+                  onChange={(e) => setMotoboyAddress({ ...motoboyAddress, numero: e.target.value })}
+                  onBlur={(e) => handleMotoboyFieldUpdate({ numero: e.target.value })}
+                  placeholder="123"
+                  title="Número do endereço"
+                  disabled={isUpdatingMotoboy}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Rua / Avenida</label>
+                <Input
+                  value={motoboyAddress.rua}
+                  onChange={(e) => setMotoboyAddress({ ...motoboyAddress, rua: e.target.value })}
+                  onBlur={(e) => handleMotoboyFieldUpdate({ rua: e.target.value })}
+                  placeholder="Rua"
+                  title="Rua ou avenida"
+                  disabled={isUpdatingMotoboy}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Bairro</label>
+                <Input
+                  value={motoboyAddress.bairro}
+                  onChange={(e) => setMotoboyAddress({ ...motoboyAddress, bairro: e.target.value })}
+                  onBlur={(e) => handleMotoboyFieldUpdate({ bairro: e.target.value })}
+                  placeholder="Bairro"
+                  title="Bairro"
+                  disabled={isUpdatingMotoboy}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Complemento</label>
+                <Input
+                  value={motoboyAddress.complemento}
+                  onChange={(e) => setMotoboyAddress({ ...motoboyAddress, complemento: e.target.value })}
+                  onBlur={(e) => handleMotoboyFieldUpdate({ complemento: e.target.value })}
+                  placeholder="Apto / Bloco"
+                  title="Complemento"
+                  disabled={isUpdatingMotoboy}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Referência</label>
+                <Input
+                  value={motoboyAddress.referencia}
+                  onChange={(e) => setMotoboyAddress({ ...motoboyAddress, referencia: e.target.value })}
+                  onBlur={(e) => handleMotoboyFieldUpdate({ referencia: e.target.value })}
+                  placeholder="Ponto de referência"
+                  title="Referência"
+                  disabled={isUpdatingMotoboy}
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">CNH (frente)</label>
+            <input
+              type="file"
+              accept="image/*,application/pdf"
+              onChange={(e) => handleMotoboyDocUpload(e.target.files?.[0] || null, 'license')}
+              disabled={isUploadingLicense}
+              title="Upload da CNH"
+            />
+            <p className="text-xs text-muted-foreground">Faça upload da sua CNH válida.</p>
+            {motoboyProfile?.licenseUrl && (
+              <a href={motoboyProfile.licenseUrl} target="_blank" rel="noreferrer" className="text-xs text-blue-600 underline">
+                Ver CNH enviada
+              </a>
+            )}
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Comprovante de residência</label>
+            <input
+              type="file"
+              accept="image/*,application/pdf"
+              onChange={(e) => handleMotoboyDocUpload(e.target.files?.[0] || null, 'residence')}
+              disabled={isUploadingResidence}
+              title="Upload do comprovante de residência"
+            />
+            <p className="text-xs text-muted-foreground">Conta de luz/água ou documento equivalente.</p>
+            {motoboyProfile?.residenceProofUrl && (
+              <a href={motoboyProfile.residenceProofUrl} target="_blank" rel="noreferrer" className="text-xs text-blue-600 underline">
+                Ver comprovante enviado
+              </a>
+            )}
+          </div>
+        </Card>
+      )}
     </>
   );
 }

@@ -8,104 +8,55 @@
  * - Exporta instância global 'storage' usada em routes.ts
  */
 
-// neon: Cliente HTTP serverless para PostgreSQL da Neon
-import { neon } from '@neondatabase/serverless';
-// drizzle: ORM TypeScript-first que gera queries SQL type-safe
-import { drizzle } from 'drizzle-orm/neon-http';
 // eq, desc, and: Funções helper do Drizzle para filtros e ordenação SQL
-import { eq, desc, and } from 'drizzle-orm';
-// randomUUID: Gera IDs únicos para novos clientes cadastrados via onboarding
-import { randomUUID } from 'crypto';
+import { eq, desc, and, inArray } from 'drizzle-orm';
 // Importa todas as tabelas e tipos do schema compartilhado
 import {
   users,           // Tabela de usuários (clients, motoboys, central)
-  motoboys,        // Tabela de motoboys (informações específicas como veículo)
-  motoboyLocations, // Tabela de histórico de localizações GPS
-  motoboySchedules, // Tabela de disponibilidade semanal dos motoboys
-  clients,         // Tabela de clientes (informações complementares)
-  orders,          // Tabela de pedidos (principal)
   liveDocs,        // Tabela de documentos (CNH, fotos, etc)
-  chatMessages,    // Tabela de mensagens de chat
-  clientSchedules, // Tabela de horários de funcionamento dos clientes
-  type InsertOrder,       // Tipo Zod para inserção de pedidos
-  type InsertMotoboy,     // Tipo Zod para inserção de motoboys
+  motoboySchedules, // Tabela de disponibilidade semanal dos motoboys
   type InsertChatMessage, // Tipo Zod para inserção de mensagens
   type InsertClientSchedule, // Tipo Zod para inserção de schedules de clientes
-  type Motoboy,           // Tipo completo de Motoboy
   type Client             // Tipo completo de Client
 } from '@shared/schema';
+import type { ClientOnboardingPayload, ClientProfileDto } from '@shared/contracts';
+import { db } from './storage/db.js';
+import { shapeChatMessage } from './storage/utils.js';
+import { createClientWithUser, getAllUsers, getClientProfile, getUser, getUserByEmail } from './storage/users.js';
+import {
+  createMotoboy,
+  deleteMotoboySchedule,
+  getAllMotoboys,
+  getLatestMotoboyLocations,
+  getMotoboy,
+  getMotoboySchedules,
+  setMotoboyOnline,
+  updateMotoboy,
+  updateMotoboyLocation,
+  updateMotoboyOnlineStatus,
+  upsertMotoboySchedule,
+} from './storage/motoboys.js';
+import {
+  assignOrderToMotoboy,
+  createOrder,
+  getAllOrders,
+  getOrder,
+  getOrdersByClientId,
+  getOrdersByMotoboyId,
+  getPendingOrders,
+  updateOrderStatus,
+} from './storage/orders.js';
+import { createChatMessage, getChatMessages } from './storage/chat.js';
+import {
+  getAllClients,
+  getAllClientSchedules,
+  getClientSchedule,
+  updateClient,
+} from './storage/clients.js';
+import { createLiveDoc } from './storage/uploads.js';
+import logger from './logger.js';
 
-// Importa o schema completo para passar ao Drizzle (necessário para relações)
-import * as schema from '@shared/schema';
-
-import type { ClientOnboardingPayload, ClientProfileDto, DocumentType } from '@shared/contracts';
-
-// ========================================
-// INICIALIZAÇÃO DO BANCO DE DADOS
-// ========================================
-
-// CRÍTICO: Valida que DATABASE_URL existe no .env antes de conectar
-if (!process.env.DATABASE_URL) {
-  throw new Error('DATABASE_URL environment variable is required.');
-}
-
-// CONSTANTE GLOBAL: Instância do Drizzle ORM conectada ao PostgreSQL
-// CONEXÃO: Usada por toda a classe DrizzleStorage para executar queries
-// CONFIGURAÇÃO: { schema } permite uso de relações entre tabelas
-const db = drizzle(neon(process.env.DATABASE_URL), { schema });
-
-// ========================================
-// CONSTANTES: MENSAGENS DE ERRO
-// ========================================
-// PADRÃO: Error Messages as Constants - facilita tradução e manutenção
-const EMAIL_IN_USE_ERROR = 'EMAIL_IN_USE';
-const DOCUMENT_IN_USE_ERROR = 'DOCUMENT_IN_USE';
-
-// ========================================
-// FUNÇÃO AUXILIAR: MAPEAMENTO CLIENT → CLIENTPROFILEDTO
-// ========================================
-/**
- * FUNÇÃO: mapClientToProfile
- * PROPÓSITO: Converte registro do banco (Client) para DTO da API (ClientProfileDto)
- * PARÂMETRO: client (Client) - registro da tabela clients
- * RETORNO: ClientProfileDto - objeto estruturado para resposta da API
- * 
- * TRANSFORMAÇÕES:
- * - Achata estrutura: campos de endereço vão para objeto aninhado 'address'
- * - Converte tipos: geoLat/geoLng de Decimal (string) para number | null
- * - Type cast: documentType de text para "PF" | "PJ" (literal union)
- * - Normaliza nullables: email ?? '' (garante string, nunca null)
- * 
- * USADO EM:
- * - getClientProfile: GET /api/me/profile
- * - createClientWithUser: POST /api/auth/register (retorna profile completo)
- * 
- * PADRÃO: Data Mapper - separa estrutura do banco (tabela plana) da API (objeto aninhado)
- */
-function mapClientToProfile(client: Client): ClientProfileDto {
-  return {
-    id: client.id,
-    name: client.name,
-    phone: client.phone,
-    email: client.email ?? '', // Garante string não-nula
-    documentType: client.documentType as DocumentType, // Cast de text para "PF" | "PJ"
-    documentNumber: client.documentNumber,
-    ie: client.ie,
-    mensalidade: client.mensalidade ? Number(client.mensalidade) : 0, // Conversao Decimal para number
-    address: {
-      cep: client.cep,
-      rua: client.rua,
-      numero: client.numero,
-      bairro: client.bairro,
-      complemento: client.complemento,
-      referencia: client.referencia,
-      // CONVERSÃO: Decimal (armazenado como string) → number para JSON
-      geoLat: client.geoLat ? Number(client.geoLat) : null,
-      geoLng: client.geoLng ? Number(client.geoLng) : null,
-    },
-    horario: undefined, // TODO Etapa 09: popular de tabela schedules quando implementada
-  };
-}
+// Helper utilities and database client are provided via modular storage submodules
 
 // ========================================
 // CLASSE PRINCIPAL: DrizzleStorage
@@ -128,10 +79,7 @@ class DrizzleStorage /* implements IStorage */ {
    * USADO EM: Validação de token JWT em middleware/auth.ts
    */
   async getUser(id: string) {
-    // CONSTANTE: Array de resultados da query (limit 1 garante máximo 1 resultado)
-    const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
-    // RETORNA: Primeiro elemento (usuário) ou undefined se não encontrado
-    return result[0];
+    return getUser(id);
   }
 
   /**
@@ -141,9 +89,7 @@ class DrizzleStorage /* implements IStorage */ {
    * CORREÇÃO: Adicionada para substituir busca por ID no login
    */
   async getUserByEmail(email: string) {
-    // CONSTANTE: Resultado da busca por email
-    const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
-    return result[0];
+    return getUserByEmail(email);
   }
 
   /**
@@ -152,7 +98,7 @@ class DrizzleStorage /* implements IStorage */ {
    * USADO EM: GET /api/users (central dashboard)
    */
   async getAllUsers() {
-    return await db.select().from(users);
+    return getAllUsers();
   }
 
   /**
@@ -178,88 +124,7 @@ class DrizzleStorage /* implements IStorage */ {
    * PADRÃO: Unit of Work - múltiplas operações executadas como unidade atômica
    */
   async createClientWithUser(payload: Omit<ClientOnboardingPayload, 'password'>, passwordHash: string): Promise<ClientProfileDto> {
-    // GERAÇÃO: UUID v4 para chave primária (mesmo ID em users e clients)
-    const clientId = randomUUID();
-    
-    // NORMALIZAÇÃO: Remove caracteres não-numéricos (pontos, hífens, barras)
-    const normalizedDocument = payload.documentNumber.replace(/\D/g, '');
-
-    // ATENÇÃO: O driver neon-http não suporta transações (db.transaction)
-    // Portanto executamos em duas etapas e aplicamos rollback manual
-
-    // VALIDAÇÃO: Email único (unique constraint)
-    const existingUser = await db.select({ id: users.id }).from(users).where(eq(users.email, payload.email)).limit(1);
-    if (existingUser.length > 0) {
-      throw new Error(EMAIL_IN_USE_ERROR); // Capturado em routes.ts
-    }
-
-    // VALIDAÇÃO: Documento único (CPF/CNPJ)
-    const existingDocument = await db
-      .select({ id: clients.id })
-      .from(clients)
-      .where(eq(clients.documentNumber, normalizedDocument))
-      .limit(1);
-
-    if (existingDocument.length > 0) {
-      throw new Error(DOCUMENT_IN_USE_ERROR);
-    }
-
-    // INSERT 1: Cria usuário na tabela de autenticação
-    await db.insert(users).values({
-      id: clientId, // Mesma PK para relacionamento 1:1
-      name: payload.name,
-      role: 'client', // Hardcoded para onboarding de clientes
-      email: payload.email,
-      phone: payload.phone,
-      password: passwordHash, // bcrypt hash (nunca plain text!)
-      status: 'active',
-    });
-
-    try {
-      // INSERT 2: Cria registro de cliente com dados complementares
-      const insertedClient = await db
-        .insert(clients)
-        .values({
-          id: clientId, // FK para users.id (1:1)
-          name: payload.name,
-          phone: payload.phone,
-          email: payload.email,
-          company: payload.name, // TODO: adicionar campo 'razaoSocial' separado
-          documentType: payload.documentType, // "PF" | "PJ"
-          documentNumber: normalizedDocument,
-          ie: payload.documentType === 'PJ' ? payload.ie ?? null : null, // IE apenas PJ
-          // ENDEREÇO: 8 campos do addressSchema
-          cep: payload.address.cep,
-          rua: payload.address.rua,
-          numero: payload.address.numero,
-          bairro: payload.address.bairro,
-          complemento: payload.address.complemento ?? null,
-          referencia: payload.address.referencia ?? null,
-          // GPS: converte number → string (tipo Decimal no banco)
-          geoLat: payload.address.geoLat !== undefined ? String(payload.address.geoLat) : null,
-          geoLng: payload.address.geoLng !== undefined ? String(payload.address.geoLng) : null,
-        })
-        .returning(); // Retorna registro inserido
-
-      // MAPEAMENTO: Client (banco) → ClientProfileDto (API)
-      const profile = mapClientToProfile(insertedClient[0]);
-      
-      // POPULA HORÁRIO: Busca schedule se existir
-      const schedule = await db.select().from(clientSchedules).where(eq(clientSchedules.clientId, clientId)).limit(1);
-      if (schedule.length > 0) {
-        profile.horario = {
-          horaAbertura: schedule[0].horaAbertura ?? undefined,
-          horaFechamento: schedule[0].horaFechamento ?? undefined,
-          fechado: schedule[0].fechado ?? undefined
-        };
-      }
-      
-      return profile;
-    } catch (error) {
-      // ROLLBACK MANUAL: remove usuário criado se cadastro do client falhar
-      await db.delete(users).where(eq(users.id, clientId));
-      throw error;
-    }
+    return createClientWithUser(payload, passwordHash);
   }
 
   /**
@@ -275,26 +140,7 @@ class DrizzleStorage /* implements IStorage */ {
    * TRANSFORMAÇÃO: Usa mapClientToProfile para converter Client → ClientProfileDto
    */
   async getClientProfile(id: string): Promise<ClientProfileDto | null> {
-    // CONSTANTE: Resultado da busca por ID
-    const result = await db.select().from(clients).where(eq(clients.id, id)).limit(1);
-    
-    if (result.length === 0) {
-      return null;
-    }
-
-    const profile = mapClientToProfile(result[0]);
-    
-    // POPULA HORÁRIO: Busca schedule se existir
-    const schedule = await db.select().from(clientSchedules).where(eq(clientSchedules.clientId, id)).limit(1);
-    if (schedule.length > 0) {
-      profile.horario = {
-        horaAbertura: schedule[0].horaAbertura ?? undefined,
-        horaFechamento: schedule[0].horaFechamento ?? undefined,
-        fechado: schedule[0].fechado ?? undefined
-      };
-    }
-
-    return profile;
+    return getClientProfile(id);
   }
 
 
@@ -309,15 +155,7 @@ class DrizzleStorage /* implements IStorage */ {
    * NOTA: Cria novo registro (INSERT) em vez de atualizar (UPDATE) para manter histórico
    */
   async updateMotoboyLocation(id: string, lat: number, lng: number) {
-    // CONSTANTE: Objeto de localização para inserir no banco
-    // NOTA: Coordenadas convertidas para string (tipo Decimal no schema)
-    const newLocation = {
-      motoboyId: id,           // UUID do motoboy
-      latitude: lat.toString(),  // Latitude convertida para string
-      longitude: lng.toString()  // Longitude convertida para string
-    };
-    // OPERAÇÃO: Insere nova localização (timestamp é gerado automaticamente)
-    await db.insert(motoboyLocations).values(newLocation);
+    return updateMotoboyLocation(id, lat, lng);
   }
 
   /**
@@ -327,27 +165,7 @@ class DrizzleStorage /* implements IStorage */ {
    * USADO EM: AIEngine para calcular distâncias e atribuir pedidos
    */
   async getLatestMotoboyLocations() {
-    // CONSTANTE: Todas as localizações ordenadas por timestamp (mais recente primeiro)
-    const allLocations = await db.select().from(motoboyLocations).orderBy(desc(motoboyLocations.timestamp));
-    
-    // CONSTANTE: Map para armazenar apenas a localização mais recente de cada motoboy
-    const latestByMotoboy = new Map();
-    
-    // LOOP: Itera sobre todas as localizações (já ordenadas por data)
-    for (const location of allLocations) {
-      // LÓGICA: Se ainda não temos localização deste motoboy, adiciona (será a mais recente)
-      if (!latestByMotoboy.has(location.motoboyId)) {
-        // CONSTANTE: Localização normalizada com coordenadas convertidas para number
-        // NOTA: Banco armazena como Decimal (string), aqui convertemos para Number para cálculos
-        const normalizedLocation = {
-          ...location,
-          latitude: typeof location.latitude === "string" ? parseFloat(location.latitude) : (location.latitude || 0),
-          longitude: typeof location.longitude === "string" ? parseFloat(location.longitude) : (location.longitude || 0)
-        };
-        latestByMotoboy.set(location.motoboyId, normalizedLocation);
-      }
-    }
-    return latestByMotoboy;
+    return getLatestMotoboyLocations();
   }
 
   // ========================================
@@ -360,7 +178,7 @@ class DrizzleStorage /* implements IStorage */ {
    * USADO EM: GET /api/motoboys em routes.ts (apenas central)
    */
   async getAllMotoboys() {
-    return await db.select().from(motoboys);
+    return getAllMotoboys();
   }
 
   /**
@@ -369,9 +187,7 @@ class DrizzleStorage /* implements IStorage */ {
    * USADO EM: Validações de atribuição de pedidos
    */
   async getMotoboy(id: string) {
-    // CONSTANTE: Resultado da busca (limit 1 para performance)
-    const result = await db.select().from(motoboys).where(eq(motoboys.id, id)).limit(1);
-    return result[0];
+    return getMotoboy(id);
   }
 
   /**
@@ -380,12 +196,7 @@ class DrizzleStorage /* implements IStorage */ {
    * USADO EM: WebSocket connection/disconnection no index.ts
    */
   async updateMotoboyOnlineStatus(id: string, online: boolean) {
-    await db.update(motoboys)
-      .set({ 
-        online: online,
-        updatedAt: new Date() // Drizzle espera Date object, não string
-      })
-      .where(eq(motoboys.id, id));
+    return updateMotoboyOnlineStatus(id, online);
   }
 
   /**
@@ -394,9 +205,7 @@ class DrizzleStorage /* implements IStorage */ {
    * USADO EM: Scripts de importação (import-motoboys-reais.ts)
    */
   async createMotoboy(insertMotoboy: InsertMotoboy) {
-    // CONSTANTE: Resultado da inserção com .returning() para obter o motoboy criado
-    const result = await db.insert(motoboys).values(insertMotoboy).returning();
-    return result[0];
+    return createMotoboy(insertMotoboy);
   }
 
   /**
@@ -405,7 +214,7 @@ class DrizzleStorage /* implements IStorage */ {
    * PARÂMETROS: data - Objeto Partial<Motoboy> (pode conter apenas campos a atualizar)
    */
   async updateMotoboy(id: string, data: Partial<Motoboy>) {
-    await db.update(motoboys).set(data).where(eq(motoboys.id, id));
+    return updateMotoboy(id, data);
   }
 
   /**
@@ -414,7 +223,7 @@ class DrizzleStorage /* implements IStorage */ {
    * USADO EM: Conexão/desconexão de WebSocket em index.ts
    */
   async setMotoboyOnline(id: string, online: boolean) {
-    await db.update(motoboys).set({ online }).where(eq(motoboys.id, id));
+    return setMotoboyOnline(id, online);
   }
 
   // ========================================
@@ -427,7 +236,7 @@ class DrizzleStorage /* implements IStorage */ {
    * USADO EM: GET /api/orders em routes.ts
    */
   async getAllOrders() {
-    return await db.select().from(orders).orderBy(desc(orders.createdAt));
+    return getAllOrders();
   }
 
   /**
@@ -436,9 +245,7 @@ class DrizzleStorage /* implements IStorage */ {
    * USADO EM: Rotas de accept/deliver para retornar pedido atualizado
    */
   async getOrder(id: string) {
-    // CONSTANTE: Resultado da busca por ID
-    const result = await db.select().from(orders).where(eq(orders.id, id)).limit(1);
-    return result[0];
+    return getOrder(id);
   }
 
   /**
@@ -447,7 +254,7 @@ class DrizzleStorage /* implements IStorage */ {
    * USADO EM: GET /api/orders/pending em routes.ts
    */
   async getPendingOrders() {
-    return await db.select().from(orders).where(eq(orders.status, "pending"));
+    return getPendingOrders();
   }
 
   /**
@@ -457,9 +264,7 @@ class DrizzleStorage /* implements IStorage */ {
    * RETORNA: Pedido recém-criado com ID gerado
    */
   async createOrder(order: InsertOrder) {
-    // CONSTANTE: Resultado da inserção com .returning() para obter o pedido criado
-    const result = await db.insert(orders).values(order).returning();
-    return result[0];
+    return createOrder(order);
   }
 
   /**
@@ -469,11 +274,7 @@ class DrizzleStorage /* implements IStorage */ {
    * NOTA: Também atualiza deliveredAt para timestamp atual e salva comprovante se fornecido
    */
   async updateOrderStatus(id: string, status: "pending" | "in_progress" | "delivered" | "cancelled", proofUrl?: string) {
-    const updateData: any = { status, deliveredAt: new Date() };
-    if (proofUrl) {
-      updateData.proofUrl = proofUrl;
-    }
-    await db.update(orders).set(updateData).where(eq(orders.id, id));
+    return updateOrderStatus(id, status, proofUrl);
   }
 
   /**
@@ -483,12 +284,7 @@ class DrizzleStorage /* implements IStorage */ {
    * ATUALIZA: motoboyId, motoboyName, status (para in_progress), acceptedAt (timestamp)
    */
   async assignOrderToMotoboy(orderId: string, motoboyId: string, motoboyName: string) {
-    await db.update(orders).set({
-      motoboyId,      // UUID do motoboy que aceitou
-      motoboyName,    // Nome do motoboy (desnormalizado para performance)
-      status: "in_progress", // Muda status de pending para in_progress
-      acceptedAt: new Date()  // Registra momento da aceitação
-    }).where(eq(orders.id, orderId));
+    return assignOrderToMotoboy(orderId, motoboyId, motoboyName);
   }
 
   /**
@@ -497,7 +293,7 @@ class DrizzleStorage /* implements IStorage */ {
    * USADO EM: GET /api/orders (filtro por role client)
    */
   async getOrdersByClientId(clientId: string) {
-    return await db.select().from(orders).where(eq(orders.clientId, clientId)).orderBy(desc(orders.createdAt));
+    return getOrdersByClientId(clientId);
   }
 
   /**
@@ -506,7 +302,7 @@ class DrizzleStorage /* implements IStorage */ {
    * USADO EM: GET /api/orders (filtro por role motoboy)
    */
   async getOrdersByMotoboyId(motoboyId: string) {
-    return await db.select().from(orders).where(eq(orders.motoboyId, motoboyId)).orderBy(desc(orders.createdAt));
+    return getOrdersByMotoboyId(motoboyId);
   }
 
   // ========================================
@@ -520,11 +316,7 @@ class DrizzleStorage /* implements IStorage */ {
    * USADO EM: GET /api/chat em routes.ts
    */
   async getChatMessages(limit?: number) {
-    // CONSTANTE: Query base com ordenação por data
-    const query = db.select().from(chatMessages).orderBy(desc(chatMessages.createdAt));
-    // LÓGICA: Se limit fornecido, aplica limitação na query
-    if (limit) query.limit(limit);
-    return await query;
+    return getChatMessages(limit);
   }
 
   /**
@@ -533,10 +325,8 @@ class DrizzleStorage /* implements IStorage */ {
    * USADO EM: POST /api/chat em routes.ts
    * RETORNA: Mensagem recém-criada com ID e timestamp gerados
    */
-  async createChatMessage(message: InsertChatMessage) {
-    // CONSTANTE: Resultado da inserção com .returning() para obter a mensagem criada
-    const result = await db.insert(chatMessages).values(message).returning();
-    return result[0];
+  async createChatMessage(message: any) {
+    return createChatMessage(message);
   }
 
   /**
@@ -545,7 +335,7 @@ class DrizzleStorage /* implements IStorage */ {
    * RETORNA: Array de schedules com diaSemana, horários e status fechado
    */
   async getClientSchedule(clientId: string) {
-    return await db.select().from(clientSchedules).where(eq(clientSchedules.clientId, clientId));
+    return getClientSchedule(clientId);
   }
 
   /**
@@ -555,10 +345,7 @@ class DrizzleStorage /* implements IStorage */ {
    * RETORNA: Array de schedules com diaSemana e turnos (manha/tarde/noite)
    */
   async getMotoboySchedules(motoboyId: string) {
-    return await db.select()
-      .from(motoboySchedules)
-      .where(eq(motoboySchedules.motoboyId, motoboyId))
-      .orderBy(motoboySchedules.diaSemana);
+    return getMotoboySchedules(motoboyId);
   }
 
   /**
@@ -574,28 +361,7 @@ class DrizzleStorage /* implements IStorage */ {
     turnoTarde: boolean, 
     turnoNoite: boolean
   ) {
-    // Delete existing schedule for this day
-    await db.delete(motoboySchedules)
-      .where(
-        and(
-          eq(motoboySchedules.motoboyId, motoboyId),
-          eq(motoboySchedules.diaSemana, diaSemana)
-        )
-      );
-    
-    // If at least one shift is active, insert new schedule
-    if (turnoManha || turnoTarde || turnoNoite) {
-      const result = await db.insert(motoboySchedules).values({
-        motoboyId,
-        diaSemana,
-        turnoManha,
-        turnoTarde,
-        turnoNoite
-      }).returning();
-      return result[0];
-    }
-    
-    return null; // All shifts disabled = no schedule entry
+    return upsertMotoboySchedule(motoboyId, diaSemana, turnoManha, turnoTarde, turnoNoite);
   }
 
   /**
@@ -604,7 +370,7 @@ class DrizzleStorage /* implements IStorage */ {
    * USADO EM: DELETE /api/motoboy-schedules/:id
    */
   async deleteMotoboySchedule(id: string) {
-    await db.delete(motoboySchedules).where(eq(motoboySchedules.id, id));
+    return deleteMotoboySchedule(id);
   }
 
   // ========================================
@@ -617,7 +383,7 @@ class DrizzleStorage /* implements IStorage */ {
    * USADO EM: GET /api/clients
    */
   async getAllClients() {
-    return await db.select().from(clients).orderBy(desc(clients.createdAt));
+    return getAllClients();
   }
 
   /**
@@ -626,8 +392,7 @@ class DrizzleStorage /* implements IStorage */ {
    * USADO EM: PATCH /api/clients/:id
    */
   async updateClient(clientId: string, data: Partial<Client>) {
-    const result = await db.update(clients).set(data).where(eq(clients.id, clientId)).returning();
-    return result[0];
+    return updateClient(clientId, data);
   }
 
   // ========================================
@@ -650,8 +415,7 @@ class DrizzleStorage /* implements IStorage */ {
    * USADO EM: POST /api/upload/live-doc
    */
   async createLiveDoc(doc: typeof liveDocs.$inferInsert) {
-    const result = await db.insert(liveDocs).values(doc).returning();
-    return result[0];
+    return createLiveDoc(doc);
   }
 
   /**
@@ -666,23 +430,7 @@ class DrizzleStorage /* implements IStorage */ {
     horaFechamento: string | null;
     fechado: boolean;
   }) {
-    console.log('🔧 upsertClientSchedule - data recebido:', JSON.stringify(data, null, 2));
-    
-    // Cria objeto tipado explicitamente com InsertClientSchedule
-    const scheduleData: InsertClientSchedule = {
-      clientId: data.clientId,
-      diaSemana: data.diaSemana,
-      horaAbertura: data.horaAbertura,
-      horaFechamento: data.horaFechamento,
-      fechado: data.fechado,
-    };
-    
-    console.log('🔧 scheduleData para insert:', JSON.stringify(scheduleData, null, 2));
-    
-    const result = await db.insert(clientSchedules).values(scheduleData).returning();
-    
-    console.log('🔧 upsertClientSchedule - result:', JSON.stringify(result[0], null, 2));
-    return result[0];
+    return upsertClientSchedule(data);
   }
 
   /**
@@ -690,8 +438,8 @@ class DrizzleStorage /* implements IStorage */ {
    * PROPÓSITO: Remove horário de funcionamento específico
    * USADO EM: POST /api/clients/:id/schedules (delete before insert)
    */
-  async deleteClientSchedule(id: number) {
-    await db.delete(clientSchedules).where(eq(clientSchedules.id, id));
+  async deleteClientSchedule(id: string) {
+    return deleteClientSchedule(id);
   }
 
   /**
@@ -701,7 +449,7 @@ class DrizzleStorage /* implements IStorage */ {
    * RETORNA: Array completo de schedules com clientId
    */
   async getAllClientSchedules() {
-    return await db.select().from(clientSchedules).orderBy(clientSchedules.clientId, clientSchedules.diaSemana);
+    return getAllClientSchedules();
   }
 
   /**

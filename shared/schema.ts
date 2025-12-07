@@ -95,6 +95,14 @@ export const motoboys = pgTable("motoboys", {
   status: text("status").notNull().default("ativo"),
   available: boolean("available").default(true), // Disponível para aceitar pedidos
   online: boolean("online").default(false), // Atualizado por WebSocket
+  licenseUrl: text("license_url"), // Upload da CNH do motoboy
+  residenceProofUrl: text("residence_proof_url"), // Comprovante de residência
+  cep: text("cep").default('00000-000'),
+  numero: text("numero").default('0'),
+  rua: text("rua").default('ENDERECO-PENDENTE'),
+  bairro: text("bairro").default('BAIRRO-PENDENTE'),
+  complemento: text("complemento"),
+  referencia: text("referencia"),
   updatedAt: timestamp("updated_at").defaultNow(), // Última atualização
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -174,6 +182,7 @@ export const clients = pgTable("clients", {
   bairro: text("bairro").notNull().default('BAIRRO-PENDENTE'), // Bairro fixo
   complemento: text("complemento"), // Complemento opcional
   referencia: text("referencia"), // Ponto de referência
+  documentFileUrl: text("document_file_url"), // Upload do comprovante (CNPJ/CPF)
   geoLat: decimal("geo_lat", { precision: 10, scale: 7 }), // Futuro geocoding
   geoLng: decimal("geo_lng", { precision: 10, scale: 7 }),
   mensalidade: decimal("mensalidade", { precision: 10, scale: 2 }).default("0"),
@@ -316,50 +325,44 @@ export type LiveDoc = typeof liveDocs.$inferSelect;
 // ========================================
 /**
  * TABELA EXPORTADA: chatMessages
- * PROPÓSITO: Sistema de chat em tempo real entre clientes, motoboys e central
+ * PROPÓSITO: Sistema de chat em tempo real entre usuários (clientes, motoboys, central)
  * USADO EM: GET/POST /api/chat, broadcast via WebSocket
- * RECURSOS: Mensagens públicas (toId=null) ou privadas (toId especificado)
+ * 
+ * FLUXO:
+ * - Cliente/Motoboy sempre falam com Central
+ * - Central pode enviar mensagens para qualquer usuário
+ * - Mensagens podem ser sobre pedidos específicos (orderId != null) ou gerais (orderId = null)
  * 
  * CAMPOS:
  *   - id: VARCHAR UUID gerado automaticamente
- *   - fromId: VARCHAR quem enviou (UUID do user)
- *   - fromName: TEXT nome de quem enviou (desnormalizado)
- *   - fromRole: TEXT papel de quem enviou ('client', 'motoboy', 'central')
- *   - toId: VARCHAR destinatário (null = mensagem pública para todos)
- *   - message: TEXT conteúdo da mensagem
- *   - orderId: VARCHAR pedido relacionado (opcional)
+ *   - senderId: VARCHAR quem enviou (UUID do user)
+ *   - receiverId: VARCHAR quem recebe (UUID do user) - NULL se for mensagem pública
+ *   - orderId: VARCHAR pedido relacionado (NULL = conversa geral)
+ *   - message: TEXT conteúdo textual da mensagem
+ *   - audioUrl: TEXT URL do áudio (se for mensagem de áudio)
+ *   - imageUrl: TEXT URL da imagem (se for mensagem com foto)
  *   - createdAt: TIMESTAMP momento do envio
- */
-/**
- * TABELA: CHAT_MESSAGES
- * ARQUITETURA: Cliente/Motoboy → Central (futura IA) → destinatário
- * NUNCA comunicação direta entre cliente e motoboy
  * 
- * CATEGORIAS DE CONVERSA:
- * - status_entrega: Cliente pergunta sobre pedido → Central → Motoboy
- * - suporte: Dúvidas gerais, problemas → Central
- * - problema: Urgências, reportar issues → Central (alta prioridade)
+ * EXEMPLOS:
+ * - Conversa geral: senderId=joão, receiverId=central, orderId=NULL, message="Disponível amanhã?"
+ * - Sobre pedido: senderId=central, receiverId=joão, orderId=123, message="Cadê o comprovante?"
+ * - Com áudio: senderId=joão, receiverId=central, orderId=123, audioUrl="s3://...", message=""
+ * - Com imagem: senderId=joão, receiverId=central, orderId=123, imageUrl="s3://...", message="Foto do comprovante"
  */
 export const chatMessages = pgTable("chat_messages", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   
-  // REMETENTE
-  fromId: varchar("from_id").notNull(),     // UUID do remetente
-  fromName: text("from_name").notNull(),    // Nome para exibição
-  fromRole: text("from_role").notNull(),    // 'client' | 'motoboy' | 'central'
+  // PARTICIPANTES
+  senderId: varchar("sender_id").notNull(),       // Quem enviou
+  receiverId: varchar("receiver_id").notNull(),   // Quem recebe
   
-  // DESTINATÁRIO (sempre via Central)
-  toId: varchar("to_id"),                   // UUID destinatário (null = para Central)
-  toRole: text("to_role"),                  // Papel do destinatário
+  // CONTEXTO (OPCIONAL)
+  orderId: varchar("order_id"),                   // Pedido relacionado (NULL = conversa geral)
   
-  // CATEGORIA E CONTEXTO
-  category: text("category").notNull().default('suporte'), // 'status_entrega' | 'suporte' | 'problema'
-  orderId: varchar("order_id"),             // Pedido relacionado (obrigatório para status_entrega)
-  threadId: varchar("thread_id").notNull().default('legacy'), // Agrupa mensagens da mesma conversa
-  
-  // CONTEÚDO
-  message: text("message").notNull(),       // Texto da mensagem
-  isFromCentral: boolean("is_from_central").default(false).notNull(), // true = resposta da IA/Central
+  // CONTEÚDO (pelo menos 1 deve estar preenchido)
+  message: text("message"),                       // Texto (pode ser vazio se for só áudio/imagem)
+  audioUrl: text("audio_url"),                    // URL do áudio (se houver)
+  imageUrl: text("image_url"),                    // URL da imagem (se houver)
   
   // METADATA
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -371,6 +374,17 @@ export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({
 });
 export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
 export type ChatMessage = typeof chatMessages.$inferSelect;
+
+// TIPO: Agrupamento de conversas para a Central
+export type ChatConversation = {
+  userId: string;          // ID do usuário (cliente ou motoboy)
+  userName: string;        // Nome do usuário
+  userRole: 'client' | 'motoboy';
+  orderId: string | null;  // ID do pedido (null = conversa geral)
+  lastMessage: string;     // Última mensagem enviada
+  lastMessageAt: Date;     // Timestamp da última mensagem
+  unreadCount: number;     // Mensagens não lidas
+};
 
 // ========================================
 // TABELA: MOTOBOY_SCHEDULES (AGENDAMENTO DE MOTOBOYS)

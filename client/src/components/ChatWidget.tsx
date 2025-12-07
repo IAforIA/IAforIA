@@ -13,8 +13,11 @@
  */
 
 import { useState, useEffect, useRef } from "react";
+import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { resolveWebSocketUrl } from "@/lib/utils";
+import { getSenderId, getReceiverId, getSenderName, getSenderRole, isPublicMessage } from '../../../shared/message-utils';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -22,9 +25,7 @@ import { MessageCircle, X, Minus, Send, Package, MessageSquare, AlertTriangle, A
 import { ChatMessage } from "./ChatMessage";
 import type { ChatMessage as ChatMessageType } from "@shared/schema";
 
-const WS_URL = import.meta.env.VITE_WS_URL || 
-  (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + 
-  window.location.host.replace(':5000', ':5001');
+
 
 type ChatCategory = 'status_entrega' | 'suporte' | 'problema';
 
@@ -44,8 +45,21 @@ export function ChatWidget({ currentUserId, currentUserName, currentUserRole, em
   const [currentThreadId, setCurrentThreadId] = useState<string | null>(null);
   const [loadingAISuggestion, setLoadingAISuggestion] = useState(false);
   const [showThreadList, setShowThreadList] = useState(isCentral); // Central começa com lista de threads
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [lastReadTimestamp, setLastReadTimestamp] = useState<number>(Date.now());
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const shouldFetchMessages = isOpen && (selectedCategory !== null || isCentral);
+  const messagesScrollRef = useRef<HTMLDivElement>(null);
+  // Para cliente/motoboy manter contagem de não lidas, buscamos mesmo fechado (flutuante).
+  const shouldFetchMessages = isOpen || (!isCentral && !embedded);
+
+  // Para cliente/motoboy, ao abrir o chat já seleciona automaticamente a categoria padrão (suporte)
+  useEffect(() => {
+    if (!isCentral && isOpen && !selectedCategory) {
+      const defaultCategory: ChatCategory = 'suporte';
+      setSelectedCategory(defaultCategory);
+      setCurrentThreadId(`${currentUserId}_${defaultCategory}`);
+    }
+  }, [isCentral, isOpen, selectedCategory, currentUserId]);
 
   // Query: busca mensagens (backend já filtra por usuário automaticamente)
   // Se for Central E tiver threadId selecionado, filtra por thread específica
@@ -55,8 +69,26 @@ export function ChatWidget({ currentUserId, currentUserName, currentUserRole, em
       ? [`/api/chat?threadId=${currentThreadId}`]
       : ['/api/chat'],
     enabled: shouldFetchMessages,
-    refetchInterval: shouldFetchMessages && !isMinimized ? 3000 : false,
+    refetchInterval: shouldFetchMessages && !isMinimized ? (isOpen ? 3000 : 10000) : false,
   });
+
+  // Zera contagem ao abrir
+  useEffect(() => {
+    if (isOpen) {
+      setLastReadTimestamp(Date.now());
+      setUnreadCount(0);
+    }
+  }, [isOpen]);
+
+  // Atualiza contagem de não lidas enquanto fechado
+  useEffect(() => {
+    if (isOpen || isCentral || isMinimized || embedded) return;
+    const newUnread = messages.filter((m) => {
+      const created = new Date(m.createdAt).getTime();
+      return created > lastReadTimestamp && getSenderId(m as any) !== currentUserId;
+    }).length;
+    setUnreadCount(newUnread);
+  }, [isOpen, isCentral, isMinimized, embedded, messages, lastReadTimestamp, currentUserId]);
 
   // Mutation: enviar mensagem
   const sendMutation = useMutation({
@@ -65,11 +97,11 @@ export function ChatWidget({ currentUserId, currentUserName, currentUserRole, em
       category: ChatCategory;
       orderId?: string;
       threadId?: string;
-      toId?: string | null;
+      receiverId?: string | null;
       toRole?: string | null;
-      fromId: string;
-      fromName: string;
-      fromRole: ChatWidgetProps['currentUserRole'];
+      senderId: string;
+      senderName: string;
+      senderRole: ChatWidgetProps['currentUserRole'];
     }) => {
       const res = await apiRequest('POST', '/api/chat', messageData);
       return await res.json() as ChatMessageType;
@@ -85,16 +117,31 @@ export function ChatWidget({ currentUserId, currentUserName, currentUserRole, em
 
   // Auto-scroll para última mensagem
   useEffect(() => {
-    if (!isMinimized && messagesEndRef.current) {
+    if (isMinimized) return;
+    const el = messagesScrollRef.current;
+    if (el) {
+      // Scroll apenas no container do chat para não empurrar a página
+      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    } else if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages, isMinimized]);
 
+  // Refetch imediato ao abrir o chat ou trocar de thread/categoria
+  useEffect(() => {
+    if (isOpen) {
+      refetch();
+    }
+  }, [isOpen, currentThreadId, selectedCategory, refetch]);
+
   // WebSocket listener para atualizações em tempo real
+  const { token } = useAuth();
+
   useEffect(() => {
     if (!shouldFetchMessages) return;
 
-    const websocket = new WebSocket(WS_URL);
+    if (!token) return;
+    const websocket = new WebSocket(resolveWebSocketUrl(token));
 
     websocket.onmessage = (event) => {
       try {
@@ -140,17 +187,21 @@ export function ChatWidget({ currentUserId, currentUserName, currentUserRole, em
       message: message.trim(),
       category: messageCategory,
       threadId,
-      fromId: currentUserId,
-      fromName: currentUserName,
-      fromRole: currentUserRole,
-      toId,
+      senderId: currentUserId,
+      senderName: currentUserName,
+      senderRole: currentUserRole,
+      receiverId: toId,
       toRole,
-    });
+    } as any);
 
     // Define threadId atual para manter conversa
     if (!currentThreadId) {
       setCurrentThreadId(threadId);
     }
+
+    // Ao enviar, consideramos mensagens lidas
+    setLastReadTimestamp(Date.now());
+    setUnreadCount(0);
   };
 
   const handleCategorySelect = (category: ChatCategory) => {
@@ -178,7 +229,7 @@ export function ChatWidget({ currentUserId, currentUserName, currentUserRole, em
   // Apenas mensagens RECEBIDAS (não enviadas pela Central)
   const threadGroups = isCentral ? messages.reduce((acc, msg) => {
     // Ignora mensagens enviadas pela própria Central
-    if (msg.fromId === currentUserId) {
+    if (getSenderId(msg) === currentUserId) {
       return acc;
     }
     if (!acc[msg.threadId]) {
@@ -190,10 +241,10 @@ export function ChatWidget({ currentUserId, currentUserName, currentUserRole, em
 
   const threads = Object.entries(threadGroups).map(([threadId, msgs]) => {
     const lastMessage = msgs[msgs.length - 1];
-    const unreadCount = msgs.filter(m => !m.isFromCentral && m.fromId !== currentUserId).length;
-    const firstMessage = msgs.find(m => m.fromId !== currentUserId);
-    const participantName = firstMessage?.fromName || 'Desconhecido';
-    const participantRole = firstMessage?.fromRole || 'client';
+    const unreadCount = msgs.filter(m => getSenderRole(m as any) !== 'central' && getSenderId(m) !== currentUserId).length;
+    const firstMessage = msgs.find(m => getSenderId(m) !== currentUserId);
+    const participantName = firstMessage ? getSenderName(firstMessage as any) || 'Desconhecido' : 'Desconhecido';
+    const participantRole = firstMessage ? getSenderRole(firstMessage as any) || 'client' : 'client';
     
     return {
       threadId,
@@ -240,6 +291,9 @@ export function ChatWidget({ currentUserId, currentUserName, currentUserRole, em
       >
         <MessageCircle className="h-4 w-4 sm:h-5 sm:w-5" />
         <span className="font-medium text-sm sm:text-base">Chat</span>
+        {unreadCount > 0 && (
+          <Badge variant="secondary" className="ml-1 text-[11px]">{unreadCount}</Badge>
+        )}
       </button>
     );
   }
@@ -258,6 +312,9 @@ export function ChatWidget({ currentUserId, currentUserName, currentUserRole, em
                 {selectedCategory === 'suporte' && '💬'}
                 {selectedCategory === 'problema' && '⚠️'}
               </Badge>
+            )}
+            {!isCentral && unreadCount > 0 && (
+              <Badge variant="default" className="text-[11px] ml-1">{unreadCount}</Badge>
             )}
           </div>
           <div className="flex gap-0.5 sm:gap-1 flex-shrink-0">
@@ -454,7 +511,7 @@ export function ChatWidget({ currentUserId, currentUserName, currentUserRole, em
       {/* Lista de Mensagens */}
       {!showThreadList && (selectedCategory || (isCentral && currentThreadId)) && (
         <>
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          <div className="flex-1 overflow-y-auto p-4 space-y-3" ref={messagesScrollRef}>
             {(() => {
               // Filtra mensagens da thread atual
               const threadMessages = currentThreadId 

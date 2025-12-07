@@ -24,7 +24,7 @@ import path from "path";
 
 // IMPORTANTE: Usamos extensão .ts explícita para garantir que o bundler resolva os arquivos fonte
 // registerRoutes: Função que registra todas as rotas da API (definida em routes.ts)
-import { registerRoutes } from "./routes.ts"; 
+import { registerRoutes } from "./routes/index.ts"; 
 // setupVite: Configura Vite dev server | serveStatic: Serve arquivos build | log: Função de logging
 import { setupVite, serveStatic, log } from "./vite.ts";
 // createServer: Cria servidor HTTP nativo do Node.js
@@ -35,6 +35,9 @@ import { WebSocketServer, WebSocket } from "ws";
 import { verifyTokenFromQuery } from "./middleware/auth.ts";
 // storage: Acesso ao banco de dados para atualizar status online dos motoboys
 import { storage } from "./storage.ts";
+import { attachRequestId } from "./middleware/request-context.ts";
+import { info as logInfo, error as logError } from "./logger.ts";
+import { randomUUID } from "crypto";
 
 // VARIÁVEL GLOBAL: Instância do Express application
 // Usada para registrar middlewares e rotas
@@ -54,6 +57,9 @@ declare module 'http' {
 // ========================================
 // MIDDLEWARES DE SEGURANÇA
 // ========================================
+
+// Identificação de requisições para rastreabilidade
+app.use(attachRequestId);
 
 // SEGURANÇA: Helmet - Headers HTTP seguros
 // Previne ataques comuns (XSS, clickjacking, etc) configurando headers automaticamente
@@ -101,11 +107,14 @@ app.use((req, res, next) => {
   res.on("finish", () => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      // Response JSON logging disabled to reduce terminal noise
-      // if (capturedJsonResponse) {
-      //   logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      // }
+      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms (reqId=${req.requestId})`;
+      logInfo("http_request", {
+        requestId: req.requestId,
+        method: req.method,
+        path,
+        status: res.statusCode,
+        durationMs: duration,
+      });
       log(logLine);
     }
   });
@@ -120,43 +129,14 @@ app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 // WEBSOCKET - COMUNICAÇÃO EM TEMPO REAL
 // ========================================
 
-// VARIÁVEL GLOBAL: Map que armazena todas as conexões WebSocket ativas
-// Chave: userId (string) | Valor: WebSocket connection
-// Permite enviar mensagens para usuários específicos
-const wsClients = new Map<string, WebSocket>();
+import { wsClients, broadcast, getOnlineUsers } from './ws/broadcast.js';
 
 /**
  * FUNÇÃO EXPORTADA: getOnlineUsers
  * PROPÓSITO: Retorna array com IDs dos usuários conectados via WebSocket
  * USADO EM: routes.ts - endpoint /api/users/online
  */
-export function getOnlineUsers(): string[] {
-  return Array.from(wsClients.keys());
-}
-
-/**
- * FUNÇÃO EXPORTADA: broadcast
- * PROPÓSITO: Envia mensagem para todos os clientes WebSocket conectados
- * 
- * @param message - Objeto com dados a enviar (será convertido para JSON)
- * @param excludeId - (Opcional) ID do usuário que NÃO deve receber a mensagem
- * 
- * USADO EM: routes.ts - para notificar dashboards sobre novos pedidos/atualizações
- */
-export function broadcast(message: any, excludeId?: string) {
-  // VARIÁVEL LOCAL: Converte objeto message para string JSON
-  const data = JSON.stringify(message);
-  
-  // Itera sobre todos os clientes conectados
-  wsClients.forEach((ws, id) => {
-    // Envia apenas se:
-    // 1. Não for o usuário excluído (excludeId)
-    // 2. Conexão estiver aberta (readyState === OPEN)
-    if (id !== excludeId && ws.readyState === WebSocket.OPEN) {
-      ws.send(data);
-    }
-  });
-}
+// Delegates for WebSocket clients and broadcasting are imported from ws/broadcast.js
 
 function startWebSocketServer(host: string) {
   if (wsServer) {
@@ -172,14 +152,18 @@ function startWebSocketServer(host: string) {
   });
 
   wss.on('connection', async (ws, req) => {
+    const connectionId = randomUUID();
     const urlParams = new URLSearchParams(req.url?.split('?')[1] || '');
     const token = urlParams.get('token');
     const user = verifyTokenFromQuery(token);
 
     if (!user) {
+      logInfo('ws_reject', { connectionId, reason: 'invalid_token' });
       ws.terminate();
       return;
     }
+
+    logInfo('ws_connect', { connectionId, userId: user.id, role: user.role });
 
     wsClients.set(user.id, ws);
     log(`WebSocket connected: ${user.id} (${user.role})`, 'ws');
@@ -198,6 +182,7 @@ function startWebSocketServer(host: string) {
     ws.on('close', async () => {
       wsClients.delete(user.id);
       log(`WebSocket disconnected: ${user.id}`, 'ws');
+      logInfo('ws_disconnect', { connectionId, userId: user.id, role: user.role });
 
       // Se for motoboy, marca como offline
       if (user.role === 'motoboy') {
@@ -207,6 +192,7 @@ function startWebSocketServer(host: string) {
           log(`Motoboy ${user.id} agora está OFFLINE`, 'ws');
         } catch (error) {
           console.error(`Erro ao atualizar status offline do motoboy ${user.id}:`, error);
+          logError('ws_disconnect_error', { connectionId, userId: user.id, error: (error as Error).message });
         }
       }
     });
@@ -222,28 +208,30 @@ function startWebSocketServer(host: string) {
   app.use(apiRouter);
 
   // SEGURANÇA: Error handler que não expõe detalhes em produção
-  app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-    // Log completo do erro (para debugging interno)
-    console.error('[ERROR]', {
+  app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
+    const status = (err as any).status || (err as any).statusCode || 500;
+
+    logError("http_error", {
+      requestId: (req as any).requestId,
       message: err.message,
       stack: err.stack,
-      timestamp: new Date().toISOString()
+      status,
+      path: req.path,
+      method: req.method,
     });
 
-    const status = (err as any).status || (err as any).statusCode || 500;
-    
-    // Em produção: mensagem genérica para não expor detalhes internos
     if (process.env.NODE_ENV === "production") {
       res.status(status).json({ 
         error: status === 500 ? "Internal server error" : err.message,
-        status
+        status,
+        requestId: (req as any).requestId,
       });
     } else {
-      // Em desenvolvimento: mensagem completa para debugging
       res.status(status).json({ 
         error: err.message,
         status,
-        stack: err.stack 
+        stack: err.stack,
+        requestId: (req as any).requestId,
       });
     }
   });

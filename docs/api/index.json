@@ -1,0 +1,23 @@
+{
+  "name": "Guriri Express API v1.0",
+  "source": "docs\\postman\\GuririExpress.postman_collection.json",
+  "sections": [
+    {
+      "name": "Authentication",
+      "slug": "authentication"
+    },
+    {
+      "name": "Orders",
+      "slug": "orders"
+    },
+    {
+      "name": "Chat & AI",
+      "slug": "chat-and-ai"
+    },
+    {
+      "name": "Analytics",
+      "slug": "analytics"
+    }
+  ],
+  "generatedAt": "2025-11-26T06:00:28.928Z"
+}
