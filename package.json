@@ -141,9 +141,8 @@
     "tsx": "4.21.0",
     "typescript": "5.6.3",
     "vite": "6.4.1",
-    "vitest": "2.1.9"
+    "vitest": "^4.0.15"
   },
-  "optionalDependencies": {},
   "overrides": {
     "@esbuild-kit/esm-loader": {
       "@esbuild-kit/core-utils": {
