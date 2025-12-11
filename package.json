@@ -143,7 +143,7 @@
     "vitest": "2.1.9"
   },
   "optionalDependencies": {
-    "bufferutil": "^4.0.8"
+    "bufferutil": "4.0.9"
   },
   "overrides": {
     "@esbuild-kit/esm-loader": {
