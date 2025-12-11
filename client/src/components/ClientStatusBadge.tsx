@@ -34,6 +34,12 @@ export function ClientStatusBadge({ clientId, schedules }: ClientStatusBadgeProp
     );
   }
 
+  // Normaliza diaSemana para número, pois alguns registros podem vir como string do banco
+  const normalizedSchedules = schedules.map((s) => ({
+    ...s,
+    diaSemana: Number((s as any).diaSemana),
+  }));
+
   // Check if client is open now
   const now = new Date();
   const currentDay = now.getDay();
@@ -41,7 +47,7 @@ export function ClientStatusBadge({ clientId, schedules }: ClientStatusBadgeProp
   const currentMinute = now.getMinutes();
   const currentTimeInMinutes = currentHour * 60 + currentMinute;
 
-  const todaySchedules = schedules.filter(s => s.diaSemana === currentDay);
+  const todaySchedules = normalizedSchedules.filter((s) => s.diaSemana === currentDay);
 
   if (todaySchedules.length === 0 || todaySchedules[0].fechado || !todaySchedules[0].horaAbertura || !todaySchedules[0].horaFechamento) {
     return (

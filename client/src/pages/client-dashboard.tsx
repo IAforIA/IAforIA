@@ -30,6 +30,8 @@ export default function ClientDashboard() {
 
   const { data: orders = [], refetch } = useQuery<Order[]>({
     queryKey: ["/api/orders"],
+    refetchInterval: 5000,
+    refetchOnWindowFocus: true,
   });
 
   const { data: clientReport } = useQuery<ClientReport>({
@@ -74,6 +76,7 @@ export default function ClientDashboard() {
 
   const totalOrders = clientOrders.length;
   const pending = clientOrders.filter((o) => o.status === "pending").length;
+  const inProgress = clientOrders.filter((o) => o.status === "in_progress").length;
   const deliveredOrders = clientOrders.filter((o) => o.status === "delivered");
   const deliveredCount = deliveredOrders.length;
   const cancelled = clientOrders.filter((o) => o.status === "cancelled").length;
@@ -120,6 +123,7 @@ export default function ClientDashboard() {
                       clientOrders={clientOrders}
                       totalOrders={totalOrders}
                       pending={pending}
+                      inProgress={inProgress}
                       delivered={deliveredCount}
                       cancelled={cancelled}
                       clientReport={clientReport}
@@ -131,6 +135,7 @@ export default function ClientDashboard() {
                       clientOrders={clientOrders}
                       totalOrders={totalOrders}
                       pending={pending}
+                      inProgress={inProgress}
                       delivered={deliveredCount}
                       cancelled={cancelled}
                       clientReport={clientReport}

@@ -1,6 +1,8 @@
+import { useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { RefreshCw } from "lucide-react";
 import { DeliveryMap } from "@/components/DeliveryMap";
 import { ClientStatusBadge } from "@/components/ClientStatusBadge";
@@ -46,8 +48,35 @@ export function CentralHomeRoute({
   companyReport,
   user,
 }: HomeProps) {
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+
+  const selectedOrder = useMemo(() => normalizedOrders.find((o) => o.id === selectedOrderId) || null, [normalizedOrders, selectedOrderId]);
+
   const deliveredWithProof = normalizedOrders.filter((o) => o.status === "delivered" && o.proofUrl);
   const today = new Date().getDay();
+  const now = new Date();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+  const isClientOpenNow = (clientSchedules: any[]): boolean => {
+    const todaySchedule = clientSchedules.find((s: any) => Number((s as any).diaSemana) === today);
+    if (!todaySchedule || todaySchedule.fechado || !todaySchedule.horaAbertura || !todaySchedule.horaFechamento) {
+      return false;
+    }
+
+    const toMinutes = (t: string) => {
+      const [h, m] = t.split(":").map(Number);
+      return h * 60 + m;
+    };
+
+    const openTime = toMinutes(todaySchedule.horaAbertura);
+    const closeTime = toMinutes(todaySchedule.horaFechamento);
+    return currentMinutes >= openTime && currentMinutes <= closeTime;
+  };
+
+  const openClients = clients.filter((client) => {
+    const clientSchedules = allClientSchedules.filter((s: any) => String(s.clientId) === String(client.id));
+    return isClientOpenNow(clientSchedules);
+  });
 
   return (
     <>
@@ -87,10 +116,16 @@ export function CentralHomeRoute({
               </Button>
             </div>
             <div className="space-y-2 max-h-[200px] sm:max-h-[240px] overflow-y-auto">
-              {clients.slice(0, 8).map((client) => {
-                const scheduleForToday = allClientSchedules.find((s: any) => s.clientId === client.id && s.diaSemana === today);
-                const fallbackSchedule = allClientSchedules.find((s: any) => s.clientId === client.id);
-                const schedule = scheduleForToday || fallbackSchedule;
+              {openClients.length === 0 && (
+                <p className="text-xs text-muted-foreground">Nenhum cliente aberto agora.</p>
+              )}
+              {openClients.map((client) => {
+                const clientSchedules = allClientSchedules.filter((s: any) => String(s.clientId) === String(client.id));
+                const scheduleForToday = clientSchedules.find(
+                  (s: any) => Number((s as any).diaSemana) === today
+                );
+                const schedule = scheduleForToday || clientSchedules[0];
+
                 return (
                   <div key={client.id} className="flex items-center justify-between py-1 border-b last:border-b-0">
                     <div className="flex-1 min-w-0">
@@ -99,13 +134,11 @@ export function CentralHomeRoute({
                         <p className="text-[10px] text-muted-foreground">
                           {schedule.horaAbertura || "--"} - {schedule.horaFechamento || "--"}
                         </p>
-                      ) : client.horarioFuncionamento ? (
-                        <p className="text-[10px] text-muted-foreground">{client.horarioFuncionamento}</p>
                       ) : (
                         <p className="text-[10px] text-muted-foreground italic">SEM HORÁRIO</p>
                       )}
                     </div>
-                    <ClientStatusBadge clientId={client.id} schedules={allClientSchedules} />
+                    <ClientStatusBadge clientId={client.id} schedules={clientSchedules} />
                   </div>
                 );
               })}
@@ -117,7 +150,7 @@ export function CentralHomeRoute({
             <div className="space-y-2 max-h-[200px] overflow-y-auto">
               {motoboys.slice(0, 6).map((motoboy) => {
                 const motoboySchedules = allMotoboySchedules.filter((s: any) => s.motoboyId === motoboy.id);
-                const scheduleToday = motoboySchedules.find((s: any) => s.diaSemana === today) || motoboySchedules[0];
+                const scheduleToday = motoboySchedules.find((s: any) => Number((s as any).diaSemana) === today) || motoboySchedules[0];
                 const shifts = scheduleToday
                   ? [
                       scheduleToday.turnoManha ? "Manhã" : null,
@@ -148,7 +181,11 @@ export function CentralHomeRoute({
         <h3 className="text-sm font-semibold mb-3">⚡ Últimos Pedidos</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {normalizedOrders.slice(0, 6).map((order) => (
-            <div key={order.id} className="p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+            <button
+              key={order.id}
+              className="p-3 border rounded-lg hover:bg-muted/50 transition-colors text-left"
+              onClick={() => setSelectedOrderId(order.id)}
+            >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-semibold">
                   {order.status === "pending" && "🆕"}
@@ -163,10 +200,55 @@ export function CentralHomeRoute({
               </div>
               <p className="text-[10px] text-muted-foreground mb-1">→ {order.entregaBairro}</p>
               <p className="text-xs font-bold text-green-600">{currency(order.totalValue)}</p>
-            </div>
+            </button>
           ))}
         </div>
       </Card>
+
+      <Dialog open={!!selectedOrder} onOpenChange={(open) => !open && setSelectedOrderId(null)}>
+        <DialogContent className="max-w-lg">
+          {selectedOrder && (
+            <>
+              <DialogHeader>
+                <DialogTitle>Pedido #{selectedOrder.id.slice(0, 8)}</DialogTitle>
+                <DialogDescription>Detalhes rápidos do pedido mais recente.</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold">Cliente</span>
+                  <span>{selectedOrder.clientName}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold">Status</span>
+                  <Badge variant="outline">{selectedOrder.status}</Badge>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Origem</p>
+                  <p className="font-medium">{selectedOrder.coletaBairro} — {selectedOrder.coletaRua}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Destino</p>
+                  <p className="font-medium">{selectedOrder.entregaBairro} — {selectedOrder.entregaRua}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="rounded border p-2">
+                    <p className="text-[11px] text-muted-foreground">Frete</p>
+                    <p className="font-semibold">{currency(selectedOrder.freteValue)}</p>
+                  </div>
+                  <div className="rounded border p-2">
+                    <p className="text-[11px] text-muted-foreground">Produtos</p>
+                    <p className="font-semibold">{currency(selectedOrder.produtoValue)}</p>
+                  </div>
+                </div>
+                <div className="rounded border p-2 bg-muted/50">
+                  <p className="text-[11px] text-muted-foreground">Total</p>
+                  <p className="font-bold text-lg">{currency(selectedOrder.totalValue)}</p>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {companyReport && (
         <Card className="p-6 mb-6">
@@ -296,7 +378,7 @@ export function CentralHomeRoute({
       <OperationalInsights
         clientSchedules={allClientSchedules}
         motoboySchedules={allMotoboySchedules}
-        activeMotoboys={motoboys.length}
+        motoboysOnline={motoboys.filter((m) => m.online).length}
       />
     </>
   );

@@ -264,7 +264,10 @@ export const orders = pgTable("orders", {
 });
 
 // SCHEMA ZOD: Omite campos gerados automaticamente e campos de sistema
-export const insertOrderSchema = createInsertSchema(orders).omit({ 
+// Override coletaOverride via callback to keep the generated schema valid across builds.
+export const insertOrderSchema = createInsertSchema(orders, {
+  coletaOverride: (schema) => schema.default(false),
+}).omit({ 
   id: true,          // Gerado pelo banco
   createdAt: true,   // Gerado pelo banco
   acceptedAt: true,  // Preenchido ao aceitar
@@ -273,8 +276,6 @@ export const insertOrderSchema = createInsertSchema(orders).omit({
   motoboyName: true, // Atribuído ao aceitar
   status: true,      // Default 'pending'
   clienteRefId: true,
-}).extend({
-  coletaOverride: z.boolean().default(false),
 });
 export type InsertOrder = z.infer<typeof insertOrderSchema>;
 export type Order = typeof orders.$inferSelect;

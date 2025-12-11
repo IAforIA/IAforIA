@@ -61,10 +61,76 @@ export function FinancialRoute({
   const safeClients = clients || [];
   const safeMotoboys = motoboys || [];
 
+  const downloadFile = (filename: string, mime: string, content: string) => {
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportCsv = () => {
+    const header = [
+      "Tipo","Data","Cliente","Motoboy","Bairro Entrega","Rua Entrega","Frete","Produto","Total","Motoboy Recebe"
+    ];
+    const rows = safeFilteredDeliveredOrders.map((o) => [
+      "Entrega",
+      o.deliveredAtDate ? o.deliveredAtDate.toISOString() : "",
+      o.clientName,
+      o.motoboyName || "",
+      o.entregaBairro || "",
+      o.entregaRua || "",
+      o.freteValue.toFixed(2),
+      o.produtoValue.toFixed(2),
+      o.totalValue.toFixed(2),
+      o.motoboyValue.toFixed(2),
+    ]);
+
+    const summaryRows = [
+      ["Resumo","","","","","","","","",""],
+      ["Total Frete", "", "", "", "", "", safeFinancialSummary.totalFrete.toFixed(2), "", "", ""],
+      ["Total Motoboy", "", "", "", "", "", "", "", "", safeFinancialSummary.totalMotoboy.toFixed(2)],
+      ["Lucro Guriri", "", "", "", "", "", "", "", "", safeFinancialSummary.lucroGuriri.toFixed(2)],
+      ["Volume Produtos", "", "", "", "", "", "", safeFinancialSummary.volumeTotal.toFixed(2), "", ""],
+    ];
+
+    const allRows = [header, ...rows, [], ...summaryRows];
+    const csv = allRows.map((r) => r.map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
+    downloadFile("relatorio-financeiro.csv", "text/csv;charset=utf-8;", csv);
+  };
+
+  const exportPdf = () => {
+    const lines = [] as string[];
+    lines.push("RELATORIO FINANCEIRO");
+    lines.push("");
+    lines.push(`Total Frete: R$ ${safeFinancialSummary.totalFrete.toFixed(2)}`);
+    lines.push(`Total Motoboy: R$ ${safeFinancialSummary.totalMotoboy.toFixed(2)}`);
+    lines.push(`Lucro Guriri: R$ ${safeFinancialSummary.lucroGuriri.toFixed(2)}`);
+    lines.push(`Volume Produtos: R$ ${safeFinancialSummary.volumeTotal.toFixed(2)}`);
+    lines.push("");
+    lines.push("Pedidos Entregues:");
+    safeFilteredDeliveredOrders.forEach((o, idx) => {
+      lines.push(`${idx + 1}. ${o.deliveredAtDate ? o.deliveredAtDate.toLocaleString("pt-BR") : "--"} | ${o.clientName} -> ${o.entregaBairro}/${o.entregaRua} | Frete R$ ${o.freteValue.toFixed(2)} | Produto R$ ${o.produtoValue.toFixed(2)} | Total R$ ${o.totalValue.toFixed(2)} | Motoboy R$ ${o.motoboyValue.toFixed(2)}`);
+    });
+
+    const win = window.open("", "_blank", "width=900,height=700");
+    if (!win) return;
+    win.document.write(`<pre>${lines.join("\n")}</pre>`);
+    win.document.close();
+    win.focus();
+    win.print();
+  };
+
   return (
     <>
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold">💰 Gestão Financeira - Repasse Diário</h2>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={exportCsv}>Exportar Excel/CSV</Button>
+          <Button onClick={exportPdf}>Exportar PDF</Button>
+        </div>
       </div>
 
       <Card className="p-6 mb-6">

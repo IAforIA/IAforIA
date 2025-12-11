@@ -25,14 +25,26 @@ export type OrdersFilters = {
   setOrderSearchFilter: (value: string) => void;
 };
 
-type OrdersRouteProps = OrdersFilters & {
-  filteredOrders: NormalizedOrder[];
+type OrdersRouteProps = {
+  orders: NormalizedOrder[];
   clients: Client[];
   motoboys: Motoboy[];
+  orderDateFilter: string;
+  orderClientFilter: string;
+  orderMotoboyFilter: string;
+  orderStatusFilter: string;
+  orderPaymentFilter: string;
+  orderSearchFilter: string;
+  onStatusChange: (value: string) => void;
+  onClientChange: (value: string) => void;
+  onMotoboyChange: (value: string) => void;
+  onPaymentChange: (value: string) => void;
+  onDateChange: (value: string) => void;
+  onSearchChange: (value: string) => void;
 };
 
 export function OrdersRoute({
-  filteredOrders,
+  orders,
   clients,
   motoboys,
   orderDateFilter,
@@ -41,14 +53,14 @@ export function OrdersRoute({
   orderStatusFilter,
   orderPaymentFilter,
   orderSearchFilter,
-  handleOrderStatusFilterChange,
-  handleOrderClientFilterChange,
-  handleOrderMotoboyFilterChange,
-  handleOrderPaymentFilterChange,
-  setOrderDateFilter,
-  setOrderSearchFilter,
+  onStatusChange,
+  onClientChange,
+  onMotoboyChange,
+  onPaymentChange,
+  onDateChange,
+  onSearchChange,
 }: OrdersRouteProps) {
-  const safeOrders = Array.isArray(filteredOrders) ? filteredOrders : [];
+  const safeOrders = Array.isArray(orders) ? orders : [];
   const safeClients = Array.isArray(clients) ? clients : [];
   const safeMotoboys = Array.isArray(motoboys) ? motoboys : [];
 
@@ -100,12 +112,12 @@ export function OrdersRoute({
               type="date"
               className="text-sm dark:text-foreground dark:bg-background dark:[color-scheme:dark]"
               value={orderDateFilter}
-              onChange={(e) => setOrderDateFilter(e.target.value)}
+              onChange={(e) => onDateChange(e.target.value)}
             />
           </div>
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">Cliente</label>
-            <Select value={orderClientFilter} onValueChange={handleOrderClientFilterChange}>
+            <Select value={orderClientFilter} onValueChange={onClientChange}>
               <SelectTrigger className="text-sm">
                 <SelectValue placeholder="Todos" />
               </SelectTrigger>
@@ -121,7 +133,7 @@ export function OrdersRoute({
           </div>
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">Motoboy</label>
-            <Select value={orderMotoboyFilter} onValueChange={handleOrderMotoboyFilterChange}>
+            <Select value={orderMotoboyFilter} onValueChange={onMotoboyChange}>
               <SelectTrigger className="text-sm">
                 <SelectValue placeholder="Todos" />
               </SelectTrigger>
@@ -137,7 +149,7 @@ export function OrdersRoute({
           </div>
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">Status</label>
-            <Select value={orderStatusFilter} onValueChange={handleOrderStatusFilterChange}>
+            <Select value={orderStatusFilter} onValueChange={onStatusChange}>
               <SelectTrigger className="text-sm">
                 <SelectValue placeholder="Todos" />
               </SelectTrigger>
@@ -152,7 +164,7 @@ export function OrdersRoute({
           </div>
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">Pagamento</label>
-            <Select value={orderPaymentFilter} onValueChange={handleOrderPaymentFilterChange}>
+            <Select value={orderPaymentFilter} onValueChange={onPaymentChange}>
               <SelectTrigger className="text-sm">
                 <SelectValue placeholder="Todos" />
               </SelectTrigger>
@@ -170,7 +182,7 @@ export function OrdersRoute({
               placeholder="Nome, bairro..."
               className="text-sm"
               value={orderSearchFilter}
-              onChange={(e) => setOrderSearchFilter(e.target.value)}
+              onChange={(e) => onSearchChange(e.target.value)}
             />
           </div>
         </div>

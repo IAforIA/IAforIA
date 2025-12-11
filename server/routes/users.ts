@@ -39,5 +39,28 @@ export function buildUsersRouter() {
     }
   });
 
+  router.patch('/users/:id/role', authenticateToken, requireRole('central'), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { role } = req.body;
+
+      if (!role || !['client', 'motoboy', 'central'].includes(role)) {
+        return res.status(400).json({ error: "Role deve ser 'client', 'motoboy' ou 'central'" });
+      }
+
+      // SEGURANÇA: Não altera o próprio papel para evitar lock-out acidental
+      if (req.user?.id === id) {
+        return res.status(403).json({ error: 'Você não pode alterar seu próprio papel' });
+      }
+
+      const updated = await storage.updateUser(id, { role });
+      const { password, ...userWithoutPassword } = updated;
+      res.json(userWithoutPassword);
+    } catch (error: any) {
+      console.error('💥 Erro ao atualizar role do usuário:', error);
+      res.status(500).json({ error: 'Erro ao atualizar role do usuário' });
+    }
+  });
+
   return router;
 }

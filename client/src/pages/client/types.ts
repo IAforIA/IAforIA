@@ -36,6 +36,7 @@ export interface DashboardContentProps {
   clientOrders: Order[];
   totalOrders: number;
   pending: number;
+  inProgress: number;
   delivered: number;
   cancelled: number;
   clientReport?: ClientReport;

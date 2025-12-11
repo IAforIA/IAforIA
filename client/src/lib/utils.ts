@@ -13,12 +13,17 @@ export function resolveWebSocketUrl(token: string) {
   if (explicitUrl) {
     const normalized = explicitUrl.replace(/\/$/, '')
     const separator = normalized.includes('?') ? '&' : '?'
-    return `${normalized}${separator}token=${token}`
+    return `${normalized}${separator}token=${encodeURIComponent(token)}`
   }
 
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-  const host = (import.meta.env.VITE_WS_HOST ?? window.location.hostname).trim()
-  const port = (import.meta.env.VITE_WS_PORT ?? '5001').trim()
-  const authority = host.includes(':') || port === '' ? host : `${host}:${port}`
-  return `${protocol}//${authority}/ws?token=${token}`
+  const hostEnv = import.meta.env.VITE_WS_HOST?.trim()
+  const portEnv = import.meta.env.VITE_WS_PORT?.trim()
+
+  // Prefer same-origin host:port when nenhum override foi definido
+  const authority = hostEnv
+    ? (portEnv && !hostEnv.includes(':') ? `${hostEnv}:${portEnv}` : hostEnv)
+    : window.location.host
+
+  return `${protocol}//${authority}/ws?token=${encodeURIComponent(token)}`
 }

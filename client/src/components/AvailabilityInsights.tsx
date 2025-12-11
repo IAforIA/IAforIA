@@ -59,7 +59,7 @@ export function AvailabilityInsights({ motoboys }: AvailabilityInsightsProps) {
       shiftKey: shift.key,
       shiftLabel: shift.label,
       count: allSchedules.reduce((sum, motoboySchedules) => {
-        const daySchedule = motoboySchedules.find(s => s.diaSemana === day);
+        const daySchedule = motoboySchedules.find((s: any) => Number(s.diaSemana) === day);
         return sum + (daySchedule?.[shift.key as keyof Schedule] ? 1 : 0);
       }, 0)
     }))

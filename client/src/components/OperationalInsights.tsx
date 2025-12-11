@@ -11,7 +11,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Users, TrendingUp, AlertTriangle } from "lucide-react";
+import { Clock, Users, TrendingUp, AlertTriangle, Info } from "lucide-react";
 
 interface ClientScheduleEntry {
   id: string;
@@ -34,7 +34,7 @@ interface MotoboySchedule {
 interface OperationalInsightsProps {
   clientSchedules: ClientScheduleEntry[];
   motoboySchedules: MotoboySchedule[];
-  activeMotoboys: number;
+  motoboysOnline: number;
 }
 
 type Shift = 'manha' | 'tarde' | 'noite';
@@ -52,10 +52,13 @@ interface ShiftAnalysis {
 export function OperationalInsights({ 
   clientSchedules, 
   motoboySchedules,
-  activeMotoboys 
+  motoboysOnline,
 }: OperationalInsightsProps) {
   
   const currentDay = new Date().getDay();
+
+  // Quantidade de motoboys que possuem escala para o dia atual (qualquer turno)
+  const motoboysScheduledToday = motoboySchedules.filter((s) => s.diaSemana === currentDay).length;
   
   // Analisa cada turno do dia
   const analyzeShift = (shift: Shift): ShiftAnalysis => {
@@ -117,8 +120,8 @@ export function OperationalInsights({
     analyzeShift('noite'),
   ];
 
-  const totalClientsToday = clientSchedules.filter(s => 
-    s.diaSemana === currentDay && !s.fechado && s.horaAbertura && s.horaFechamento
+  const totalClientsToday = clientSchedules.filter((s) => 
+    Number((s as any).diaSemana) === currentDay && !s.fechado && s.horaAbertura && s.horaFechamento
   ).length;
 
   const getStatusBadge = (status: 'ok' | 'warning' | 'critical') => {
@@ -135,6 +138,47 @@ export function OperationalInsights({
 
   return (
     <div className="space-y-4">
+      {/* Previsão Semanal primeiro para destacar clientes por dia */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            <CardTitle>Previsão Semanal</CardTitle>
+          </div>
+          <CardDescription>Clientes operando por dia. Útil para planejar escalas antes do dia.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-7 gap-2">
+            {[0, 1, 2, 3, 4, 5, 6].map(day => {
+              const clientsThisDay = clientSchedules.filter((s) => 
+                Number((s as any).diaSemana) === day && !s.fechado && s.horaAbertura && s.horaFechamento
+              ).length;
+              const isToday = day === currentDay;
+              return (
+                <div 
+                  key={day}
+                  className={`text-center p-3 rounded-lg ${
+                    isToday 
+                      ? 'bg-blue-100 dark:bg-blue-900 border-2 border-blue-500' 
+                      : 'bg-gray-100 dark:bg-gray-800'
+                  }`}
+                >
+                  <div className="text-xs font-semibold mb-1">
+                    {daysOfWeek[day]}
+                  </div>
+                  <div className="text-2xl font-bold">
+                    {clientsThisDay}
+                  </div>
+                  <div className="text-[10px] text-gray-500 mt-1">
+                    clientes
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Resumo Geral */}
       <Card>
         <CardHeader>
@@ -143,11 +187,11 @@ export function OperationalInsights({
             <CardTitle>Análise Operacional - {daysOfWeek[currentDay]}</CardTitle>
           </div>
           <CardDescription>
-            Demanda esperada vs cobertura de motoboys
+            Visão rápida: clientes abertos hoje × motoboys escalados × recomendação mínima.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
             <div className="text-center p-4 bg-blue-50 dark:bg-blue-950 rounded-lg">
               <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">
                 {totalClientsToday}
@@ -158,10 +202,10 @@ export function OperationalInsights({
             </div>
             <div className="text-center p-4 bg-green-50 dark:bg-green-950 rounded-lg">
               <div className="text-2xl font-bold text-green-700 dark:text-green-300">
-                {activeMotoboys}
+                {motoboysScheduledToday}
               </div>
               <div className="text-xs text-gray-600 dark:text-gray-400">
-                Motoboys no Sistema
+                Motoboys com escala hoje
               </div>
             </div>
             <div className="text-center p-4 bg-purple-50 dark:bg-purple-950 rounded-lg">
@@ -170,6 +214,14 @@ export function OperationalInsights({
               </div>
               <div className="text-xs text-gray-600 dark:text-gray-400">
                 Recomendado (1:3.5)
+              </div>
+            </div>
+            <div className="text-center p-4 bg-amber-50 dark:bg-amber-950 rounded-lg">
+              <div className="text-2xl font-bold text-amber-700 dark:text-amber-300">
+                {motoboysOnline}
+              </div>
+              <div className="text-xs text-gray-600 dark:text-gray-400">
+                Motoboys online agora
               </div>
             </div>
           </div>
@@ -183,6 +235,10 @@ export function OperationalInsights({
             <Clock className="h-5 w-5" />
             <CardTitle>Cobertura por Turno</CardTitle>
           </div>
+          <CardDescription className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Info className="h-3.5 w-3.5" />
+            Verde = cobertura ok | Amarelo = atenção | Vermelho = faltando motoboy
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -237,48 +293,7 @@ export function OperationalInsights({
         </CardContent>
       </Card>
 
-      {/* Previsão Semanal */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            <CardTitle>Previsão Semanal</CardTitle>
-          </div>
-          <CardDescription>Demanda de clientes por dia da semana</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-7 gap-2">
-            {[0, 1, 2, 3, 4, 5, 6].map(day => {
-              const clientsThisDay = clientSchedules.filter(s => 
-                s.diaSemana === day && !s.fechado && s.horaAbertura && s.horaFechamento
-              ).length;
-              
-              const isToday = day === currentDay;
-              
-              return (
-                <div 
-                  key={day}
-                  className={`text-center p-3 rounded-lg ${
-                    isToday 
-                      ? 'bg-blue-100 dark:bg-blue-900 border-2 border-blue-500' 
-                      : 'bg-gray-100 dark:bg-gray-800'
-                  }`}
-                >
-                  <div className="text-xs font-semibold mb-1">
-                    {daysOfWeek[day]}
-                  </div>
-                  <div className="text-2xl font-bold">
-                    {clientsThisDay}
-                  </div>
-                  <div className="text-[10px] text-gray-500 mt-1">
-                    clientes
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
+      {/* (Cobertura por Turno vem em seguida) */}
     </div>
   );
 }

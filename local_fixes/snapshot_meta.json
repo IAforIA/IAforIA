@@ -1,0 +1,16 @@
+{
+  "generated_at": "2025-12-07T00:00:00Z",
+  "note": "Local-only artifacts; no git index touched.",
+  "files": [
+    "local_fixes/report_inspection.json",
+    "local_fixes/report_summary.md",
+    "local_fixes/snapshot_meta.json",
+    "local_fixes/snapshot_tests.log",
+    "local_fixes/patches/controllers/patchUserController.stub.ts",
+    "local_fixes/patches/routes/usersRoute.stub.ts",
+    "local_fixes/patches/routes/clientsSchedulesWrapper.stub.ts",
+    "local_fixes/tests/users.patch.test.stub.ts",
+    "local_fixes/README.md"
+  ],
+  "excluded_from_commits": [".env", ".env.*", "secrets/*"]
+}

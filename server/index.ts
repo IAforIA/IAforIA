@@ -138,23 +138,56 @@ import { wsClients, broadcast, getOnlineUsers } from './ws/broadcast.js';
  */
 // Delegates for WebSocket clients and broadcasting are imported from ws/broadcast.js
 
-function startWebSocketServer(host: string) {
+function startWebSocketServer(host: string, httpListener?: ReturnType<typeof createServer>) {
+  // Evita inicializar duas vezes
   if (wsServer) {
     return;
   }
 
-  const wsPort = parseInt(process.env.WS_PORT || '5001', 10);
-  wsServer = createServer();
+  // Estratégia: se já existe HTTP server (compartilhado com Vite HMR), usamos noServer:true
+  // e roteamos manualmente via upgrade somente no path /ws, para não conflitar com o socket de HMR.
+  // Caso contrário, criamos um servidor dedicado ouvindo em WS_PORT.
+  const useSharedServer = Boolean(httpListener);
+  wsServer = httpListener ?? createServer();
 
-  const wss = new WebSocketServer({
-    server: wsServer,
-    path: '/ws',
+  let wss: WebSocketServer;
+  if (useSharedServer) {
+    wss = new WebSocketServer({ noServer: true });
+    wsServer.on('upgrade', (req, socket, head) => {
+      try {
+        const { pathname, searchParams } = new URL(req.url || '', `http://${host}`);
+        if (pathname !== '/ws') {
+          return; // Deixa outros listeners (ex: Vite HMR) tratarem upgrades diferentes
+        }
+        const token = searchParams.get('token');
+        wss.handleUpgrade(req, socket, head, (ws) => {
+          wss.emit('connection', ws, req, token);
+        });
+      } catch (err) {
+        socket.destroy();
+        logError('ws_upgrade_error', { message: (err as Error).message });
+      }
+    });
+    log(`WebSocket server attached to existing HTTP server (shared port)`, 'ws');
+  } else {
+    const wsPort = parseInt(process.env.WS_PORT || '5001', 10);
+    wss = new WebSocketServer({
+      server: wsServer,
+      path: '/ws',
+    });
+    wsServer.listen({ port: wsPort, host }, () => {
+      log(`WebSocket server listening on dedicated port ${wsPort}`, 'ws');
+    });
+  }
+
+  wss.on('error', (err) => {
+    logError('ws_server_error', { message: (err as Error).message, stack: (err as Error).stack });
   });
 
-  wss.on('connection', async (ws, req) => {
+  wss.on('connection', async (ws, req, tokenFromUpgrade?: string) => {
     const connectionId = randomUUID();
     const urlParams = new URLSearchParams(req.url?.split('?')[1] || '');
-    const token = urlParams.get('token');
+    const token = tokenFromUpgrade ?? urlParams.get('token');
     const user = verifyTokenFromQuery(token);
 
     if (!user) {
@@ -179,6 +212,10 @@ function startWebSocketServer(host: string) {
       }
     }
 
+    ws.on('error', (err) => {
+      logError('ws_client_error', { connectionId, userId: user.id, message: (err as Error).message });
+    });
+
     ws.on('close', async () => {
       wsClients.delete(user.id);
       log(`WebSocket disconnected: ${user.id}`, 'ws');
@@ -196,10 +233,6 @@ function startWebSocketServer(host: string) {
         }
       }
     });
-  });
-
-  wsServer.listen({ port: wsPort, host }, () => {
-    log(`WebSocket server listening on port ${wsPort}`, 'ws');
   });
 }
 
@@ -249,7 +282,7 @@ function startWebSocketServer(host: string) {
     log(`Starting Vite setup...`);
     await setupVite(app, httpServer);
     log(`Vite setup complete!`);
-    startWebSocketServer(host);
+    startWebSocketServer(host, httpServer);
 
     console.log(`🔧 Attempting to listen on ${host}:${port}...`);
     httpServer.listen({ port, host }, () => {
@@ -264,7 +297,7 @@ function startWebSocketServer(host: string) {
   } else {
     serveStatic(app);
     httpServer = createServer(app);
-    startWebSocketServer(host);
+    startWebSocketServer(host, httpServer);
 
     httpServer.listen({ port, host }, () => {
         log(`serving in production on port ${port}`);

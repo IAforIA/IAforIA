@@ -163,8 +163,7 @@ export function DeliveryMap({ clients, motoboys, motoboyLocations }: DeliveryMap
     <Card className="p-0 h-full overflow-hidden relative z-0">
       <div 
         ref={mapContainer} 
-        className="w-full h-full min-h-[400px] sm:min-h-[500px] lg:min-h-[600px]"
-        style={{ background: '#e5e7eb' }}
+        className="w-full h-full min-h-[400px] sm:min-h-[500px] lg:min-h-[600px] bg-gray-200"
       />
     </Card>
   );

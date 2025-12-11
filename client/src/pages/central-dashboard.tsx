@@ -68,52 +68,19 @@ export default function CentralDashboard() {
     enabled: !!token, // Só faz a query se tiver token
   });
 
-  // QUERY: Busca TODOS os horários dos clientes de uma vez (otimização)
+  // QUERY: Busca TODOS os horários dos clientes de uma vez (sem fallback para evitar dados irreais)
   const { data: allClientSchedules = [] } = useQuery<any[]>({
     queryKey: ['/api/schedules/all-clients'],
     enabled: !!token,
     refetchInterval: 60000, // Atualiza a cada 1 minuto
   });
-
-  // Fallback: se não houver schedules na tabela, usa horarioFuncionamento textual dos clientes
-  const clientSchedulesView = useMemo(() => {
-    if (Array.isArray(allClientSchedules) && allClientSchedules.length > 0) return allClientSchedules;
-    if (!Array.isArray(clients) || clients.length === 0) return [];
-
-    const parseHorario = (str?: string | null) => {
-      if (!str) return { horaAbertura: undefined, horaFechamento: undefined };
-      const parts = str.replace(/\s+/g, '').split(/-|–|—/);
-      const [start, end] = parts;
-      return {
-        horaAbertura: start || undefined,
-        horaFechamento: end || undefined,
-      };
-    };
-
-    // Cria uma entrada por dia da semana para cada cliente com o horário textual
-    const days = [0,1,2,3,4,5,6];
-    return clients.flatMap((c) => {
-      const { horaAbertura, horaFechamento } = parseHorario((c as any).horarioFuncionamento);
-      return days.map((diaSemana) => ({
-        id: `${c.id}-${diaSemana}-fallback` ,
-        clientId: c.id,
-        diaSemana,
-        horaAbertura,
-        horaFechamento,
-        fechado: false,
-        fallback: true,
-      }));
-    });
-  }, [allClientSchedules, clients]);
   
-  // Log de debug
+  // Log de debug (somente quando chegar dado)
   useEffect(() => {
-    if (clientSchedulesView.length > 0) {
-      console.log('📅 Dashboard - schedules carregados (com fallback):', clientSchedulesView.length);
-    } else {
-      console.warn('⚠️ Dashboard - schedules ainda vazios');
+    if (allClientSchedules.length > 0) {
+      console.log('📅 Dashboard - schedules carregados:', allClientSchedules.length);
     }
-  }, [clientSchedulesView]);
+  }, [allClientSchedules]);
 
   // QUERY: Busca TODOS os horários dos motoboys de uma vez
   const { data: allMotoboySchedules = [] } = useQuery<any[]>({
@@ -195,11 +162,21 @@ export default function CentralDashboard() {
     return acc;
   }, {});
 
-  // KPI rápidos para o dashboard inicial (default 0 para evitar undefined)
-  const totalOrders = normalizedOrders.length;
-  const inProgress = normalizedOrders.filter((o) => o.status === 'in_progress').length;
-  const delivered = normalizedOrders.filter((o) => o.status === 'delivered').length;
-  const activeDrivers = onlineUserIds.length;
+  // KPI rápidos para o dashboard inicial (usando somente pedidos de HOJE)
+  const isToday = (date: Date) => {
+    const now = new Date();
+    return (
+      date.getFullYear() === now.getFullYear() &&
+      date.getMonth() === now.getMonth() &&
+      date.getDate() === now.getDate()
+    );
+  };
+
+  const ordersToday = normalizedOrders.filter((o) => o.createdAtDate && isToday(o.createdAtDate));
+  const totalOrders = ordersToday.length;
+  const inProgress = ordersToday.filter((o) => o.status === 'in_progress').length;
+  const delivered = ordersToday.filter((o) => o.status === 'delivered').length;
+  const onlineMotoboys = motoboys.filter((m) => m.online).length;
 
   // EFEITO: Abre conexão WebSocket autenticada para receber eventos em tempo real
   useEffect(() => {
@@ -261,12 +238,12 @@ export default function CentralDashboard() {
                       motoboys={motoboys}
                       motoboyLocations={motoboyLocations}
                       normalizedOrders={normalizedOrders}
-                      allClientSchedules={clientSchedulesView}
+                      allClientSchedules={allClientSchedules}
                       allMotoboySchedules={allMotoboySchedules}
                       totalOrders={totalOrders}
                       inProgress={inProgress}
                       delivered={delivered}
-                      activeDrivers={activeDrivers}
+                      activeDrivers={onlineMotoboys}
                       handleRefreshSchedules={handleRefreshSchedules}
                       companyReport={companyReport}
                       user={user}
@@ -297,7 +274,7 @@ export default function CentralDashboard() {
                   <Route path="/clients">
                     <ClientsRoute
                       clients={clients}
-                      allClientSchedules={clientSchedulesView}
+                      allClientSchedules={allClientSchedules}
                       normalizedOrders={normalizedOrders}
                     />
                   </Route>
@@ -340,12 +317,12 @@ export default function CentralDashboard() {
                       motoboys={motoboys}
                       motoboyLocations={motoboyLocations}
                       normalizedOrders={normalizedOrders}
-                      allClientSchedules={clientSchedulesView}
+                      allClientSchedules={allClientSchedules}
                       allMotoboySchedules={allMotoboySchedules}
                       totalOrders={totalOrders}
                       inProgress={inProgress}
                       delivered={delivered}
-                      activeDrivers={activeDrivers}
+                      activeDrivers={onlineMotoboys}
                       handleRefreshSchedules={handleRefreshSchedules}
                       companyReport={companyReport}
                       user={user}

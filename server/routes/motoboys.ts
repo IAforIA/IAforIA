@@ -27,6 +27,18 @@ export function buildMotoboysRouter() {
     }
   });
 
+  // Últimas localizações conhecidas dos motoboys (mapa tempo real)
+  router.get('/motoboys/locations/latest', authenticateToken, requireRole('central'), async (_req, res) => {
+    try {
+      const latest = await storage.getLatestMotoboyLocations();
+      // storage returns Map; expor como array para o front
+      res.json({ locations: Array.from(latest.values()) });
+    } catch (error) {
+      console.error('Erro ao buscar localizações de motoboys', error);
+      res.status(500).json({ error: 'Erro ao buscar localizações de motoboys' });
+    }
+  });
+
   // Perfil do motoboy logado
   router.get('/motoboys/me', authenticateToken, requireRole('motoboy'), async (req, res) => {
     try {

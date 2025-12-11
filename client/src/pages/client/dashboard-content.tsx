@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Package, Clock, CheckCircle, XCircle } from "lucide-react";
+import { Package, Clock, CheckCircle, XCircle, Truck } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { Order, OrderStatus } from "@shared/schema";
 import type { DashboardContentProps } from "./types";
@@ -13,6 +13,7 @@ export function DashboardContent({
   clientOrders,
   totalOrders,
   pending,
+  inProgress,
   delivered,
   cancelled,
   clientReport,
@@ -37,9 +38,10 @@ export function DashboardContent({
 
   return (
     <>
-      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
-        <StatCard title="Total Pedidos" value={totalOrders} icon={Package} />
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 md:gap-6">
+        <StatCard title="Total" value={totalOrders} icon={Package} />
         <StatCard title="Aguardando" value={pending} icon={Clock} />
+        <StatCard title="Em Rota" value={inProgress} icon={Truck} />
         <StatCard title="Concluídos" value={delivered} icon={CheckCircle} />
         <StatCard title="Cancelados" value={cancelled} icon={XCircle} />
       </div>

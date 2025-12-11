@@ -60,7 +60,7 @@ export function DriverScheduleViewer({ motoboyId, motoboyName, compact = false }
   const currentShift = currentHour >= 6 && currentHour < 12 ? 'turnoManha' :
                        currentHour >= 12 && currentHour < 18 ? 'turnoTarde' : 'turnoNoite';
   
-  const todaySchedule = schedules.find(s => s.diaSemana === currentDay);
+  const todaySchedule = schedules.find((s) => Number((s as any).diaSemana) === currentDay);
   const isAvailableNow = todaySchedule?.[currentShift as keyof Schedule] === true;
 
   if (isLoading) {
@@ -142,7 +142,7 @@ export function DriverScheduleViewer({ motoboyId, motoboyName, compact = false }
       {/* Grid de disponibilidade */}
       <div className="space-y-2">
         {DAYS.map(day => {
-          const schedule = schedules.find(s => s.diaSemana === day.num);
+          const schedule = schedules.find((s) => Number((s as any).diaSemana) === day.num);
           const isToday = day.num === currentDay;
 
           if (!schedule) {
@@ -248,7 +248,7 @@ export function DriverAvailabilityBadge({ motoboyId }: { motoboyId: string }) {
   const currentShift = currentHour >= 6 && currentHour < 12 ? 'turnoManha' :
                        currentHour >= 12 && currentHour < 18 ? 'turnoTarde' : 'turnoNoite';
   
-  const todaySchedule = schedules.find(s => s.diaSemana === currentDay);
+  const todaySchedule = schedules.find((s) => Number((s as any).diaSemana) === currentDay);
   const isAvailable = todaySchedule?.[currentShift as keyof Schedule] === true;
 
   if (schedules.length === 0) {

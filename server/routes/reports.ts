@@ -40,7 +40,7 @@ export function buildReportsRouter() {
     }
   });
 
-  router.get('/motoboys/:motoboyId', authenticateToken, async (req, res) => {
+  const handleMotoboyReport = async (req: any, res: any) => {
     try {
       const { motoboyId } = req.params;
       if (!motoboyId) return res.status(400).json({ success: false, error: 'motoboyId inválido' });
@@ -58,7 +58,12 @@ export function buildReportsRouter() {
       if (error instanceof Error && error.message.includes('Acesso negado')) return res.status(403).json({ success: false, error: error.message });
       res.status(500).json({ success: false, error: error instanceof Error ? error.message : 'Erro ao gerar relatório do motoboy' });
     }
-  });
+  };
+
+  router.get('/motoboys/:motoboyId', authenticateToken, handleMotoboyReport);
+
+  // Alias para compatibilidade com front: /api/reports/motoboys/:id
+  router.get('/reports/motoboys/:motoboyId', authenticateToken, handleMotoboyReport);
 
   router.get('/orders', authenticateToken, async (req, res) => {
     try {

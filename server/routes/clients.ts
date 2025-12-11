@@ -48,6 +48,21 @@ export function buildClientsRouter() {
     }
   });
 
+  // Horários de funcionamento do cliente (somente central ou o próprio cliente)
+  router.get('/clients/:id/schedules', authenticateToken, async (req, res) => {
+    try {
+      const { id } = req.params;
+      if (req.user!.role !== 'central' && req.user!.id !== id) {
+        return res.status(403).json({ error: 'Acesso negado' });
+      }
+      const schedules = await storage.getClientSchedule(id);
+      res.json(schedules);
+    } catch (error: any) {
+      console.error('💥 Erro ao buscar horários do cliente:', error);
+      res.status(500).json({ error: 'Erro ao buscar horários do cliente' });
+    }
+  });
+
   // Permite cliente autenticado atualizar próprio cadastro (endereço/documentos)
   router.patch('/clients/me', authenticateToken, requireRole('client'), async (req, res) => {
     try {

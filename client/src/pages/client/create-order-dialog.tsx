@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation } from "@tanstack/react-query";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -294,6 +294,7 @@ export function CreateOrderDialog({
       <DialogContent className="max-w-md sm:max-w-lg md:max-w-2xl lg:max-w-3xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto w-full sm:w-auto">
         <DialogHeader>
           <DialogTitle className="text-lg sm:text-xl">Criar Novo Pedido</DialogTitle>
+          <DialogDescription>Informe endereços, produto e forma de pagamento para abrir um novo pedido.</DialogDescription>
         </DialogHeader>
 
         {isProfileLoading && <p className="text-sm text-muted-foreground">Carregando endereço fixo cadastrado...</p>}
@@ -657,7 +658,10 @@ export function CreateOrderDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Valor da Entrega (Frete)</FormLabel>
-                    <Select onValueChange={(val) => field.onChange(parseFloat(val))} value={field.value?.toString()}>
+                    <Select
+                      onValueChange={(val) => field.onChange(parseFloat(val))}
+                      value={field.value ? field.value.toString() : ""}
+                    >
                       <FormControl>
                         <SelectTrigger data-testid="select-valor-entrega">
                           <SelectValue placeholder="Selecione o valor do frete" />
@@ -680,7 +684,7 @@ export function CreateOrderDialog({
               <FormField control={form.control} name="formaPagamento" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Forma de Pagamento</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger data-testid="select-forma-pagamento">
                         <SelectValue placeholder="Como vai pagar?" />
