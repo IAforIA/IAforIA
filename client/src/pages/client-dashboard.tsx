@@ -4,7 +4,7 @@
  * TECNOLOGIAS: React, React Query, WebSocket, shadcn/ui, Wouter
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { Switch as RouterSwitch, Route, Router as NestedRouter } from "wouter";
@@ -67,12 +67,53 @@ export default function ClientDashboard() {
 
   const clientOrders = orders.filter((o) => o.clientId === user?.id);
 
+  // Usar ref para evitar loop de dependência do useEffect
+  const refetchRef = useRef(refetch);
+  refetchRef.current = refetch;
+
   useEffect(() => {
     if (!user?.id || !token) return;
-    const websocket = new WebSocket(resolveWebSocketUrl(token));
-    websocket.onmessage = () => refetch();
-    return () => websocket.close();
-  }, [user?.id, refetch, token]);
+    
+    let websocket: WebSocket | null = null;
+    let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
+    
+    const connect = () => {
+      try {
+        websocket = new WebSocket(resolveWebSocketUrl(token));
+        
+        websocket.onopen = () => {
+          console.log('✅ WebSocket conectado (client)');
+        };
+        
+        websocket.onmessage = () => {
+          refetchRef.current();
+        };
+        
+        websocket.onerror = (e) => {
+          console.error('❌ WebSocket erro:', e);
+        };
+        
+        websocket.onclose = (e) => {
+          console.log('🔌 WebSocket fechado:', e.code, e.reason);
+          // Só reconecta se não foi fechamento intencional
+          if (e.code !== 1000 && e.code !== 1001) {
+            reconnectTimeout = setTimeout(connect, 5000);
+          }
+        };
+      } catch (err) {
+        console.error('❌ Erro ao criar WebSocket:', err);
+      }
+    };
+    
+    connect();
+    
+    return () => {
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
+      if (websocket) {
+        websocket.close(1000, 'Component unmounting');
+      }
+    };
+  }, [user?.id, token]); // Removido refetch das dependências
 
   const totalOrders = clientOrders.length;
   const pending = clientOrders.filter((o) => o.status === "pending").length;

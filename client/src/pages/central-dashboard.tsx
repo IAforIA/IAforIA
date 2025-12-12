@@ -13,7 +13,7 @@ import { useQuery } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import type { Order, Motoboy, Client } from "@shared/schema";
-import { useEffect, useMemo, Suspense, lazy } from "react";
+import { useEffect, useMemo, Suspense, lazy, useRef } from "react";
 import { resolveWebSocketUrl } from "@/lib/utils";
 import { useOrderFilters } from "@/hooks/use-order-filters";
 import { useFinancialReports } from "@/hooks/use-financial-reports";
@@ -178,38 +178,75 @@ export default function CentralDashboard() {
   const delivered = ordersToday.filter((o) => o.status === 'delivered').length;
   const onlineMotoboys = motoboys.filter((m) => m.online).length;
 
+  // Usar refs para evitar loops de dependência no useEffect
+  const refetchOrdersRef = useRef(refetchOrders);
+  const refetchMotoboysRef = useRef(refetchMotoboys);
+  const refetchOnlineRef = useRef(refetchOnline);
+  refetchOrdersRef.current = refetchOrders;
+  refetchMotoboysRef.current = refetchMotoboys;
+  refetchOnlineRef.current = refetchOnline;
+
   // EFEITO: Abre conexão WebSocket autenticada para receber eventos em tempo real
   useEffect(() => {
     if (!token) return; // Sem token não conectamos
 
-    const websocket = new WebSocket(resolveWebSocketUrl(token));
+    let websocket: WebSocket | null = null;
+    let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
+    
+    const connect = () => {
+      try {
+        websocket = new WebSocket(resolveWebSocketUrl(token));
 
-    // Quando chegar mensagem relevante, revalida cache de pedidos e motoboys
-    websocket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === 'new_order' || data.type === 'order_accepted' || data.type === 'order_delivered') {
-        refetchOrders();
-      }
-      // Atualiza lista de motoboys e usuários online quando houver mudança de status
-      if (data.type === 'driver_online' || data.type === 'driver_offline' || data.type === 'order_accepted') {
-        refetchMotoboys();
-        refetchOnline(); // Atualiza lista de usuários online
-      }
-      // Atualiza cache de localizações em tempo real
-      if (data.type === 'location_update' && data.payload?.motoboyId) {
-        queryClient.setQueryData(['/api/motoboys/locations/latest'], (prev: any) => {
-          const prevLocations = prev?.locations || [];
-          const filtered = prevLocations.filter((loc: any) => loc.motoboyId !== data.payload.motoboyId);
-          return { locations: [...filtered, data.payload] };
-        });
+        websocket.onopen = () => {
+          console.log('✅ WebSocket conectado (central)');
+        };
+
+        // Quando chegar mensagem relevante, revalida cache de pedidos e motoboys
+        websocket.onmessage = (event) => {
+          const data = JSON.parse(event.data);
+          if (data.type === 'new_order' || data.type === 'order_accepted' || data.type === 'order_delivered') {
+            refetchOrdersRef.current();
+          }
+          // Atualiza lista de motoboys e usuários online quando houver mudança de status
+          if (data.type === 'driver_online' || data.type === 'driver_offline' || data.type === 'order_accepted') {
+            refetchMotoboysRef.current();
+            refetchOnlineRef.current(); // Atualiza lista de usuários online
+          }
+          // Atualiza cache de localizações em tempo real
+          if (data.type === 'location_update' && data.payload?.motoboyId) {
+            queryClient.setQueryData(['/api/motoboys/locations/latest'], (prev: any) => {
+              const prevLocations = prev?.locations || [];
+              const filtered = prevLocations.filter((loc: any) => loc.motoboyId !== data.payload.motoboyId);
+              return { locations: [...filtered, data.payload] };
+            });
+          }
+        };
+
+        websocket.onerror = (e) => {
+          console.error('❌ WebSocket erro:', e);
+        };
+
+        websocket.onclose = (e) => {
+          console.log('🔌 WebSocket fechado:', e.code, e.reason);
+          // Só reconecta se não foi fechamento intencional
+          if (e.code !== 1000 && e.code !== 1001) {
+            reconnectTimeout = setTimeout(connect, 5000);
+          }
+        };
+      } catch (err) {
+        console.error('❌ Erro ao criar WebSocket:', err);
       }
     };
-
-    websocket.onclose = () => console.log('WebSocket closed');
-    websocket.onerror = (error) => console.error('WebSocket error:', error);
-    websocket.onopen = () => console.log('WebSocket connected');
-    return () => websocket.close();
-  }, [token, refetchOrders, refetchMotoboys, refetchOnline]);
+    
+    connect();
+    
+    return () => {
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
+      if (websocket) {
+        websocket.close(1000, 'Component unmounting');
+      }
+    };
+  }, [token]); // Removidas refetch functions das dependências
 
   return (
     <SidebarProvider>
