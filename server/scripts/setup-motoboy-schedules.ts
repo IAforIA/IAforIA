@@ -10,6 +10,7 @@
  * Execute: npx tsx server/scripts/setup-motoboy-schedules.ts
  */
 
+import 'dotenv/config';
 import { neon } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-http';
 import { motoboys, motoboySchedules } from '@shared/schema';
