@@ -52,7 +52,7 @@ const DEFAULTS: AgentConfig = {
   },
   ports: {
     main: 5000,
-    canary: 5001
+    canary: 5010
   },
   autopilot: {
     intervalSeconds: 60,

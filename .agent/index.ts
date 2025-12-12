@@ -30,10 +30,16 @@ function isEnabled(): boolean {
 
 async function main(): Promise<void> {
   const prod = process.argv.includes('--prod');
+  const notifyTest = process.argv.includes('--notify-test');
   ensureDirs();
 
   const notifier = createNotifier({ prod });
   const config = getConfig();
+
+  if (notifyTest) {
+    await notifier.warn('Teste de notificação do Agent-Zero (warn). Se você recebeu isso no Telegram, está configurado ✅');
+    process.exit(0);
+  }
 
   if (!isEnabled()) {
     await notifier.info('Agent-Zero está desativado (ENABLE_AGENT_ZERO != true e config.enabled=false). Saindo sem mudanças.');
