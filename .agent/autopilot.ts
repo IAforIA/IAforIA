@@ -231,12 +231,14 @@ export async function runAutopilotLoop(opts: { config: AgentConfig; notifier: No
         state.attempts = attempt;
         writeCache({ ...cache, [stateKey]: state });
 
-        ensureGitClean(Boolean(config.patch?.requireGitClean));
-
+        // Em dryRun não aplicamos patch nem fazemos rollback.
+        // Portanto, não faz sentido bloquear por working tree “sujo”.
         if (config.dryRun) {
           await notifier.info('dryRun=true: não vou pedir patch nem aplicar mudanças.');
           break;
         }
+
+        ensureGitClean(Boolean(config.patch?.requireGitClean));
 
         const prompt = buildContextForModel(config, incident, String(state.lastActionLog || ''));
         const patch = await askOpenAIForPatch(prompt);
