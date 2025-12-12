@@ -204,7 +204,7 @@ export function DriversRoute({ motoboys, activeOrdersByDriver }: DriversRoutePro
       </Card>
 
       <Dialog open={scheduleDialogOpen} onOpenChange={setScheduleDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl w-[95vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Disponibilidade do Motoboy</DialogTitle>
             <DialogDescription>Visualização completa da disponibilidade semanal</DialogDescription>
@@ -221,7 +221,7 @@ export function DriversRoute({ motoboys, activeOrdersByDriver }: DriversRoutePro
       </Dialog>
 
       <Dialog open={createDriverOpen} onOpenChange={setCreateDriverOpen}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-3xl w-[95vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Novo Motoboy</DialogTitle>
             <DialogDescription>Cadastre um entregador com dados básicos.</DialogDescription>
@@ -237,7 +237,7 @@ export function DriversRoute({ motoboys, activeOrdersByDriver }: DriversRoutePro
       </Dialog>
 
       <Dialog open={driverDetailsOpen} onOpenChange={setDriverDetailsOpen}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-3xl w-[95vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Detalhes do Motoboy</DialogTitle>
             <DialogDescription>Contato, endereço, documentos e agenda completa.</DialogDescription>

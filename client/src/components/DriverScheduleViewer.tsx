@@ -104,38 +104,38 @@ export function DriverScheduleViewer({ motoboyId, motoboyName, compact = false }
 
   // MODO COMPLETO: Grid visual para modal/detalhes
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {/* Header com estatísticas */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div className="flex items-center gap-2">
-          <Calendar className="w-5 h-5 text-primary" />
-          <h3 className="font-semibold">Disponibilidade de {motoboyName}</h3>
+          <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+          <h3 className="font-semibold text-sm sm:text-base">Disponibilidade de {motoboyName}</h3>
         </div>
         <div className="flex gap-2">
           {isAvailableNow ? (
-            <Badge className="bg-green-500 text-white">
-              <CheckCircle2 className="w-4 h-4 mr-1" />
+            <Badge className="bg-green-500 text-white text-xs">
+              <CheckCircle2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
               Disponível AGORA
             </Badge>
           ) : (
-            <Badge variant="outline">Indisponível agora</Badge>
+            <Badge variant="outline" className="text-xs">Indisponível agora</Badge>
           )}
         </div>
       </div>
 
       {/* Estatísticas resumidas */}
-      <div className="grid grid-cols-3 gap-2">
-        <Card className="p-3">
-          <p className="text-xs text-muted-foreground">Dias Trabalhados</p>
-          <p className="text-2xl font-bold">{daysWorking}/7</p>
+      <div className="grid grid-cols-3 sm:grid-cols-3 gap-2">
+        <Card className="p-2 sm:p-3">
+          <p className="text-[10px] sm:text-xs text-muted-foreground">Dias Trabalhados</p>
+          <p className="text-lg sm:text-2xl font-bold">{daysWorking}/7</p>
         </Card>
-        <Card className="p-3">
-          <p className="text-xs text-muted-foreground">Total Turnos</p>
-          <p className="text-2xl font-bold">{totalShifts}</p>
+        <Card className="p-2 sm:p-3">
+          <p className="text-[10px] sm:text-xs text-muted-foreground">Total Turnos</p>
+          <p className="text-lg sm:text-2xl font-bold">{totalShifts}</p>
         </Card>
-        <Card className="p-3">
-          <p className="text-xs text-muted-foreground">Média/Dia</p>
-          <p className="text-2xl font-bold">{daysWorking > 0 ? (totalShifts / daysWorking).toFixed(1) : 0}</p>
+        <Card className="p-2 sm:p-3">
+          <p className="text-[10px] sm:text-xs text-muted-foreground">Média/Dia</p>
+          <p className="text-lg sm:text-2xl font-bold">{daysWorking > 0 ? (totalShifts / daysWorking).toFixed(1) : 0}</p>
         </Card>
       </div>
 
@@ -153,11 +153,11 @@ export function DriverScheduleViewer({ motoboyId, motoboyName, compact = false }
                   isToday ? 'border-primary bg-accent/30' : 'border-muted bg-muted/20'
                 }`}
               >
-                <div className="w-16 text-sm font-medium text-muted-foreground">
+                <div className="w-12 sm:w-16 text-xs sm:text-sm font-medium text-muted-foreground">
                   {day.short}
-                  {isToday && <span className="ml-1 text-xs text-primary">(Hoje)</span>}
+                  {isToday && <span className="ml-1 text-[10px] sm:text-xs text-primary">(Hoje)</span>}
                 </div>
-                <div className="flex-1 text-sm text-muted-foreground italic">
+                <div className="flex-1 text-xs sm:text-sm text-muted-foreground italic">
                   Folga
                 </div>
               </div>
@@ -171,11 +171,11 @@ export function DriverScheduleViewer({ motoboyId, motoboyName, compact = false }
                 isToday ? 'border-primary bg-accent/30' : 'border-border'
               }`}
             >
-              <div className="w-16 text-sm font-medium">
+              <div className="w-12 sm:w-16 text-xs sm:text-sm font-medium">
                 {day.short}
-                {isToday && <span className="ml-1 text-xs text-primary">(Hoje)</span>}
+                {isToday && <span className="ml-1 text-[10px] sm:text-xs text-primary">(Hoje)</span>}
               </div>
-              <div className="flex-1 flex gap-1">
+              <div className="flex-1 flex flex-wrap gap-1">
                 {SHIFTS.map(shift => {
                   const isActive = schedule[shift.key as keyof Schedule] === true;
                   const isCurrentShift = isToday && shift.key === currentShift;
@@ -185,16 +185,16 @@ export function DriverScheduleViewer({ motoboyId, motoboyName, compact = false }
                   return (
                     <Badge 
                       key={shift.key}
-                      className={`${shift.color} text-white text-xs ${
-                        isCurrentShift ? 'ring-2 ring-green-400 ring-offset-2' : ''
+                      className={`${shift.color} text-white text-[10px] sm:text-xs px-1 sm:px-2 ${
+                        isCurrentShift ? 'ring-2 ring-green-400 ring-offset-1 sm:ring-offset-2' : ''
                       }`}
                     >
-                      {shift.emoji} {shift.label}
+                      {shift.emoji} <span className="hidden sm:inline">{shift.label}</span>
                     </Badge>
                   );
                 })}
                 {!schedule.turnoManha && !schedule.turnoTarde && !schedule.turnoNoite && (
-                  <span className="text-xs text-muted-foreground italic">Sem turnos</span>
+                  <span className="text-[10px] sm:text-xs text-muted-foreground italic">Sem turnos</span>
                 )}
               </div>
             </div>

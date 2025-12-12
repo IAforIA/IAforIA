@@ -133,15 +133,15 @@ export function ScheduleGrid() {
 
   return (
     <div className="space-y-4">
-      <Card className="p-6">
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold">📅 Minha Disponibilidade Semanal</h2>
-          <p className="text-sm text-muted-foreground mt-1">
+      <Card className="p-3 sm:p-6">
+        <div className="mb-4 sm:mb-6">
+          <h2 className="text-lg sm:text-2xl font-bold">📅 Minha Disponibilidade</h2>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
             Configure os dias e turnos em que você pode trabalhar
           </p>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {DAYS.map((day) => {
             const schedule = scheduleMap.get(day.num);
             const isToday = day.num === currentDay;
@@ -151,17 +151,18 @@ export function ScheduleGrid() {
             return (
               <div
                 key={day.num}
-                className={`border-l-4 rounded-lg p-4 transition-colors ${
+                className={`border-l-4 rounded-lg p-3 sm:p-4 transition-colors ${
                   isToday
                     ? "border-primary bg-accent/50"
                     : "border-muted bg-card"
                 }`}
               >
-                <div className="flex items-center justify-between mb-3">
-                  <div className="font-bold text-base">
-                    {day.emoji} {day.name}
+                <div className="flex items-center justify-between mb-2 sm:mb-3">
+                  <div className="font-bold text-sm sm:text-base">
+                    {day.emoji} {day.short}
+                    <span className="hidden sm:inline"> - {day.name.slice(0, 3)}</span>
                     {isToday && (
-                      <span className="ml-2 text-xs font-normal text-primary">
+                      <span className="ml-1 sm:ml-2 text-xs font-normal text-primary">
                         (Hoje)
                       </span>
                     )}
@@ -174,7 +175,7 @@ export function ScheduleGrid() {
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-3 gap-2">
                   {SHIFTS.map((shift) => {
                     const isChecked = schedule?.[shift.key as keyof Schedule] as boolean ?? false;
                     const isShiftSaving = saving?.day === day.num && saving?.shift === shift.key;
@@ -182,26 +183,26 @@ export function ScheduleGrid() {
                     return (
                       <div
                         key={shift.key}
-                        className={`flex items-center justify-between p-3 rounded-md transition-all ${
+                        className={`flex flex-col items-center p-2 sm:p-3 rounded-md transition-all ${
                           isChecked
                             ? `${shift.color} text-white`
                             : "bg-muted/50 text-muted-foreground"
                         }`}
                       >
-                        <div className="flex items-center space-x-2">
-                          <span className="text-lg">{shift.emoji}</span>
+                        <div className="flex flex-col items-center text-center">
+                          <span className="text-sm sm:text-lg">{shift.emoji}</span>
                           <div>
-                            <Label className="text-sm font-semibold cursor-pointer">
+                            <Label className="text-xs sm:text-sm font-semibold cursor-pointer">
                               {shift.label}
                             </Label>
-                            <div className="text-xs opacity-80">{shift.time}</div>
+                            <div className="text-[10px] sm:text-xs opacity-80 hidden sm:block">{shift.time}</div>
                           </div>
                         </div>
                         <Switch
                           checked={isChecked}
                           onCheckedChange={(checked) => handleToggle(day.num, shift.key, checked)}
                           disabled={isShiftSaving}
-                          className={isChecked ? "data-[state=checked]:bg-white/30" : ""}
+                          className={`mt-1 scale-90 sm:scale-100 ${isChecked ? "data-[state=checked]:bg-white/30" : ""}`}
                         />
                       </div>
                     );
@@ -213,10 +214,10 @@ export function ScheduleGrid() {
         </div>
       </Card>
 
-      <Card className="p-4 bg-muted/50">
-        <div className="flex items-start gap-3">
-          <div className="text-2xl">💡</div>
-          <div className="flex-1 text-sm text-muted-foreground">
+      <Card className="p-3 sm:p-4 bg-muted/50">
+        <div className="flex items-start gap-2 sm:gap-3">
+          <div className="text-xl sm:text-2xl">💡</div>
+          <div className="flex-1 text-xs sm:text-sm text-muted-foreground">
             <strong>Dica:</strong> Sua disponibilidade é usada pelo sistema para atribuir entregas
             automaticamente. Mantenha sempre atualizada para receber mais pedidos!
           </div>
