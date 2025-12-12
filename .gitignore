@@ -56,6 +56,7 @@ prototipos/
 
 # Agent Zero (code should be versioned; ignore runtime artifacts only)
 .agent/logs/*
+!.agent/logs/
 !.agent/logs/.gitkeep
 .agent/learning/*
 !.agent/learning/.gitkeep
