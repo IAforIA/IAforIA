@@ -7,7 +7,11 @@ import { getConfig } from './validator.js';
 import { runAutopilotLoop } from './autopilot.js';
 
 // Load environment variables from .env on startup (PM2/npm won't do this automatically).
-loadEnv();
+loadEnv({ quiet: true });
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 function ensureDirs(): void {
   mkdirSync(join(process.cwd(), '.agent', 'logs'), { recursive: true });
@@ -34,7 +38,6 @@ async function main(): Promise<void> {
   ensureDirs();
 
   const notifier = createNotifier({ prod });
-  const config = getConfig();
 
   if (notifyTest) {
     await notifier.warn('Teste de notificação do Agent-Zero (warn). Se você recebeu isso no Telegram, está configurado ✅');
@@ -42,9 +45,21 @@ async function main(): Promise<void> {
   }
 
   if (!isEnabled()) {
-    await notifier.info('Agent-Zero está desativado (ENABLE_AGENT_ZERO != true e config.enabled=false). Saindo sem mudanças.');
-    process.exit(0);
+    // Em dev/local: sair sem fazer nada.
+    // Em prod/PM2: manter vivo para evitar loop de restart; aguarda habilitação.
+    if (!prod) {
+      await notifier.info('Agent-Zero está desativado (ENABLE_AGENT_ZERO != true e config.enabled=false). Saindo sem mudanças.');
+      process.exit(0);
+    }
+
+    await notifier.info('Agent-Zero está desativado (ENABLE_AGENT_ZERO != true e config.enabled=false). Mantendo processo ativo (PM2) e aguardando habilitação…');
+    while (!isEnabled()) {
+      await sleep(60_000);
+    }
+    await notifier.info('Habilitação detectada. Iniciando Agent-Zero…');
   }
+
+  const config = getConfig();
 
   await notifier.info(`Agent-Zero iniciado (${prod ? 'prod' : 'dev'}) em modo seguro (dryRun=${String(config.dryRun)}).`);
 
