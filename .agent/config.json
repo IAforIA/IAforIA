@@ -1,0 +1,31 @@
+{
+  "enabled": false,
+  "dryRun": true,
+  "mode": "watch",
+  "watch": {
+    "paths": [
+      "server",
+      "client",
+      "shared",
+      "tests",
+      "scripts"
+    ],
+    "ignore": [
+      "node_modules",
+      "dist",
+      ".git",
+      "uploads",
+      "datasets",
+      ".agent/logs",
+      ".agent/learning"
+    ]
+  },
+  "patch": {
+    "requireGitClean": true,
+    "maxPatchBytes": 262144
+  },
+  "notifications": {
+    "telegram": false,
+    "slack": false
+  }
+}

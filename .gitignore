@@ -53,7 +53,14 @@ txt/
 
 # Protótipos e metadados locais
 prototipos/
-.agent/
+
+# Agent Zero (code should be versioned; ignore runtime artifacts only)
+.agent/logs/*
+!.agent/logs/.gitkeep
+.agent/learning/*
+!.agent/learning/.gitkeep
+.agent/.cache/*
+!.agent/.cache/.gitkeep
 
 # Arquivos de credenciais acidentais
 credenciais-*.ts
