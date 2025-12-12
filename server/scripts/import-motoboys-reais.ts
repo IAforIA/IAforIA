@@ -6,10 +6,11 @@
 
 import { neon } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-http';
-import { users, motoboys } from '@shared/schema';
+import { users, motoboys, motoboySchedules } from '@shared/schema';
 import bcrypt from 'bcryptjs';
 import * as schema from '@shared/schema';
 import { generateSecurePassword, CredentialRecorder } from './utils/credential-helper';
+import { eq, and } from 'drizzle-orm';
 
 if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL não configurada no .env');
@@ -189,7 +190,19 @@ async function importarMotoboys() {
         online: false,
       });
 
-      console.log(`✅ ${motoboy.nome} criado com sucesso!`);
+      // Criar schedules para todos os dias da semana com todos os turnos habilitados
+      // (0 = Domingo, 1 = Segunda, ..., 6 = Sábado)
+      for (let diaSemana = 0; diaSemana <= 6; diaSemana++) {
+        await db.insert(motoboySchedules).values({
+          motoboyId: motoboy.id,
+          diaSemana: diaSemana,
+          turnoManha: true,  // 6h-12h
+          turnoTarde: true,  // 12h-18h
+          turnoNoite: true,  // 18h-00h
+        }).onConflictDoNothing();
+      }
+
+      console.log(`✅ ${motoboy.nome} criado com sucesso (+ schedules)!`);
       sucesso++;
 
       credentialRecorder.add({
