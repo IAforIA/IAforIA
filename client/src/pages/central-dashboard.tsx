@@ -125,6 +125,8 @@ export default function CentralDashboard() {
     orderClientFilter,
     orderMotoboyFilter,
     orderDateFilter,
+    orderStartDateFilter,
+    orderEndDateFilter,
     orderSearchFilter,
     orderPaymentFilter,
     handleOrderStatusFilterChange,
@@ -132,6 +134,8 @@ export default function CentralDashboard() {
     handleOrderMotoboyFilterChange,
     handleOrderPaymentFilterChange,
     setOrderDateFilter,
+    setOrderStartDateFilter,
+    setOrderEndDateFilter,
     setOrderSearchFilter,
   } = useOrderFilters(orders);
 
@@ -299,12 +303,16 @@ export default function CentralDashboard() {
                       orderMotoboyFilter={orderMotoboyFilter}
                       orderPaymentFilter={orderPaymentFilter}
                       orderDateFilter={orderDateFilter}
+                      orderStartDateFilter={orderStartDateFilter}
+                      orderEndDateFilter={orderEndDateFilter}
                       orderSearchFilter={orderSearchFilter}
                       onStatusChange={handleOrderStatusFilterChange}
                       onClientChange={handleOrderClientFilterChange}
                       onMotoboyChange={handleOrderMotoboyFilterChange}
                       onPaymentChange={handleOrderPaymentFilterChange}
                       onDateChange={setOrderDateFilter}
+                      onStartDateChange={setOrderStartDateFilter}
+                      onEndDateChange={setOrderEndDateFilter}
                       onSearchChange={setOrderSearchFilter}
                     />
                   </Route>
@@ -336,8 +344,12 @@ export default function CentralDashboard() {
                       finClientFilter={finClientFilter}
                       setFinStartDate={setFinStartDate}
                       setFinEndDate={setFinEndDate}
-                      onMotoboyChange={handleFinMotoboyFilterChange}
-                      onClientChange={handleFinClientFilterChange}
+                      handleFinMotoboyFilterChange={handleFinMotoboyFilterChange}
+                      handleFinClientFilterChange={handleFinClientFilterChange}
+                      deliveredTodayOrders={deliveredTodayOrders}
+                      deliveredTodaySummary={deliveredTodaySummary}
+                      pendingOrders={pendingOrders}
+                      pendingSummary={pendingSummary}
                       clients={clients || []}
                       motoboys={motoboys || []}
                     />

@@ -8,10 +8,10 @@
  * Mantido apenas para compatibilidade com código existente.
  */
 
-import { db } from './db';
+import { db } from './db.js';
 import { orders, clients, motoboys } from '@shared/schema';
 import { eq, and, gte, lte, sql } from 'drizzle-orm';
-import * as FinancialEngine from './financial-engine';
+import * as FinancialEngine from './financial-engine.js';
 
 // ============================================================================
 // FUNÇÕES DE COMPATIBILIDADE (usam financial-engine internamente)

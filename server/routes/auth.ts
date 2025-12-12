@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { ZodError } from "zod";
 import { storage } from "../storage.ts";
-import { clientOnboardingSchema } from "@shared/contracts";
+import { clientOnboardingSchema, motoboyOnboardingSchema } from "@shared/contracts";
 import { authenticateToken, requireRole } from "../middleware/auth.ts";
 
 const CLIENT_PROFILE_NOT_FOUND = "CLIENT_PROFILE_NOT_FOUND";
@@ -62,6 +62,40 @@ export function buildAuthRouter() {
       console.error("💥 Erro no registro:", error);
       const errorMessage = process.env.NODE_ENV === "production"
         ? "Erro interno ao registrar usuário"
+        : (error instanceof Error ? error.message : "Erro desconhecido");
+      res.status(500).json({ error: errorMessage });
+    }
+  });
+
+  // ROTA: Registro de novo motoboy/entregador
+  router.post("/auth/register/motoboy", registerLimiter, async (req, res) => {
+    try {
+      const payload = motoboyOnboardingSchema.parse(req.body);
+      const passwordHash = await bcrypt.hash(payload.password, 10);
+      const { password: _password, acceptTerms: _acceptTerms, ...motoboyPayload } = payload;
+      const profile = await storage.createMotoboyWithUser(motoboyPayload, passwordHash);
+      const token = jwt.sign({ id: profile.id, role: "motoboy" }, JWT_SECRET, { expiresIn: "24h" });
+      res.status(201).json({ 
+        access_token: token, 
+        id: profile.id,
+        name: profile.name,
+        role: "motoboy",
+        phone: profile.phone,
+        email: profile.email,
+      });
+    } catch (error: any) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ error: error.flatten() });
+      }
+      if (error instanceof Error && error.message === "EMAIL_IN_USE") {
+        return res.status(409).json({ error: "Email já cadastrado" });
+      }
+      if (error instanceof Error && error.message === "CPF_IN_USE") {
+        return res.status(409).json({ error: "CPF já cadastrado" });
+      }
+      console.error("💥 Erro no registro de motoboy:", error);
+      const errorMessage = process.env.NODE_ENV === "production"
+        ? "Erro interno ao registrar entregador"
         : (error instanceof Error ? error.message : "Erro desconhecido");
       res.status(500).json({ error: errorMessage });
     }

@@ -74,12 +74,12 @@ import { withDependencyMonitoring } from './middleware/security.js';
 // });
 
 // DEPOIS:
-const completion = await withDependencyMonitoring('openai', () =>
-  this.openai.chat.completions.create({
-    model: 'gpt-4o-mini',
-    messages: [...]
-  })
-);
+// const completion = await withDependencyMonitoring('openai', () =>
+//   this.openai.chat.completions.create({
+//     model: 'gpt-4o-mini',
+//     messages: [...] // Nota: substituir [...] por array real de mensagens
+//   })
+// );
 
 // ============================================================================
 // 5. MONITORAR QUERIES DE BANCO (em server/db.ts)
@@ -89,9 +89,9 @@ const completion = await withDependencyMonitoring('openai', () =>
 // const pedidos = await db.select().from(orders);
 
 // DEPOIS:
-const pedidos = await withDependencyMonitoring('database', () =>
-  db.select().from(orders)
-);
+// const pedidos = await withDependencyMonitoring('database', () =>
+//   db.select().from(orders)
+// );
 
 // ============================================================================
 // 6. ENDPOINT DE STATUS DE SEGURANÇA

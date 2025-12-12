@@ -14,7 +14,7 @@
  */
 
 import type { Order, ChatMessage } from "@shared/schema";
-import { storage } from "./storage";
+import { storage } from "./storage.js";
 
 // ========================================
 // TIPOS

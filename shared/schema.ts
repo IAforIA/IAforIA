@@ -103,6 +103,16 @@ export const motoboys = pgTable("motoboys", {
   bairro: text("bairro").default('BAIRRO-PENDENTE'),
   complemento: text("complemento"),
   referencia: text("referencia"),
+  // Dados bancários para recebimento
+  pixKey: text("pix_key"),            // Chave PIX (CPF, celular, email ou aleatória)
+  pixKeyType: text("pix_key_type"),   // Tipo: cpf, phone, email, random
+  bankName: text("bank_name"),        // Nome do banco (ex: Nubank, Bradesco)
+  bankCode: text("bank_code"),        // Código do banco (ex: 260, 237)
+  bankAgency: text("bank_agency"),    // Número da agência
+  bankAccount: text("bank_account"),  // Número da conta
+  bankAccountDigit: text("bank_account_digit"), // Dígito da conta
+  bankAccountType: text("bank_account_type"),   // Tipo: corrente, poupanca
+  bankHolderName: text("bank_holder_name"),     // Nome do titular
   updatedAt: timestamp("updated_at").defaultNow(), // Última atualização
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

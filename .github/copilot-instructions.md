@@ -51,9 +51,15 @@ npm run db:push      # Initialize database schema
 
 ### Database Schema Management
 - Schema defined in `shared/schema.ts` using Drizzle ORM
-- Tables: users, motoboys, motoboyLocations, clients, orders, liveDocs, chatMessages
+- Tables: users, motoboys, motoboyLocations, motoboySchedules, clients, clientSchedules, orders, liveDocs, chatMessages
 - Use `drizzle-zod` for automatic Zod schema generation from tables
 - Push schema changes: `npm run db:push` (uses drizzle-kit)
+
+### Motoboy Bank Data (added 2025-12-12)
+The `motoboys` table includes banking fields for payment processing:
+- `pixKey`, `pixKeyType` (cpf, phone, email, random)
+- `bankName`, `bankCode`, `bankAgency`, `bankAccount`, `bankAccountDigit`, `bankAccountType`, `bankHolderName`
+- These are edited in Settings page, NOT during registration (security)
 
 ## Code Patterns & Conventions
 
@@ -78,22 +84,25 @@ router.post("/api/orders", authenticateToken, requireRole('client', 'central'), 
 ### WebSocket Real-Time Updates
 - Server: WebSocket server in `server/index.ts` with global `broadcast()` function
 - Authentication: Token passed as query param (`/ws?token=<JWT>`)
-- Connection managed per dashboard with `useEffect` cleanup
-- Message types: `new_order`, `order_accepted`, `order_delivered`, `location_update`
+- Connection managed per dashboard with `useEffect` cleanup + `useRef` for refetch
+- Message types: `new_order`, `order_accepted`, `order_delivered`, `location_update`, `chat_message`
 
 ```typescript
-// Client pattern (see client/src/pages/central-dashboard.tsx:32)
+// Client pattern - CRITICAL: Use useRef to avoid infinite loops
+// See client/src/pages/driver-dashboard.tsx for reference
+const refetchRef = useRef(refetch);
+refetchRef.current = refetch;
+
 useEffect(() => {
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const websocket = new WebSocket(`${protocol}//${window.location.host}/ws?token=${token}`);
+  const websocket = new WebSocket(resolveWebSocketUrl(token));
   
   websocket.onmessage = (event) => {
     const data = JSON.parse(event.data);
-    if (data.type === 'new_order') refetchOrders();
+    if (data.type === 'new_order') refetchRef.current(); // Use ref, not direct function
   };
   
   return () => websocket.close();
-}, [token]);
+}, [token]); // Do NOT include refetch in dependencies
 
 // Server broadcast pattern (server/index.ts:55)
 export function broadcast(message: any, excludeId?: string) {
@@ -194,14 +203,21 @@ Each dashboard at `/client/src/pages/[role]-dashboard.tsx` uses:
 This project was migrated from Replit and is now deployment-agnostic. See `DEPLOYMENT.md` for comprehensive deployment instructions.
 
 ### Internal Launch (Private Company Use)
-**The system has NO public registration** - all users must be manually created by administrators.
+**The system has self-registration** for clients and motoboys via the landing page.
 
-For launching within your company with pre-existing users:
+#### Registration Endpoints:
+- **Clients:** `POST /api/auth/register` - Full company registration with address
+- **Motoboys:** `POST /api/auth/register/motoboy` - Driver self-registration (added 2025-12-12)
+
+For bulk import of pre-existing users:
 - See `INICIO-RAPIDO.md` - Quick 4-step guide (35 minutes)
 - See `LANCAMENTO-INTERNO.md` - Detailed internal launch guide
 - Use `server/scripts/import-users.ts` - Bulk user import script
 
-**Security by default:** No `/api/register` route exists - impossible for external users to create accounts.
+**Security notes:**
+- Rate limiting: 3 registration attempts per 15 minutes per IP
+- Motoboy PIX/bank data collected separately in Settings (not during registration)
+- Motoboy registration creates default schedules (all shifts enabled)
 
 ### Quick Deploy Options
 - **Docker**: `docker-compose up -d` (includes PostgreSQL)

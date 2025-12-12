@@ -8,6 +8,8 @@ export interface OrderFilters {
   motoboyId: string | "all";
   paymentMethod: string | "all";
   date: string;
+  startDate: string;
+  endDate: string;
   search: string;
 }
 

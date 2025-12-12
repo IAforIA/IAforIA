@@ -35,9 +35,6 @@ export async function registerRoutes() {
   // Health and readiness
   router.use(buildHealthRouter());
 
-  // Health check for external load balancers
-  router.get('/health', (_, res) => res.json({ status: 'ok' }));
-
   return router;
 }
 

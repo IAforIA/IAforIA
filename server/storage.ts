@@ -22,7 +22,7 @@ import {
 import type { ClientOnboardingPayload, ClientProfileDto } from '@shared/contracts';
 import { db } from './storage/db.js';
 import { shapeChatMessage } from './storage/utils.js';
-import { createClientWithUser, getAllUsers, getClientProfile, getUser, getUserByEmail } from './storage/users.js';
+import { createClientWithUser, createMotoboyWithUser, getAllUsers, getClientProfile, getUser, getUserByEmail } from './storage/users.js';
 import {
   createMotoboy,
   deleteMotoboySchedule,
@@ -125,6 +125,21 @@ class DrizzleStorage /* implements IStorage */ {
    */
   async createClientWithUser(payload: Omit<ClientOnboardingPayload, 'password'>, passwordHash: string): Promise<ClientProfileDto> {
     return createClientWithUser(payload, passwordHash);
+  }
+
+  /**
+   * MÉTODO: createMotoboyWithUser(payload, passwordHash)
+   * PROPÓSITO: Criar motoboy com usuário em transação atômica
+   * PARÂMETROS:
+   *   - payload: Dados do motoboy (nome, email, phone, cpf, placa, pix)
+   *   - passwordHash: Senha já hasheada com bcrypt
+   * RETORNO: Objeto com dados do motoboy criado
+   */
+  async createMotoboyWithUser(
+    payload: { name: string; email: string; phone: string; cpf: string; placa?: string; pix?: string },
+    passwordHash: string
+  ) {
+    return createMotoboyWithUser(payload, passwordHash);
   }
 
   /**

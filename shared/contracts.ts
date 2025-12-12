@@ -158,6 +158,55 @@ export const clientOnboardingSchema = z
 export type ClientOnboardingPayload = z.infer<typeof clientOnboardingSchema>;
 
 // ========================================
+// SCHEMA ZOD: ONBOARDING DE MOTOBOYS
+// ========================================
+
+/**
+ * SCHEMA EXPORTADO: motoboyOnboardingSchema
+ * PROPÓSITO: Validação do cadastro inicial de motoboys/entregadores
+ * 
+ * CAMPOS PRINCIPAIS:
+ * - name: nome completo (3+ chars)
+ * - email: validação de email
+ * - phone: telefone (8+ chars)
+ * - password: senha (8+ chars)
+ * - cpf: CPF do entregador (11 dígitos)
+ * - placa: placa da moto (opcional)
+ * 
+ * NOTA: PIX não é coletado no cadastro inicial por segurança.
+ * O administrador pode atualizar depois em Entregadores > Ver detalhes.
+ */
+export const motoboyOnboardingSchema = z
+  .object({
+    name: z.string().min(3, "Nome obrigatório"),
+    email: z.string().email("Email inválido"),
+    phone: z.string().min(8, "Telefone obrigatório"),
+    password: z.string().min(8, "Senha com no mínimo 8 caracteres"),
+    cpf: z.string().min(11, "CPF obrigatório").max(14, "CPF inválido"),
+    placa: z.string().max(10).optional(),
+    acceptTerms: z
+      .boolean()
+      .refine((value) => value === true, "É necessário aceitar os termos de uso"),
+  })
+  .superRefine((value, ctx) => {
+    // VALIDAÇÃO: CPF deve ter 11 dígitos numéricos
+    const digitsOnly = value.cpf.replace(/\D/g, "");
+    if (digitsOnly.length !== 11) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "CPF deve ter 11 dígitos",
+        path: ["cpf"],
+      });
+    }
+  });
+
+/**
+ * TIPO EXPORTADO: MotoboyOnboardingPayload
+ * PROPÓSITO: TypeScript type inferido do schema Zod
+ */
+export type MotoboyOnboardingPayload = z.infer<typeof motoboyOnboardingSchema>;
+
+// ========================================
 // DTOS: CLIENTE E HORÁRIOS
 // ========================================
 

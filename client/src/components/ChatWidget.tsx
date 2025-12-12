@@ -49,6 +49,7 @@ export function ChatWidget({ currentUserId, currentUserName, currentUserRole, em
   const [lastReadTimestamp, setLastReadTimestamp] = useState<number>(Date.now());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesScrollRef = useRef<HTMLDivElement>(null);
+  const refetchRef = useRef<() => void>(() => {});
   // Para cliente/motoboy manter contagem de não lidas, buscamos mesmo fechado (flutuante).
   const shouldFetchMessages = isOpen || (!isCentral && !embedded);
 
@@ -71,6 +72,9 @@ export function ChatWidget({ currentUserId, currentUserName, currentUserRole, em
     enabled: shouldFetchMessages,
     refetchInterval: shouldFetchMessages && !isMinimized ? (isOpen ? 3000 : 10000) : false,
   });
+
+  // Mantém refetchRef atualizado para evitar loops no WebSocket useEffect
+  refetchRef.current = refetch;
 
   // Zera contagem ao abrir
   useEffect(() => {
@@ -147,7 +151,7 @@ export function ChatWidget({ currentUserId, currentUserName, currentUserRole, em
       try {
         const data = JSON.parse(event.data);
         if (data.type === 'chat_message') {
-          refetch(); // Atualiza mensagens quando nova chega
+          refetchRef.current(); // Atualiza mensagens quando nova chega
         }
       } catch (error) {
         console.error('Erro ao processar WebSocket:', error);
@@ -161,7 +165,7 @@ export function ChatWidget({ currentUserId, currentUserName, currentUserRole, em
     return () => {
       websocket.close();
     };
-  }, [shouldFetchMessages, refetch]);
+  }, [shouldFetchMessages, token]);
 
   const handleSend = () => {
     // Central pode enviar sem categoria, outros usuários precisam de categoria

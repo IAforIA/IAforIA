@@ -1,7 +1,8 @@
 # STATUS ATUAL DO PROJETO GURIRI EXPRESS
 
-**Data:** 06 de Dezembro de 2025  
-**Última atualização:** 16:20 PM
+**Data:** 12 de Dezembro de 2025  
+**Última atualização:** 14:30 PM  
+**Branch:** `deploy/vps-20251210`
 
 ## ✅ SISTEMA FUNCIONANDO
 
@@ -20,6 +21,15 @@
 - **Fluxo:** recebe `name`, `email`, telefone, `documentType`, `documentNumber`, endereço fixo completo, senha e aceite explícito do uso do endereço.
 - **Retorno:** `{ access_token, profile }` para autenticação imediata.
 - **Frontend:** landing page com abas "Entrar" e "Cadastrar" usando o mesmo schema Zod compartilhado (`shared/contracts.ts`).
+
+### Cadastro de Motoboys (NOVO - 12/12)
+
+- **Endpoint:** `POST /api/auth/register/motoboy` (rate limit: 3 tentativas/15 min por IP)
+- **Fluxo:** recebe `name`, `email`, `phone`, `password`, `cpf`, `placa` (opcional), `acceptTerms`
+- **Retorno:** `{ access_token, id, name, role, phone, email }` para autenticação imediata
+- **Frontend:** Modal dedicado na landing page com botões "Sou Cliente" e "Sou Entregador"
+- **Inicialização:** Cria automaticamente escalas padrão (todos os turnos habilitados para 7 dias)
+- **Segurança:** PIX/dados bancários NÃO são coletados no cadastro (apenas em Configurações após aprovação)
 
 ### Pedidos com Endereço Fixo (Etapa 06)
 
@@ -47,6 +57,40 @@ npm run dev
 
 ```powershell
 Get-Process -Name node -ErrorAction SilentlyContinue | Stop-Process -Force
+```
+
+---
+
+## 🔧 ÚLTIMAS MODIFICAÇÕES (12/12)
+
+### Cadastro de Motoboys
+- **Nova rota:** `POST /api/auth/register/motoboy` com validação Zod e rate limiting
+- **Frontend:** Modal dedicado na landing page com seleção "Sou Cliente" / "Sou Entregador"
+- **Schema:** `motoboyOnboardingSchema` em `shared/contracts.ts`
+- **Storage:** Função `createMotoboyWithUser` cria user + motoboy + schedules padrão atomicamente
+
+### Dados Bancários do Motoboy
+- **9 novos campos no schema:** `pixKey`, `pixKeyType`, `bankName`, `bankCode`, `bankAgency`, `bankAccount`, `bankAccountDigit`, `bankAccountType`, `bankHolderName`
+- **UI:** Nova seção "Dados para Recebimento" em Configurações do motoboy
+- **Segurança:** Dados bancários NÃO são coletados no cadastro inicial
+
+### Filtro de Período em Pedidos
+- **Substituído:** Filtro de data única por Data Inicial e Data Final
+- **Afetados:** `use-order-filters.ts`, `orders.tsx`, `orders.ts` (service), `orders.ts` (types)
+
+### Correções WebSocket
+- **ChatWidget:** Aplicado padrão `useRef` para `refetch` (mesmo dos dashboards)
+- **Dependências:** Corrigidas para `[shouldFetchMessages, token]`
+
+### Correções de Código
+- **Rota `/health` duplicada:** Removida de `server/routes/index.ts`
+- **Imports ES Modules:** Extensões `.js` adicionadas em `chatbot-filter.ts` e `analytics.ts`
+- **Landing dark mode:** `bg-background` adicionado ao container principal
+- **FinancialRoute:** Props corrigidas (`handleFinMotoboyFilterChange`, etc.)
+
+### Migração Necessária
+```bash
+npm run db:push  # Adiciona campos bancários à tabela motoboys
 ```
 
 ---

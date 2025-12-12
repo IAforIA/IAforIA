@@ -75,6 +75,17 @@ export function SettingsPage({ user, clientProfile, motoboyProfile }: SettingsPa
     complemento: motoboyProfile?.complemento ?? '',
     referencia: motoboyProfile?.referencia ?? '',
   }));
+  const [motoboyBankData, setMotoboyBankData] = useState(() => ({
+    pixKey: motoboyProfile?.pixKey ?? '',
+    pixKeyType: motoboyProfile?.pixKeyType ?? '',
+    bankName: motoboyProfile?.bankName ?? '',
+    bankCode: motoboyProfile?.bankCode ?? '',
+    bankAgency: motoboyProfile?.bankAgency ?? '',
+    bankAccount: motoboyProfile?.bankAccount ?? '',
+    bankAccountDigit: motoboyProfile?.bankAccountDigit ?? '',
+    bankAccountType: motoboyProfile?.bankAccountType ?? 'corrente',
+    bankHolderName: motoboyProfile?.bankHolderName ?? '',
+  }));
   const [isCepLoading, setIsCepLoading] = useState(false);
   const [isMotoboyCepLoading, setIsMotoboyCepLoading] = useState(false);
 
@@ -91,6 +102,17 @@ export function SettingsPage({ user, clientProfile, motoboyProfile }: SettingsPa
         bairro: motoboyProfile.bairro ?? '',
         complemento: motoboyProfile.complemento ?? '',
         referencia: motoboyProfile.referencia ?? '',
+      });
+      setMotoboyBankData({
+        pixKey: motoboyProfile.pixKey ?? '',
+        pixKeyType: motoboyProfile.pixKeyType ?? '',
+        bankName: motoboyProfile.bankName ?? '',
+        bankCode: motoboyProfile.bankCode ?? '',
+        bankAgency: motoboyProfile.bankAgency ?? '',
+        bankAccount: motoboyProfile.bankAccount ?? '',
+        bankAccountDigit: motoboyProfile.bankAccountDigit ?? '',
+        bankAccountType: motoboyProfile.bankAccountType ?? 'corrente',
+        bankHolderName: motoboyProfile.bankHolderName ?? '',
       });
     }
   }, [motoboyProfile]);
@@ -551,6 +573,7 @@ export function SettingsPage({ user, clientProfile, motoboyProfile }: SettingsPa
       )}
 
       {user?.role === 'motoboy' && (
+        <>
         <Card className="p-6 max-w-2xl mt-6 space-y-4">
           <h3 className="text-lg font-semibold">Documentos do Motoboy</h3>
           {user.email && (
@@ -664,6 +687,135 @@ export function SettingsPage({ user, clientProfile, motoboyProfile }: SettingsPa
             )}
           </div>
         </Card>
+
+        {/* Dados Bancários e PIX */}
+        <Card className="p-6 max-w-2xl mt-6 space-y-4">
+          <h3 className="text-lg font-semibold">💰 Dados para Recebimento</h3>
+          <p className="text-sm text-muted-foreground">Configure sua chave PIX ou dados bancários para receber seus pagamentos.</p>
+          
+          {/* Seção PIX */}
+          <div className="border rounded-lg p-4 space-y-3">
+            <h4 className="font-medium text-sm">Chave PIX (preferencial)</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Tipo de Chave</label>
+                <select
+                  title="Tipo de chave PIX"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={motoboyBankData.pixKeyType}
+                  onChange={(e) => setMotoboyBankData({ ...motoboyBankData, pixKeyType: e.target.value })}
+                  onBlur={(e) => handleMotoboyFieldUpdate({ pixKeyType: e.target.value })}
+                  disabled={isUpdatingMotoboy}
+                >
+                  <option value="">Selecione...</option>
+                  <option value="cpf">CPF</option>
+                  <option value="phone">Celular</option>
+                  <option value="email">Email</option>
+                  <option value="random">Chave Aleatória</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Chave PIX</label>
+                <Input
+                  value={motoboyBankData.pixKey}
+                  onChange={(e) => setMotoboyBankData({ ...motoboyBankData, pixKey: e.target.value })}
+                  onBlur={(e) => handleMotoboyFieldUpdate({ pixKey: e.target.value })}
+                  placeholder="Digite sua chave PIX"
+                  disabled={isUpdatingMotoboy}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Seção Conta Corrente */}
+          <div className="border rounded-lg p-4 space-y-3">
+            <h4 className="font-medium text-sm">Conta Bancária (alternativo)</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Nome do Titular</label>
+                <Input
+                  value={motoboyBankData.bankHolderName}
+                  onChange={(e) => setMotoboyBankData({ ...motoboyBankData, bankHolderName: e.target.value })}
+                  onBlur={(e) => handleMotoboyFieldUpdate({ bankHolderName: e.target.value })}
+                  placeholder="Nome conforme conta bancária"
+                  disabled={isUpdatingMotoboy}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Banco</label>
+                <Input
+                  value={motoboyBankData.bankName}
+                  onChange={(e) => setMotoboyBankData({ ...motoboyBankData, bankName: e.target.value })}
+                  onBlur={(e) => handleMotoboyFieldUpdate({ bankName: e.target.value })}
+                  placeholder="Ex: Nubank, Bradesco, Itaú"
+                  disabled={isUpdatingMotoboy}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Código do Banco</label>
+                <Input
+                  value={motoboyBankData.bankCode}
+                  onChange={(e) => setMotoboyBankData({ ...motoboyBankData, bankCode: e.target.value })}
+                  onBlur={(e) => handleMotoboyFieldUpdate({ bankCode: e.target.value })}
+                  placeholder="Ex: 260, 341, 237"
+                  disabled={isUpdatingMotoboy}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Agência</label>
+                <Input
+                  value={motoboyBankData.bankAgency}
+                  onChange={(e) => setMotoboyBankData({ ...motoboyBankData, bankAgency: e.target.value })}
+                  onBlur={(e) => handleMotoboyFieldUpdate({ bankAgency: e.target.value })}
+                  placeholder="0000"
+                  disabled={isUpdatingMotoboy}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Conta</label>
+                <Input
+                  value={motoboyBankData.bankAccount}
+                  onChange={(e) => setMotoboyBankData({ ...motoboyBankData, bankAccount: e.target.value })}
+                  onBlur={(e) => handleMotoboyFieldUpdate({ bankAccount: e.target.value })}
+                  placeholder="00000000"
+                  disabled={isUpdatingMotoboy}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-sm font-medium">Dígito</label>
+                  <Input
+                    value={motoboyBankData.bankAccountDigit}
+                    onChange={(e) => setMotoboyBankData({ ...motoboyBankData, bankAccountDigit: e.target.value })}
+                    onBlur={(e) => handleMotoboyFieldUpdate({ bankAccountDigit: e.target.value })}
+                    placeholder="0"
+                    maxLength={2}
+                    disabled={isUpdatingMotoboy}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Tipo</label>
+                  <select
+                    title="Tipo de conta bancária"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    value={motoboyBankData.bankAccountType}
+                    onChange={(e) => setMotoboyBankData({ ...motoboyBankData, bankAccountType: e.target.value })}
+                    onBlur={(e) => handleMotoboyFieldUpdate({ bankAccountType: e.target.value })}
+                    disabled={isUpdatingMotoboy}
+                  >
+                    <option value="corrente">Corrente</option>
+                    <option value="poupanca">Poupança</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <p className="text-xs text-muted-foreground">
+            ⚠️ Esses dados são usados exclusivamente para repasse dos seus ganhos. Mantenha-os atualizados.
+          </p>
+        </Card>
+        </>
       )}
     </>
   );

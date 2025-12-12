@@ -12,6 +12,8 @@ import type { NormalizedOrder } from "./types";
 
 export type OrdersFilters = {
   orderDateFilter: string;
+  orderStartDateFilter: string;
+  orderEndDateFilter: string;
   orderClientFilter: string;
   orderMotoboyFilter: string;
   orderStatusFilter: string;
@@ -22,6 +24,8 @@ export type OrdersFilters = {
   handleOrderMotoboyFilterChange: (value: string) => void;
   handleOrderPaymentFilterChange: (value: string) => void;
   setOrderDateFilter: (value: string) => void;
+  setOrderStartDateFilter: (value: string) => void;
+  setOrderEndDateFilter: (value: string) => void;
   setOrderSearchFilter: (value: string) => void;
 };
 
@@ -30,6 +34,8 @@ type OrdersRouteProps = {
   clients: Client[];
   motoboys: Motoboy[];
   orderDateFilter: string;
+  orderStartDateFilter: string;
+  orderEndDateFilter: string;
   orderClientFilter: string;
   orderMotoboyFilter: string;
   orderStatusFilter: string;
@@ -40,6 +46,8 @@ type OrdersRouteProps = {
   onMotoboyChange: (value: string) => void;
   onPaymentChange: (value: string) => void;
   onDateChange: (value: string) => void;
+  onStartDateChange: (value: string) => void;
+  onEndDateChange: (value: string) => void;
   onSearchChange: (value: string) => void;
 };
 
@@ -48,6 +56,8 @@ export function OrdersRoute({
   clients,
   motoboys,
   orderDateFilter,
+  orderStartDateFilter,
+  orderEndDateFilter,
   orderClientFilter,
   orderMotoboyFilter,
   orderStatusFilter,
@@ -58,6 +68,8 @@ export function OrdersRoute({
   onMotoboyChange,
   onPaymentChange,
   onDateChange,
+  onStartDateChange,
+  onEndDateChange,
   onSearchChange,
 }: OrdersRouteProps) {
   const safeOrders = Array.isArray(orders) ? orders : [];
@@ -105,14 +117,23 @@ export function OrdersRoute({
 
       <Card className="p-4 mb-6">
         <h3 className="text-sm font-semibold mb-3">🔍 Filtros</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3">
           <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Data</label>
+            <label className="text-xs text-muted-foreground mb-1 block">Data Inicial</label>
             <Input
               type="date"
               className="text-sm dark:text-foreground dark:bg-background dark:[color-scheme:dark]"
-              value={orderDateFilter}
-              onChange={(e) => onDateChange(e.target.value)}
+              value={orderStartDateFilter}
+              onChange={(e) => onStartDateChange(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground mb-1 block">Data Final</label>
+            <Input
+              type="date"
+              className="text-sm dark:text-foreground dark:bg-background dark:[color-scheme:dark]"
+              value={orderEndDateFilter}
+              onChange={(e) => onEndDateChange(e.target.value)}
             />
           </div>
           <div>

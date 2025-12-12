@@ -2,8 +2,8 @@ import { randomUUID } from 'crypto';
 import { eq } from 'drizzle-orm';
 import { db } from './db.js';
 import { DOCUMENT_IN_USE_ERROR, EMAIL_IN_USE_ERROR, mapClientToProfile } from './utils.js';
-import { clientSchedules, clients, users } from '@shared/schema';
-import type { ClientOnboardingPayload, ClientProfileDto } from '@shared/contracts';
+import { clientSchedules, clients, users, motoboys, motoboySchedules } from '@shared/schema';
+import type { ClientOnboardingPayload, ClientProfileDto, MotoboyOnboardingPayload } from '@shared/contracts';
 
 export async function getUser(id: string) {
   const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
@@ -124,4 +124,95 @@ export async function getClientProfile(id: string): Promise<ClientProfileDto | n
   }
 
   return profile;
+}
+
+// CPF_IN_USE constant
+const CPF_IN_USE_ERROR = "CPF_IN_USE";
+
+/**
+ * FUNÇÃO: createMotoboyWithUser
+ * PROPÓSITO: Criar novo motoboy com user associado
+ * RETORNO: Objeto com dados do motoboy criado
+ */
+export async function createMotoboyWithUser(
+  payload: Omit<MotoboyOnboardingPayload, 'password' | 'acceptTerms'>,
+  passwordHash: string
+): Promise<{ id: string; name: string; phone: string; email: string; cpf: string; placa: string | null }> {
+  const motoboyId = `moto-${randomUUID().split('-')[0]}`;
+  const normalizedCpf = payload.cpf.replace(/\D/g, '');
+
+  // Verificar se email já existe
+  const existingUser = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.email, payload.email))
+    .limit(1);
+
+  if (existingUser.length > 0) {
+    throw new Error(EMAIL_IN_USE_ERROR);
+  }
+
+  // Verificar se CPF já existe
+  const existingCpf = await db
+    .select({ id: motoboys.id })
+    .from(motoboys)
+    .where(eq(motoboys.cpf, normalizedCpf))
+    .limit(1);
+
+  if (existingCpf.length > 0) {
+    throw new Error(CPF_IN_USE_ERROR);
+  }
+
+  // Criar usuário
+  await db.insert(users).values({
+    id: motoboyId,
+    name: payload.name,
+    role: 'motoboy',
+    email: payload.email,
+    phone: payload.phone,
+    password: passwordHash,
+    status: 'active',
+  });
+
+  try {
+    // Criar motoboy
+    const insertedMotoboy = await db
+      .insert(motoboys)
+      .values({
+        id: motoboyId,
+        name: payload.name,
+        phone: payload.phone,
+        cpf: normalizedCpf,
+        placa: payload.placa ?? null,
+        pix: payload.pix ?? null,
+        taxaPadrao: '7.00',
+        status: 'ativo',
+        online: false,
+      })
+      .returning();
+
+    // Criar schedules padrão (todos os turnos habilitados para todos os dias)
+    for (let diaSemana = 0; diaSemana <= 6; diaSemana++) {
+      await db.insert(motoboySchedules).values({
+        motoboyId: motoboyId,
+        diaSemana: diaSemana,
+        turnoManha: true,
+        turnoTarde: true,
+        turnoNoite: true,
+      });
+    }
+
+    return {
+      id: insertedMotoboy[0].id,
+      name: insertedMotoboy[0].name,
+      phone: insertedMotoboy[0].phone,
+      email: payload.email,
+      cpf: insertedMotoboy[0].cpf ?? '',
+      placa: insertedMotoboy[0].placa,
+    };
+  } catch (error) {
+    // Rollback: remover usuário se falhar criação do motoboy
+    await db.delete(users).where(eq(users.id, motoboyId));
+    throw error;
+  }
 }

@@ -99,6 +99,26 @@ Acesse `http://localhost:5000` e faça login com as credenciais do seed.
 
 ---
 
+## 🏍️ Cadastro de Motoboys
+
+- **Endpoint:** `POST /api/auth/register/motoboy` com rate limit (3 tentativas/15 min).
+- **Campos:** `name`, `email`, `phone`, `password`, `cpf`, `placa` (opcional), `acceptTerms`.
+- **Validação:** Schema Zod em `shared/contracts.ts` → `motoboyOnboardingSchema`.
+- **Inicialização:** Cria automaticamente escalas padrão (todos os turnos habilitados para 7 dias).
+- **UI:** Modal dedicado na landing page com botões "Sou Cliente" e "Sou Entregador".
+- **Segurança:** PIX e dados bancários NÃO são coletados no cadastro inicial (apenas em Configurações).
+
+---
+
+## 💰 Dados Bancários do Motoboy
+
+- **Campos disponíveis:** `pixKey`, `pixKeyType`, `bankName`, `bankCode`, `bankAgency`, `bankAccount`, `bankAccountDigit`, `bankAccountType`, `bankHolderName`.
+- **Onde editar:** Motoboy → Configurações → Seção "Dados para Recebimento".
+- **Tipos de PIX suportados:** CPF, Celular, Email, Chave Aleatória.
+- **Auto-save:** Campos salvam automaticamente ao perder foco.
+
+---
+
 ## 📦 Estrutura do Projeto
 
 ```text

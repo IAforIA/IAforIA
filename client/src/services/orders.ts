@@ -11,6 +11,8 @@ export function filterOrders(orders: NormalizedOrder[], filters: OrderFilters): 
       motoboyId: filters.motoboyId ?? "all",
       paymentMethod: filters.paymentMethod ?? "all",
       date: filters.date ?? "",
+      startDate: filters.startDate ?? "",
+      endDate: filters.endDate ?? "",
       search: filters.search ?? "",
     };
 
@@ -19,7 +21,14 @@ export function filterOrders(orders: NormalizedOrder[], filters: OrderFilters): 
       if (effectiveFilters.clientId !== "all" && order.clientId !== effectiveFilters.clientId) return false;
       if (effectiveFilters.motoboyId !== "all" && order.motoboyId !== effectiveFilters.motoboyId) return false;
       if (effectiveFilters.paymentMethod !== "all" && order.formaPagamento !== effectiveFilters.paymentMethod) return false;
-      if (effectiveFilters.date && order.createdDateString !== effectiveFilters.date) return false;
+      
+      // Filtro por período: se startDate e endDate estiverem definidos, usa período
+      if (effectiveFilters.startDate && effectiveFilters.endDate) {
+        if (order.createdDateString < effectiveFilters.startDate || order.createdDateString > effectiveFilters.endDate) return false;
+      } else if (effectiveFilters.date && order.createdDateString !== effectiveFilters.date) {
+        // Fallback para data única se período não estiver definido
+        return false;
+      }
 
       if (effectiveFilters.search) {
         const search = effectiveFilters.search.toLowerCase();

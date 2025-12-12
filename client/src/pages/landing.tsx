@@ -19,8 +19,10 @@ import { z } from "zod";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { clientOnboardingSchema } from "@shared/contracts";
+import { motoboyOnboardingSchema } from "@shared/contracts";
 import { motion } from "framer-motion";
 
+// Schema de validação para cliente (com confirmação de senha)
 const onboardingExtraSchema = z.object({
   confirmPassword: z.string().min(8, "Confirme sua senha"),
 });
@@ -54,6 +56,31 @@ const onboardingDefaultValues: OnboardingFormValues = {
   acceptFixedAddress: false,
 };
 
+// Schema de validação para motoboy (com confirmação de senha)
+const motoboyExtraSchema = z.object({
+  confirmPassword: z.string().min(8, "Confirme sua senha"),
+});
+
+const motoboyFormSchema = z
+  .intersection(motoboyOnboardingSchema, motoboyExtraSchema)
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "As senhas precisam ser iguais",
+    path: ["confirmPassword"],
+  });
+
+type MotoboyFormValues = z.infer<typeof motoboyFormSchema>;
+
+const motoboyDefaultValues: MotoboyFormValues = {
+  name: "",
+  email: "",
+  phone: "",
+  password: "",
+  confirmPassword: "",
+  cpf: "",
+  placa: "",
+  acceptTerms: false,
+};
+
 export default function Landing() {
   const [, setLocation] = useLocation();
   const { user, login } = useAuth();
@@ -65,10 +92,17 @@ export default function Landing() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<"login" | "register">("login");
   const [isRegisterModalOpen, setRegisterModalOpen] = useState(false);
+  const [isMotoboyModalOpen, setMotoboyModalOpen] = useState(false);
+  const [registerType, setRegisterType] = useState<"client" | "motoboy">("client");
 
   const registerForm = useForm<OnboardingFormValues>({
     resolver: zodResolver(onboardingFormSchema),
     defaultValues: onboardingDefaultValues,
+  });
+
+  const motoboyForm = useForm<MotoboyFormValues>({
+    resolver: zodResolver(motoboyFormSchema),
+    defaultValues: motoboyDefaultValues,
   });
 
   const watchDocumentType = registerForm.watch("documentType");
@@ -107,17 +141,51 @@ export default function Landing() {
     },
   });
 
+  // Mutação para registro de motoboy
+  const motoboyMutation = useMutation({
+    mutationFn: async (values: MotoboyFormValues) => {
+      const { confirmPassword, ...rest } = values;
+      const sanitizedPayload = {
+        ...rest,
+        cpf: rest.cpf.replace(/\D/g, ""),
+      };
+      const response = await apiRequest("POST", "/api/auth/register/motoboy", sanitizedPayload);
+      return response.json();
+    },
+    onSuccess: async (_data, variables) => {
+      await login(variables.email, variables.password);
+      toast({
+        title: "Cadastro concluído!",
+        description: "Bem-vindo(a) à equipe Guriri Express!",
+      });
+      motoboyForm.reset(motoboyDefaultValues);
+      setMotoboyModalOpen(false);
+      setActiveTab("login");
+    },
+    onError: (error) => {
+      toast({
+        title: "Não foi possível concluir o cadastro",
+        description: error instanceof Error ? error.message : "Tente novamente em instantes.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleEmailChange = (event: ChangeEvent<HTMLInputElement>) => setEmail(event.target.value);
   const handlePasswordChange = (event: ChangeEvent<HTMLInputElement>) => setPassword(event.target.value);
   const handleTabChange = (value: string) => {
     setActiveTab(value as "login" | "register");
-    if (value === "register") {
-      setRegisterModalOpen(true);
-    }
   };
 
   const handleRegisterModalChange = (open: boolean) => {
     setRegisterModalOpen(open);
+    if (!open) {
+      setActiveTab("login");
+    }
+  };
+
+  const handleMotoboyModalChange = (open: boolean) => {
+    setMotoboyModalOpen(open);
     if (!open) {
       setActiveTab("login");
     }
@@ -158,7 +226,7 @@ export default function Landing() {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-background">
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -286,14 +354,30 @@ export default function Landing() {
                 </TabsContent>
 
                 <TabsContent value="register">
-                  <div className="space-y-3 text-sm text-muted-foreground">
-                    <p>
-                      O formulário completo abre em uma janela dedicada para manter o layout da landing intacto
-                      enquanto você fornece todos os dados necessários.
+                  <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                      Escolha seu tipo de cadastro:
                     </p>
-                    <Button variant="outline" className="w-full" onClick={() => setRegisterModalOpen(true)}>
-                      Abrir formulário de cadastro
-                    </Button>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Button 
+                        variant="outline" 
+                        className="h-auto py-4 flex flex-col items-center gap-2"
+                        onClick={() => setRegisterModalOpen(true)}
+                      >
+                        <Package className="h-6 w-6 text-primary" />
+                        <span className="font-medium">Sou Cliente</span>
+                        <span className="text-xs text-muted-foreground">Empresa/Restaurante</span>
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        className="h-auto py-4 flex flex-col items-center gap-2"
+                        onClick={() => setMotoboyModalOpen(true)}
+                      >
+                        <TruckIcon className="h-6 w-6 text-primary" />
+                        <span className="font-medium">Sou Entregador</span>
+                        <span className="text-xs text-muted-foreground">Motoboy/Delivery</span>
+                      </Button>
+                    </div>
                   </div>
                 </TabsContent>
               </Tabs>
@@ -557,6 +641,155 @@ export default function Landing() {
 
                 <Button type="submit" className="w-full" disabled={registerMutation.isPending}>
                   {registerMutation.isPending ? "Cadastrando..." : "Cadastrar e acessar"}
+                </Button>
+              </form>
+            </Form>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Cadastro de Motoboy */}
+      <Dialog open={isMotoboyModalOpen} onOpenChange={handleMotoboyModalChange}>
+        <DialogContent className="max-w-md w-full max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <TruckIcon className="h-5 w-5 text-primary" />
+              Cadastro de Entregador
+            </DialogTitle>
+            <DialogDescription>
+              Faça parte da equipe Guriri Express! Preencha seus dados para começar a fazer entregas.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="pr-1">
+            <Form {...motoboyForm}>
+              <form
+                onSubmit={motoboyForm.handleSubmit((values) => motoboyMutation.mutate(values))}
+                className="space-y-4 text-left pb-2"
+              >
+                <FormField
+                  control={motoboyForm.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nome completo</FormLabel>
+                      <FormControl>
+                        <Input placeholder="João da Silva" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={motoboyForm.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="joao@email.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={motoboyForm.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Telefone (WhatsApp)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="(27) 99999-9999" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={motoboyForm.control}
+                  name="cpf"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>CPF</FormLabel>
+                      <FormControl>
+                        <Input placeholder="000.000.000-00" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField
+                    control={motoboyForm.control}
+                    name="placa"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Placa da moto (opcional)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="ABC-1234" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField
+                    control={motoboyForm.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Senha</FormLabel>
+                        <FormControl>
+                          <Input type="password" placeholder="Mínimo 8 caracteres" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={motoboyForm.control}
+                    name="confirmPassword"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Confirme a senha</FormLabel>
+                        <FormControl>
+                          <Input type="password" placeholder="Repita a senha" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={motoboyForm.control}
+                  name="acceptTerms"
+                  render={({ field }) => (
+                    <FormItem className="flex items-start gap-3 rounded-md border p-3">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={(checked) => field.onChange(checked === true)}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 text-sm">
+                        <FormLabel>
+                          Aceito os termos de uso e política de privacidade da plataforma Guriri Express.
+                        </FormLabel>
+                        <FormMessage />
+                      </div>
+                    </FormItem>
+                  )}
+                />
+
+                <Button type="submit" className="w-full" disabled={motoboyMutation.isPending}>
+                  {motoboyMutation.isPending ? "Cadastrando..." : "Cadastrar como entregador"}
                 </Button>
               </form>
             </Form>
