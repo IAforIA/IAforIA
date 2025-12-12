@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { authenticateToken, requireRole } from '../middleware/auth.ts';
 import { storage } from '../storage.ts';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 
 export function buildUsersRouter() {
   const router = Router();
