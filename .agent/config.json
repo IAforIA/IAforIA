@@ -1,7 +1,43 @@
 {
   "enabled": false,
   "dryRun": true,
-  "mode": "watch",
+  "mode": "autopilot",
+  "pm2": {
+    "appName": "guriri",
+    "canaryName": "guriri-canary"
+  },
+  "ports": {
+    "main": 5000,
+    "canary": 5001
+  },
+  "autopilot": {
+    "intervalSeconds": 60,
+    "logScanLines": 220,
+    "maxFixAttemptsPerIncident": 2,
+    "allowPaths": [
+      "server/",
+      "client/",
+      "shared/",
+      "tests/",
+      "scripts/"
+    ],
+    "denyPaths": [
+      ".env",
+      ".env.",
+      "migrations/",
+      "uploads/",
+      "datasets/",
+      ".agent/"
+    ],
+    "checks": {
+      "runBuild": true,
+      "runTests": false
+    },
+    "smoke": {
+      "path": "/health",
+      "timeoutMs": 5000
+    }
+  },
   "watch": {
     "paths": [
       "server",
@@ -25,7 +61,7 @@
     "maxPatchBytes": 262144
   },
   "notifications": {
-    "telegram": false,
+    "telegram": true,
     "slack": false
   }
 }

@@ -4,6 +4,7 @@ import { config as loadEnv } from 'dotenv';
 import { startWatcher } from './watcher.js';
 import { createNotifier } from './notifier.js';
 import { getConfig } from './validator.js';
+import { runAutopilotLoop } from './autopilot.js';
 
 // Load environment variables from .env on startup (PM2/npm won't do this automatically).
 loadEnv();
@@ -40,7 +41,17 @@ async function main(): Promise<void> {
   }
 
   await notifier.info(`Agent-Zero iniciado (${prod ? 'prod' : 'dev'}) em modo seguro (dryRun=${String(config.dryRun)}).`);
-  await startWatcher({ prod, config, notifier });
+
+  // Modo padrão: autopilot (mais útil em VPS). Use --watch para modo watcher.
+  const forceWatch = process.argv.includes('--watch');
+  const mode = forceWatch ? 'watch' : (config.mode || 'autopilot');
+
+  if (mode === 'watch') {
+    await startWatcher({ prod, config, notifier });
+    return;
+  }
+
+  await runAutopilotLoop({ prod, config, notifier });
 }
 
 main().catch((err) => {
