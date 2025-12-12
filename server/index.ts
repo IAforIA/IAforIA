@@ -1,35 +1,35 @@
-/**
+﻿/**
  * ARQUIVO: server/index.ts
- * PROPÓSITO: Ponto de entrada principal do servidor backend
+ * PROPÃ“SITO: Ponto de entrada principal do servidor backend
  * 
  * Este arquivo configura e inicializa:
  * - Express app (servidor HTTP)
- * - Middlewares de segurança (Helmet, CORS)
- * - WebSocket server para comunicação em tempo real
- * - Vite dev server (desenvolvimento) ou arquivos estáticos (produção)
+ * - Middlewares de seguranÃ§a (Helmet, CORS)
+ * - WebSocket server para comunicaÃ§Ã£o em tempo real
+ * - Vite dev server (desenvolvimento) ou arquivos estÃ¡ticos (produÃ§Ã£o)
  */
 
-// CRÍTICO: Carregar variáveis de ambiente PRIMEIRO
-// dotenv/config lê o arquivo .env e injeta as variáveis em process.env
+// CRÃTICO: Carregar variÃ¡veis de ambiente PRIMEIRO
+// dotenv/config lÃª o arquivo .env e injeta as variÃ¡veis em process.env
 import 'dotenv/config';
 
 // Express: Framework web para Node.js - cria rotas HTTP e middlewares
 import express, { type Request, Response, NextFunction } from "express";
-// Helmet: Middleware de segurança - define headers HTTP seguros
+// Helmet: Middleware de seguranÃ§a - define headers HTTP seguros
 import helmet from "helmet";
-// CORS: Middleware que permite requisições de diferentes origens (cross-origin)
+// CORS: Middleware que permite requisiÃ§Ãµes de diferentes origens (cross-origin)
 import cors from "cors";
-// Path: Módulo do Node.js para manipulação de caminhos de arquivos e diretórios
+// Path: MÃ³dulo do Node.js para manipulaÃ§Ã£o de caminhos de arquivos e diretÃ³rios
 import path from "path";
 
-// IMPORTANTE: Usamos extensão .ts explícita para garantir que o bundler resolva os arquivos fonte
-// registerRoutes: Função que registra todas as rotas da API (definida em routes.ts)
+// IMPORTANTE: Usamos extensÃ£o .ts explÃ­cita para garantir que o bundler resolva os arquivos fonte
+// registerRoutes: FunÃ§Ã£o que registra todas as rotas da API (definida em routes.ts)
 import { registerRoutes } from "./routes/index.ts"; 
-// setupVite: Configura Vite dev server | serveStatic: Serve arquivos build | log: Função de logging
+// setupVite: Configura Vite dev server | serveStatic: Serve arquivos build | log: FunÃ§Ã£o de logging
 import { setupVite, serveStatic, log } from "./vite.ts";
 // createServer: Cria servidor HTTP nativo do Node.js
 import { createServer } from "http";
-// WebSocket: Biblioteca para comunicação bidirecional em tempo real
+// WebSocket: Biblioteca para comunicaÃ§Ã£o bidirecional em tempo real
 import { WebSocketServer, WebSocket } from "ws";
 // verifyTokenFromQuery: Valida JWT token passado como query parameter no WebSocket
 import { verifyTokenFromQuery } from "./middleware/auth.ts";
@@ -39,12 +39,15 @@ import { attachRequestId } from "./middleware/request-context.ts";
 import { info as logInfo, error as logError } from "./logger.ts";
 import { randomUUID } from "crypto";
 
-// VARIÁVEL GLOBAL: Instância do Express application
+// VARIÃVEL GLOBAL: InstÃ¢ncia do Express application
 // Usada para registrar middlewares e rotas
 const app = express();
 
-// VARIÁVEL GLOBAL: Servidor HTTP (pode ser undefined antes da inicialização)
-// ReturnType<typeof createServer> = tipo retornado pela função createServer
+// PROXY: Necessário quando atrás de nginx/reverse proxy para express-rate-limit funcionar corretamente
+app.set('trust proxy', 1);
+
+// VARIÃVEL GLOBAL: Servidor HTTP (pode ser undefined antes da inicializaÃ§Ã£o)
+// ReturnType<typeof createServer> = tipo retornado pela funÃ§Ã£o createServer
 let httpServer: ReturnType<typeof createServer> | undefined;
 let wsServer: ReturnType<typeof createServer> | undefined;
 
@@ -55,22 +58,22 @@ declare module 'http' {
 }
 
 // ========================================
-// MIDDLEWARES DE SEGURANÇA
+// MIDDLEWARES DE SEGURANÃ‡A
 // ========================================
 
-// Identificação de requisições para rastreabilidade
+// IdentificaÃ§Ã£o de requisiÃ§Ãµes para rastreabilidade
 app.use(attachRequestId);
 
-// SEGURANÇA: Helmet - Headers HTTP seguros
+// SEGURANÃ‡A: Helmet - Headers HTTP seguros
 // Previne ataques comuns (XSS, clickjacking, etc) configurando headers automaticamente
 app.use(helmet({
   contentSecurityPolicy: process.env.NODE_ENV === "production" ? undefined : false,
-  crossOriginEmbedderPolicy: false, // Necessário para Vite HMR (Hot Module Replacement) funcionar em dev
+  crossOriginEmbedderPolicy: false, // NecessÃ¡rio para Vite HMR (Hot Module Replacement) funcionar em dev
 }));
 
-// SEGURANÇA: CORS - Controle de origens permitidas
-// Define quais domínios podem fazer requisições ao servidor
-// VARIÁVEL: allowedOrigins - Array de URLs permitidas (vem de .env ou usa defaults)
+// SEGURANÃ‡A: CORS - Controle de origens permitidas
+// Define quais domÃ­nios podem fazer requisiÃ§Ãµes ao servidor
+// VARIÃVEL: allowedOrigins - Array de URLs permitidas (vem de .env ou usa defaults)
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:5000', 'http://localhost:5173'];
 app.use(cors({
   origin: (origin, callback) => {
@@ -86,7 +89,7 @@ app.use(cors({
 }));
 
 app.use(express.json({
-  limit: '10mb', // SEGURANÇA: Limita tamanho do payload
+  limit: '10mb', // SEGURANÃ‡A: Limita tamanho do payload
   verify: (req, _res, buf) => {
     req.rawBody = buf;
   }
@@ -126,14 +129,14 @@ app.use((req, res, next) => {
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // ========================================
-// WEBSOCKET - COMUNICAÇÃO EM TEMPO REAL
+// WEBSOCKET - COMUNICAÃ‡ÃƒO EM TEMPO REAL
 // ========================================
 
 import { wsClients, broadcast, getOnlineUsers } from './ws/broadcast.js';
 
 /**
- * FUNÇÃO EXPORTADA: getOnlineUsers
- * PROPÓSITO: Retorna array com IDs dos usuários conectados via WebSocket
+ * FUNÃ‡ÃƒO EXPORTADA: getOnlineUsers
+ * PROPÃ“SITO: Retorna array com IDs dos usuÃ¡rios conectados via WebSocket
  * USADO EM: routes.ts - endpoint /api/users/online
  */
 // Delegates for WebSocket clients and broadcasting are imported from ws/broadcast.js
@@ -144,9 +147,9 @@ function startWebSocketServer(host: string, httpListener?: ReturnType<typeof cre
     return;
   }
 
-  // Estratégia: se já existe HTTP server (compartilhado com Vite HMR), usamos noServer:true
-  // e roteamos manualmente via upgrade somente no path /ws, para não conflitar com o socket de HMR.
-  // Caso contrário, criamos um servidor dedicado ouvindo em WS_PORT.
+  // EstratÃ©gia: se jÃ¡ existe HTTP server (compartilhado com Vite HMR), usamos noServer:true
+  // e roteamos manualmente via upgrade somente no path /ws, para nÃ£o conflitar com o socket de HMR.
+  // Caso contrÃ¡rio, criamos um servidor dedicado ouvindo em WS_PORT.
   const useSharedServer = Boolean(httpListener);
   wsServer = httpListener ?? createServer();
 
@@ -206,7 +209,7 @@ function startWebSocketServer(host: string, httpListener?: ReturnType<typeof cre
       try {
         await storage.updateMotoboyOnlineStatus(user.id, true);
         broadcast({ type: 'driver_online', payload: { id: user.id } });
-        log(`Motoboy ${user.id} agora está ONLINE`, 'ws');
+        log(`Motoboy ${user.id} agora estÃ¡ ONLINE`, 'ws');
       } catch (error) {
         console.error(`Erro ao atualizar status online do motoboy ${user.id}:`, error);
       }
@@ -226,7 +229,7 @@ function startWebSocketServer(host: string, httpListener?: ReturnType<typeof cre
         try {
           await storage.updateMotoboyOnlineStatus(user.id, false);
           broadcast({ type: 'driver_offline', payload: { id: user.id } });
-          log(`Motoboy ${user.id} agora está OFFLINE`, 'ws');
+          log(`Motoboy ${user.id} agora estÃ¡ OFFLINE`, 'ws');
         } catch (error) {
           console.error(`Erro ao atualizar status offline do motoboy ${user.id}:`, error);
           logError('ws_disconnect_error', { connectionId, userId: user.id, error: (error as Error).message });
@@ -240,7 +243,7 @@ function startWebSocketServer(host: string, httpListener?: ReturnType<typeof cre
   const apiRouter = await registerRoutes();
   app.use(apiRouter);
 
-  // SEGURANÇA: Error handler que não expõe detalhes em produção
+  // SEGURANÃ‡A: Error handler que nÃ£o expÃµe detalhes em produÃ§Ã£o
   app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
     const status = (err as any).status || (err as any).statusCode || 500;
 
@@ -272,11 +275,11 @@ function startWebSocketServer(host: string, httpListener?: ReturnType<typeof cre
   const port = parseInt(process.env.PORT || '5000', 10);
   const host = "0.0.0.0";
 
-  console.log(`🔧 Environment: ${process.env.NODE_ENV}`);
-  console.log(`🔧 Port: ${port}, Host: ${host}`);
+  console.log(`ðŸ”§ Environment: ${process.env.NODE_ENV}`);
+  console.log(`ðŸ”§ Port: ${port}, Host: ${host}`);
 
   if (process.env.NODE_ENV === "development") {
-    console.log(`🔧 Creating HTTP server for development...`);
+    console.log(`ðŸ”§ Creating HTTP server for development...`);
     httpServer = createServer(app);
     
     log(`Starting Vite setup...`);
@@ -284,14 +287,14 @@ function startWebSocketServer(host: string, httpListener?: ReturnType<typeof cre
     log(`Vite setup complete!`);
     startWebSocketServer(host, httpServer);
 
-    console.log(`🔧 Attempting to listen on ${host}:${port}...`);
+    console.log(`ðŸ”§ Attempting to listen on ${host}:${port}...`);
     httpServer.listen({ port, host }, () => {
-        console.log(`✅ HTTP server actually listening!`);
+        console.log(`âœ… HTTP server actually listening!`);
         log(`serving in development on port ${port}`);
     });
 
     httpServer.on('error', (err) => {
-      console.error(`💥 HTTP server error:`, err);
+      console.error(`ðŸ’¥ HTTP server error:`, err);
     });
 
   } else {
@@ -304,3 +307,4 @@ function startWebSocketServer(host: string, httpListener?: ReturnType<typeof cre
     });
   }
 })();
+

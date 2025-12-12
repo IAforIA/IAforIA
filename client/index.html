@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
@@ -32,7 +32,20 @@
       }
     </style>
   </head>
-  <body>
+  <body style="background-color: #fafafa; color: #1a1a2e;">
+    <script>
+      // Prevenir flash branco aplicando tema antes do React carregar
+      (function() {
+        try {
+          var theme = localStorage.getItem('vite-ui-theme');
+          if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.body.style.backgroundColor = '#0a0a0a';
+            document.body.style.color = '#fafafa';
+            document.documentElement.classList.add('dark');
+          }
+        } catch(e) {}
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
