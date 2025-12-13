@@ -47,7 +47,7 @@ export function buildAuthRouter() {
       const passwordHash = await bcrypt.hash(payload.password, 10);
       const { password: _password, ...clientPayload } = payload;
       const profile = await storage.createClientWithUser(clientPayload, passwordHash);
-      const token = jwt.sign({ id: profile.id, role: "client" }, JWT_SECRET, { expiresIn: "24h" });
+      const token = jwt.sign({ id: profile.id, role: "client", name: profile.name }, JWT_SECRET, { expiresIn: "24h" });
       res.status(201).json({ access_token: token, profile });
     } catch (error: any) {
       if (error instanceof ZodError) {
@@ -74,7 +74,7 @@ export function buildAuthRouter() {
       const passwordHash = await bcrypt.hash(payload.password, 10);
       const { password: _password, acceptTerms: _acceptTerms, ...motoboyPayload } = payload;
       const profile = await storage.createMotoboyWithUser(motoboyPayload, passwordHash);
-      const token = jwt.sign({ id: profile.id, role: "motoboy" }, JWT_SECRET, { expiresIn: "24h" });
+      const token = jwt.sign({ id: profile.id, role: "motoboy", name: profile.name }, JWT_SECRET, { expiresIn: "24h" });
       res.status(201).json({ 
         access_token: token, 
         id: profile.id,

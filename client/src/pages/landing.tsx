@@ -233,7 +233,7 @@ export default function Landing() {
             <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center">
               <TruckIcon className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="font-semibold text-lg">Guriri Express</span>
+            <span className="font-semibold text-lg text-foreground">Guriri Express</span>
           </div>
           <ThemeToggle />
         </div>

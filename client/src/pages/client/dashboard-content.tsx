@@ -54,43 +54,43 @@ export function DashboardContent({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <Card className="p-4 bg-white dark:bg-gray-900">
+            <Card className="p-4 bg-card">
               <p className="text-xs text-muted-foreground mb-1">Total de Entregas</p>
               <p className="text-2xl font-bold">{clientReport.stats.totalOrders}</p>
             </Card>
-            <Card className="p-4 bg-white dark:bg-gray-900">
+            <Card className="p-4 bg-card">
               <p className="text-xs text-muted-foreground mb-1">Faturamento Total</p>
-              <p className="text-2xl font-bold text-green-600">R$ {clientReport.stats.totalFaturamento.toFixed(2)}</p>
+              <p className="text-2xl font-bold text-green-600 dark:text-green-400">R$ {clientReport.stats.totalFaturamento.toFixed(2)}</p>
             </Card>
-            <Card className="p-4 bg-white dark:bg-gray-900">
+            <Card className="p-4 bg-card">
               <p className="text-xs text-muted-foreground mb-1">Repasse para Guriri</p>
-              <p className="text-2xl font-bold text-blue-600">R$ {clientReport.stats.totalRepasse.toFixed(2)}</p>
+              <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">R$ {clientReport.stats.totalRepasse.toFixed(2)}</p>
             </Card>
           </div>
 
           <div>
             <h4 className="text-sm font-semibold mb-3">📊 Vendas por Método de Pagamento</h4>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <Card className="p-3 bg-white dark:bg-gray-900 border-l-4 border-l-green-500">
+              <Card className="p-3 bg-card border-l-4 border-l-green-500">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs font-medium">💵 Dinheiro</span>
                   <Badge variant="secondary" className="text-xs">{clientReport.breakdown.byPayment.Dinheiro.orders}</Badge>
                 </div>
-                <p className="text-lg font-bold text-green-600">R$ {clientReport.breakdown.byPayment.Dinheiro.revenue.toFixed(2)}</p>
+                <p className="text-lg font-bold text-green-600 dark:text-green-400">R$ {clientReport.breakdown.byPayment.Dinheiro.revenue.toFixed(2)}</p>
               </Card>
-              <Card className="p-3 bg-white dark:bg-gray-900 border-l-4 border-l-blue-500">
+              <Card className="p-3 bg-card border-l-4 border-l-blue-500">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs font-medium">💳 Cartão</span>
                   <Badge variant="secondary" className="text-xs">{clientReport.breakdown.byPayment.Cartão.orders}</Badge>
                 </div>
-                <p className="text-lg font-bold text-blue-600">R$ {clientReport.breakdown.byPayment.Cartão.revenue.toFixed(2)}</p>
+                <p className="text-lg font-bold text-blue-600 dark:text-blue-400">R$ {clientReport.breakdown.byPayment.Cartão.revenue.toFixed(2)}</p>
               </Card>
-              <Card className="p-3 bg-white dark:bg-gray-900 border-l-4 border-l-purple-500">
+              <Card className="p-3 bg-card border-l-4 border-l-purple-500">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs font-medium">📱 Pix</span>
                   <Badge variant="secondary" className="text-xs">{clientReport.breakdown.byPayment.Pix.orders}</Badge>
                 </div>
-                <p className="text-lg font-bold text-purple-600">R$ {clientReport.breakdown.byPayment.Pix.revenue.toFixed(2)}</p>
+                <p className="text-lg font-bold text-purple-600 dark:text-purple-400">R$ {clientReport.breakdown.byPayment.Pix.revenue.toFixed(2)}</p>
               </Card>
             </div>
           </div>

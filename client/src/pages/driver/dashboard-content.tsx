@@ -35,36 +35,36 @@ export function DashboardContent({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <Card className="p-4 bg-white dark:bg-gray-900">
+            <Card className="p-4 bg-card">
               <p className="text-xs text-muted-foreground mb-1">Total de Entregas</p>
               <p className="text-2xl font-bold">{motoboyReport.stats.totalEntregas}</p>
             </Card>
-            <Card className="p-4 bg-white dark:bg-gray-900">
+            <Card className="p-4 bg-card">
               <p className="text-xs text-muted-foreground mb-1">Ganhos Semanais</p>
-              <p className="text-2xl font-bold text-green-600">R$ {motoboyReport.stats.ganhosSemanais.toFixed(2)}</p>
+              <p className="text-2xl font-bold text-green-600 dark:text-green-400">R$ {motoboyReport.stats.ganhosSemanais.toFixed(2)}</p>
             </Card>
-            <Card className="p-4 bg-white dark:bg-gray-900">
+            <Card className="p-4 bg-card">
               <p className="text-xs text-muted-foreground mb-1">Ganhos Mensais</p>
-              <p className="text-2xl font-bold text-purple-600">R$ {motoboyReport.stats.ganhosMensais.toFixed(2)}</p>
+              <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">R$ {motoboyReport.stats.ganhosMensais.toFixed(2)}</p>
             </Card>
           </div>
 
           <div>
             <h4 className="text-sm font-semibold mb-3">📊 Entregas por Método de Pagamento</h4>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <Card className="p-3 bg-white dark:bg-gray-900 border-l-4 border-l-green-500">
+              <Card className="p-3 bg-card border-l-4 border-l-green-500">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium">💵 Dinheiro</span>
                   <Badge variant="secondary" className="text-lg font-bold">{motoboyReport.breakdown.byPayment.Dinheiro}</Badge>
                 </div>
               </Card>
-              <Card className="p-3 bg-white dark:bg-gray-900 border-l-4 border-l-blue-500">
+              <Card className="p-3 bg-card border-l-4 border-l-blue-500">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium">💳 Cartão</span>
                   <Badge variant="secondary" className="text-lg font-bold">{motoboyReport.breakdown.byPayment.Cartão}</Badge>
                 </div>
               </Card>
-              <Card className="p-3 bg-white dark:bg-gray-900 border-l-4 border-l-purple-500">
+              <Card className="p-3 bg-card border-l-4 border-l-purple-500">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium">📱 Pix</span>
                   <Badge variant="secondary" className="text-lg font-bold">{motoboyReport.breakdown.byPayment.Pix}</Badge>
