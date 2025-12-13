@@ -153,7 +153,7 @@ export default function DriverDashboard() {
       <div className="flex h-screen w-full">
         <AppSidebar role="driver" />
         <div className="flex flex-col flex-1">
-          <header className="flex items-center justify-between p-4 border-b bg-background">
+          <header className="flex items-center justify-between p-4 border-b bg-background text-foreground">
             <div className="flex items-center gap-2">
               <SidebarTrigger data-testid="button-sidebar-toggle" />
               <h1 className="text-xl font-semibold" data-testid="text-page-title">Dashboard do Entregador</h1>

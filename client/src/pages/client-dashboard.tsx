@@ -133,7 +133,7 @@ export default function ClientDashboard() {
       <div className="flex h-screen w-full overflow-hidden">
         <AppSidebar role="client" />
         <div className="flex flex-col flex-1">
-          <header className="flex items-center justify-between p-3 sm:p-4 border-b bg-background sticky top-0 z-10">
+          <header className="flex items-center justify-between p-3 sm:p-4 border-b bg-background text-foreground sticky top-0 z-10">
             <div className="flex items-center gap-2">
               <SidebarTrigger data-testid="button-sidebar-toggle" className="lg:hidden" />
               <h1 className="text-base sm:text-lg md:text-xl font-semibold" data-testid="text-page-title">Meus Pedidos</h1>
