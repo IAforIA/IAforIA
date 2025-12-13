@@ -185,5 +185,35 @@ export function buildChatRouter() {
     }
   });
 
+  // Lista destinatários disponíveis para a Central iniciar nova conversa
+  router.get('/recipients', authenticateToken, requireRole('central'), async (req, res) => {
+    try {
+      const clients = await storage.getAllClients();
+      const motoboys = await storage.getAllMotoboys();
+      
+      const recipients = [
+        ...clients.map((c: any) => ({
+          id: c.userId || c.id,
+          name: c.name || c.company || 'Cliente',
+          role: 'client' as const,
+          phone: c.phone,
+          company: c.company
+        })),
+        ...motoboys.map((m: any) => ({
+          id: m.userId || m.id,
+          name: m.name,
+          role: 'motoboy' as const,
+          phone: m.phone,
+          online: m.online
+        }))
+      ];
+      
+      res.json(recipients);
+    } catch (error: any) {
+      console.error('Erro ao buscar destinatários:', error);
+      res.status(500).json({ error: 'Erro ao buscar destinatários' });
+    }
+  });
+
   return router;
 }

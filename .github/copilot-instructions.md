@@ -3,6 +3,37 @@
 ## Project Overview
 B2B delivery logistics platform connecting businesses with delivery drivers (motoboys). Three role-based dashboards (Central, Client, Driver) with real-time order management, GPS tracking, and automated driver assignment via WebSocket communication.
 
+## Code Organization Rules - CRITICAL
+
+### File Size Limits
+- **Maximum 500 lines per file** - Split larger files into smaller modules
+- If a file exceeds 500 lines, refactor into separate components/modules
+
+### Component Organization
+- **Single Responsibility Principle** - Each component/module handles ONE concern
+- Split complex components into smaller, focused sub-components
+- Example: `ChatWidget.tsx` → `ChatHeader.tsx`, `ChatMessageList.tsx`, `ChatThreadList.tsx`, `ChatInput.tsx`
+
+### Function Guidelines
+- **Small and focused functions** - Each function does ONE thing well
+- Maximum ~50 lines per function (prefer shorter)
+- Extract reusable logic into custom hooks or utility functions
+- Use descriptive function names that explain what they do
+
+### Directory Structure for Large Features
+```
+feature/
+├── index.tsx          # Main component (re-exports)
+├── FeatureHeader.tsx  # Sub-component
+├── FeatureList.tsx    # Sub-component
+├── FeatureItem.tsx    # Sub-component
+├── hooks/
+│   └── useFeature.ts  # Feature-specific hooks
+├── utils/
+│   └── helpers.ts     # Feature-specific utilities
+└── types.ts           # Feature-specific types
+```
+
 ## Architecture & Stack
 
 ### Monorepo Structure
