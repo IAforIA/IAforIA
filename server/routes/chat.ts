@@ -8,7 +8,7 @@ import { costTracker } from '../middleware/cost-tracker';
 import { responseCache } from '../middleware/response-cache';
 import { AIEngine } from '../ai-engine.ts';
 import logger from '../logger.js';
-import type { ChatMessage, Client, Motoboy } from '@shared/schema';
+import type { Client, Motoboy } from '@shared/schema';
 import { getErrorMessage } from '@shared/contracts';
 
 // Budget history day entry type
@@ -17,6 +17,9 @@ interface BudgetHistoryDay {
   totalCost: number;
   requestCount: number;
 }
+
+// Tipo para mensagem de chat após formatação pelo shapeChatMessage
+type ShapedChatMessage = Awaited<ReturnType<typeof storage.getChatMessages>>[number];
 
 export function buildChatRouter() {
   const router = Router();
@@ -27,14 +30,14 @@ export function buildChatRouter() {
       const userRole = req.user!.role;
       const { threadId } = req.query;
       const allMessages = await storage.getChatMessages();
-      let filteredMessages: ChatMessage[];
+      let filteredMessages: ShapedChatMessage[];
       if (userRole === 'central') filteredMessages = allMessages;
       else if (userRole === 'motoboy') filteredMessages = allMessages.filter(msg => msg.senderId === userId || msg.receiverId === userId || (msg.toRole === 'motoboy' && !msg.receiverId));
       else if (userRole === 'client') filteredMessages = allMessages.filter(msg => msg.senderId === userId || msg.receiverId === userId);
       else filteredMessages = [];
       if (threadId) {
-        const requestedThread = Array.isArray(threadId) ? threadId[0] : threadId;
-        const participantId = requestedThread?.split('_')[0];
+        const requestedThread = Array.isArray(threadId) ? String(threadId[0]) : String(threadId);
+        const participantId = requestedThread.split('_')[0];
         filteredMessages = filteredMessages.filter((msg) => {
           // Prefer exact threadId match when available; fall back to participant-based filter when legacy rows lack threadId
           return msg.threadId === requestedThread || (!!participantId && (msg.senderId === participantId || msg.receiverId === participantId));
@@ -83,7 +86,7 @@ export function buildChatRouter() {
       if (userRole !== 'central') {
         const allMessages = await storage.getChatMessages();
         const conversationHistory = allMessages.filter(m => m.threadId === finalThreadId || (m.orderId === orderId && orderId !== null));
-        const filterResult = await ChatbotFilter.analyzeMessage(message.trim(), userId, userRole, orderId, conversationHistory);
+        const filterResult = await ChatbotFilter.analyzeMessage(message.trim(), userId, userRole as 'client' | 'motoboy' | 'central', orderId, conversationHistory);
         console.log(`🤖 Filtro: ${filterResult.reasoning} (${filterResult.confidence}% confiança)`);
         if (filterResult.shouldAutoReply && filterResult.autoReplyMessage) {
           const autoReply = {
@@ -125,7 +128,7 @@ export function buildChatRouter() {
       if (userRole === 'central') userMessages = allMessages;
       else userMessages = allMessages.filter(msg => msg.senderId === userId || msg.receiverId === userId);
       const threadsMap = new Map();
-      userMessages.forEach((msg: ChatMessage) => {
+      userMessages.forEach((msg: ShapedChatMessage) => {
         if (!threadsMap.has(msg.threadId)) {
           threadsMap.set(msg.threadId, { threadId: msg.threadId, category: msg.category, orderId: msg.orderId, messages: [], lastMessage: null, unreadCount: 0 });
         }

@@ -27,13 +27,14 @@ export function buildClientsRouter() {
       res.status(201).json(profile);
     } catch (error: unknown) {
       console.error('💥 Erro ao criar cliente:', error);
-      if (error.message === 'EMAIL_IN_USE') {
+      const message = error instanceof Error ? error.message : 'Erro ao criar cliente';
+      if (message === 'EMAIL_IN_USE') {
         return res.status(409).json({ error: 'Email já cadastrado' });
       }
-      if (error.message === 'DOCUMENT_IN_USE') {
+      if (message === 'DOCUMENT_IN_USE') {
         return res.status(409).json({ error: 'Documento já cadastrado' });
       }
-      res.status(500).json({ error: error.message || 'Erro ao criar cliente' });
+      res.status(500).json({ error: message });
     }
   });
 

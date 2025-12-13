@@ -16,7 +16,7 @@ export interface MessageLike {
   fromRole?: string | null;
   receiverRole?: string | null;
   toRole?: string | null;
-  message?: string;
+  message?: string | null;
   category?: string;
   threadId?: string | null;
   orderId?: string | null;

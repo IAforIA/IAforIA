@@ -507,9 +507,10 @@ export interface ClientScheduleEntry {
   id?: string;
   clientId: string;
   diaSemana: number; // 0-6 (domingo = 0)
-  horaAbertura: string; // "HH:MM"
-  horaFechamento: string; // "HH:MM"
+  horaAbertura: string | null; // "HH:MM"
+  horaFechamento: string | null; // "HH:MM"
   ativo: boolean;
+  fechado?: boolean; // Indica se está fechado neste dia
 }
 
 /**
