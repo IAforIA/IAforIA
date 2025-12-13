@@ -93,7 +93,7 @@ export function ChatWidgetSimple({ embedded = false }: ChatWidgetSimpleProps) {
   }
 
   return (
-    <div className={embedded ? "h-full flex flex-col" : "fixed bottom-6 right-6 w-96 h-[600px] bg-white rounded-lg shadow-2xl flex flex-col"}>
+    <div className={embedded ? "h-full flex flex-col" : "fixed bottom-6 right-6 w-96 h-[600px] bg-background rounded-lg shadow-2xl flex flex-col"}>
       {/* HEADER */}
       <div className={`p-4 ${headerColor} text-white flex items-center justify-between rounded-t-lg`}>
         <div className="flex items-center gap-3">
@@ -118,13 +118,13 @@ export function ChatWidgetSimple({ embedded = false }: ChatWidgetSimpleProps) {
       </div>
 
       {/* AVISO INFORMATIVO */}
-      <div className="bg-yellow-50 border-b border-yellow-200 p-3 text-center text-xs text-yellow-800">
+      <div className="bg-yellow-50 dark:bg-yellow-900/20 border-b border-yellow-200 dark:border-yellow-700 p-3 text-center text-xs text-yellow-800 dark:text-yellow-200">
         ℹ️ Mensagens com <Badge variant="secondary" className="bg-blue-500 text-white text-xs">📦 Pedido #XXX</Badge> são sobre pedidos.<br/>
         Sem tag = assuntos gerais.
       </div>
 
       {/* MENSAGENS */}
-      <ScrollArea className="flex-1 p-4 bg-gray-100">
+      <ScrollArea className="flex-1 p-4 bg-muted">
         <div className="space-y-4">
           {messages.map((msg) => {
             const isSent = msg.senderId === user?.id;
@@ -136,7 +136,7 @@ export function ChatWidgetSimple({ embedded = false }: ChatWidgetSimpleProps) {
               >
                 <div className={`max-w-[75%] ${isSent ? 'items-end' : 'items-start'} flex flex-col gap-1`}>
                   <div className={`rounded-2xl px-3 py-2 shadow-sm ${
-                    isSent ? 'bg-green-100' : 'bg-white'
+                    isSent ? 'bg-green-100 dark:bg-green-900/30' : 'bg-card'
                   }`}>
                     {/* TAG DE PEDIDO */}
                     {msg.orderId && (
@@ -174,7 +174,7 @@ export function ChatWidgetSimple({ embedded = false }: ChatWidgetSimpleProps) {
                       <div className="text-sm leading-relaxed">{msg.message}</div>
                     )}
                     
-                    <div className="text-xs text-gray-500 text-right mt-1">
+                    <div className="text-xs text-muted-foreground text-right mt-1">
                       {new Date(msg.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                     </div>
                   </div>
@@ -187,7 +187,7 @@ export function ChatWidgetSimple({ embedded = false }: ChatWidgetSimpleProps) {
       </ScrollArea>
 
       {/* INPUT */}
-      <div className="p-4 bg-white border-t">
+      <div className="p-4 bg-background border-t">
         <div className="flex items-center gap-2">
           <Button size="icon" variant="ghost" className="rounded-full">
             <Paperclip className="w-5 h-5" />

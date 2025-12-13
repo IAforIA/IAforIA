@@ -51,6 +51,18 @@ export function buildMotoboysRouter() {
     }
   });
 
+  // Motoboy atualiza seu cadastro (endereço/documentos/banco)
+  // IMPORTANTE: Esta rota deve vir ANTES de /motoboys/:id para evitar conflito
+  router.patch('/motoboys/me', authenticateToken, requireRole('motoboy'), async (req, res) => {
+    try {
+      const updated = await storage.updateMotoboy(req.user!.id, req.body);
+      res.json(updated);
+    } catch (error: any) {
+      console.error('💥 Erro ao motoboy atualizar cadastro:', error);
+      res.status(500).json({ error: 'Erro ao atualizar cadastro do motoboy' });
+    }
+  });
+
   router.patch('/motoboys/:id/online', authenticateToken, requireRole('central'), async (req, res) => {
     try {
       const { id } = req.params;
@@ -84,17 +96,6 @@ export function buildMotoboysRouter() {
     } catch (error: any) {
       console.error('💥 Erro ao atualizar motoboy:', error);
       res.status(500).json({ error: 'Erro ao atualizar motoboy' });
-    }
-  });
-
-  // Motoboy atualiza seu cadastro (endereço/documentos)
-  router.patch('/motoboys/me', authenticateToken, requireRole('motoboy'), async (req, res) => {
-    try {
-      const updated = await storage.updateMotoboy(req.user!.id, req.body);
-      res.json(updated);
-    } catch (error: any) {
-      console.error('💥 Erro ao motoboy atualizar cadastro:', error);
-      res.status(500).json({ error: 'Erro ao atualizar cadastro do motoboy' });
     }
   });
 

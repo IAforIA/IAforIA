@@ -701,7 +701,7 @@ export function SettingsPage({ user, clientProfile, motoboyProfile }: SettingsPa
                 <label className="text-sm font-medium">Tipo de Chave</label>
                 <select
                   title="Tipo de chave PIX"
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  className="flex h-10 w-full rounded-md border border-input bg-background text-foreground px-3 py-2 text-sm"
                   value={motoboyBankData.pixKeyType}
                   onChange={(e) => setMotoboyBankData({ ...motoboyBankData, pixKeyType: e.target.value })}
                   onBlur={(e) => handleMotoboyFieldUpdate({ pixKeyType: e.target.value })}
@@ -797,7 +797,7 @@ export function SettingsPage({ user, clientProfile, motoboyProfile }: SettingsPa
                   <label className="text-sm font-medium">Tipo</label>
                   <select
                     title="Tipo de conta bancária"
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    className="flex h-10 w-full rounded-md border border-input bg-background text-foreground px-3 py-2 text-sm"
                     value={motoboyBankData.bankAccountType}
                     onChange={(e) => setMotoboyBankData({ ...motoboyBankData, bankAccountType: e.target.value })}
                     onBlur={(e) => handleMotoboyFieldUpdate({ bankAccountType: e.target.value })}

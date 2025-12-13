@@ -51,7 +51,7 @@ export function ChatConversationGrid({
   );
 
   return (
-    <div className="flex flex-col h-full bg-white border-r">
+    <div className="flex flex-col h-full bg-background border-r">
       {/* HEADER */}
       <div className="p-4 bg-gradient-to-br from-purple-600 to-purple-800 text-white">
         <h2 className="text-xl font-bold mb-3">📦 Pedidos & Conversas</h2>
@@ -95,7 +95,7 @@ export function ChatConversationGrid({
         {/* SEÇÃO: PEDIDOS ATIVOS */}
         {(filter === 'all' || filter === 'orders') && filteredOrders.length > 0 && (
           <div>
-            <div className="text-xs font-bold uppercase text-gray-500 mb-2 px-1">
+            <div className="text-xs font-bold uppercase text-muted-foreground mb-2 px-1">
               📦 Pedidos Ativos
             </div>
             {filteredOrders.map(order => (

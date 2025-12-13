@@ -169,7 +169,7 @@ export function ChatPanelCentral({
       </ScrollArea>
 
       {/* INPUT */}
-      <div className="p-5 bg-white border-t">
+      <div className="p-5 bg-background border-t">
         <div className="flex items-center gap-2">
           <Button size="icon" variant="ghost" className="rounded-full">
             <Paperclip className="w-5 h-5" />
