@@ -83,7 +83,12 @@ export function CentralHomeRoute({
     <>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-4 sm:mb-6 relative">
         <div className="lg:col-span-2 relative z-0 order-2 lg:order-1">
-          <DeliveryMap clients={clients} motoboys={motoboys} motoboyLocations={motoboyLocations} />
+          <DeliveryMap 
+            clients={clients} 
+            motoboys={motoboys} 
+            motoboyLocations={motoboyLocations}
+            editable={true}
+          />
         </div>
 
         <div className="space-y-4 order-1 lg:order-2">

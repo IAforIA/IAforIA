@@ -77,6 +77,33 @@ export function buildClientsRouter() {
     }
   });
 
+  // Atualiza coordenadas manualmente (drag-and-drop no mapa)
+  router.patch('/clients/:id/location', authenticateToken, requireRole('central'), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { lat, lng } = req.body;
+      
+      if (typeof lat !== 'number' || typeof lng !== 'number') {
+        return res.status(400).json({ error: 'lat e lng devem ser números' });
+      }
+      
+      if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+        return res.status(400).json({ error: 'Coordenadas inválidas' });
+      }
+      
+      const updated = await storage.updateClient(id, {
+        geoLat: lat.toString(),
+        geoLng: lng.toString(),
+      });
+      
+      console.log(`📍 Cliente ${id} localização atualizada: ${lat}, ${lng}`);
+      res.json({ success: true, client: updated });
+    } catch (error: unknown) {
+      console.error('💥 Erro ao atualizar localização do cliente:', error);
+      res.status(500).json({ error: 'Erro ao atualizar localização' });
+    }
+  });
+
   // Geocodifica um cliente específico (atualiza geoLat/geoLng no banco)
   router.post('/clients/:id/geocode', authenticateToken, requireRole('central'), async (req, res) => {
     try {
