@@ -11,6 +11,7 @@ import { TruckIcon, Users, Package, BarChart3, Eye, EyeOff } from "lucide-react"
 import { useLocation } from "wouter";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useAuth } from "@/hooks/use-auth";
+import { useCep } from "@/hooks/use-cep";
 import { useState, useEffect, type ChangeEvent, type FormEvent } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
@@ -104,6 +105,22 @@ export default function Landing() {
     resolver: zodResolver(motoboyFormSchema),
     defaultValues: motoboyDefaultValues,
   });
+
+  // Hook para busca de endereço via CEP
+  const { fetchAddress: fetchClientAddress, isLoading: isCepLoading } = useCep();
+
+  // Handler para auto-preencher endereço quando CEP é digitado
+  const handleCepBlur = async (cepValue: string) => {
+    const result = await fetchClientAddress(cepValue);
+    if (result) {
+      registerForm.setValue("address.rua", result.rua, { shouldDirty: true });
+      registerForm.setValue("address.bairro", result.bairro, { shouldDirty: true });
+      toast({
+        title: "Endereço preenchido",
+        description: "Revise número e complemento.",
+      });
+    }
+  };
 
   const watchDocumentType = registerForm.watch("documentType");
 
@@ -511,11 +528,21 @@ export default function Landing() {
                       name="address.cep"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>CEP</FormLabel>
+                          <FormLabel>CEP *</FormLabel>
                           <FormControl>
-                            <Input inputMode="numeric" placeholder="29900-000" {...field} />
+                            <Input 
+                              inputMode="numeric" 
+                              placeholder="29900-000" 
+                              {...field}
+                              onBlur={(e) => {
+                                field.onBlur();
+                                handleCepBlur(e.target.value);
+                              }}
+                              disabled={isCepLoading}
+                            />
                           </FormControl>
                           <FormMessage />
+                          {isCepLoading && <p className="text-xs text-muted-foreground">Buscando endereço...</p>}
                         </FormItem>
                       )}
                     />
