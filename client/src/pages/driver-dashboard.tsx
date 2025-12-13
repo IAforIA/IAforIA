@@ -37,10 +37,11 @@ export default function DriverDashboard() {
     queryKey: ["/api/orders"],
   });
 
-  const { data: motoboyReport } = useQuery<MotoboyReport>({
+  const { data: motoboyReport } = useQuery<{ success: boolean; data: MotoboyReport }, Error, MotoboyReport>({
     queryKey: ["/api/reports/motoboys", user?.id],
     enabled: !!user?.id && !!token,
     refetchInterval: 30000,
+    select: (response) => response?.data,
   });
 
   const { data: motoboyProfile } = useQuery<Motoboy | null>({

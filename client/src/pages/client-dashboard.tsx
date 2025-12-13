@@ -34,10 +34,11 @@ export default function ClientDashboard() {
     refetchOnWindowFocus: true,
   });
 
-  const { data: clientReport } = useQuery<ClientReport>({
+  const { data: clientReport } = useQuery<{ success: boolean; data: ClientReport }, Error, ClientReport>({
     queryKey: ["/api/reports/clients", user?.id],
     enabled: !!user?.id && !!token,
     refetchInterval: 30000,
+    select: (response) => response?.data,
   });
 
   const { data: profile, isPending: isProfileLoading, error: profileError } = useQuery<ClientProfileDto>({
