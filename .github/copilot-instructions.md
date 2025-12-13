@@ -1,9 +1,25 @@
-# Guriri Express - AI Coding Agent Instructions
+﻿# Guriri Express - AI Coding Agent Instructions
 
 ## Project Overview
 B2B delivery logistics platform connecting businesses with delivery drivers (motoboys). Three role-based dashboards (Central, Client, Driver) with real-time order management, GPS tracking, and automated driver assignment via WebSocket communication.
 
 ## Code Organization Rules - CRITICAL
+
+### TypeScript - NUNCA usar `any`
+- **PROIBIDO usar `any`** - Sempre definir tipos explícitos
+- Se encontrar `any` no código, **substituir imediatamente** por tipo correto
+- Usar `unknown` + type guards quando tipo é realmente desconhecido
+- Tipar todas as funções: parâmetros E retorno
+
+```typescript
+// ❌ PROIBIDO
+function process(data: any) { ... }
+const result: any = await fetch(...);
+
+// ✅ CORRETO
+function process(data: Order): ProcessedOrder { ... }
+const result: ApiResponse<Order> = await fetch(...);
+```
 
 ### File Size Limits
 - **Maximum 500 lines per file** - Split larger files into smaller modules
@@ -207,6 +223,13 @@ Each dashboard at `/client/src/pages/[role]-dashboard.tsx` uses:
 - **Test routes**: `client/src/pages/test-simple.tsx` available at `/test`
 - **Console logging**: Server logs API requests automatically (method, path, status, duration, response)
 - **Database inspection**: Use Drizzle Studio or direct PostgreSQL client
+
+## Documentação Técnica
+
+Consulte os docs em `docs/` antes de fazer alterações:
+- **[ARCHITECTURE.md](../docs/ARCHITECTURE.md)** - Visão geral do sistema, fluxos, stack
+- **[API-REFERENCE.md](../docs/API-REFERENCE.md)** - Todos os endpoints com payloads
+- **[WEBSOCKET-EVENTS.md](../docs/WEBSOCKET-EVENTS.md)** - Eventos em tempo real
 
 ## Extending the System
 
