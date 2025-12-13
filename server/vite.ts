@@ -1,10 +1,11 @@
 import express, { type Express } from "express";
 import fs from "fs";
 import path from "path";
-import { createServer as createViteServer, createLogger } from "vite";
 import { type Server } from "http";
 
-const viteLogger = createLogger();
+// Vite é importado dinamicamente apenas em desenvolvimento
+// Em produção, essas variáveis não são usadas
+let viteLogger: any = null;
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
@@ -17,6 +18,10 @@ export function log(message: string, source = "express") {
 }
 
 export async function setupVite(app: Express, server: Server) {
+  // Import dinâmico do Vite - só é carregado em desenvolvimento
+  const { createServer: createViteServer, createLogger } = await import("vite");
+  viteLogger = createLogger();
+  
   const serverOptions = {
     middlewareMode: true as const,
     hmr: { server }, // Reabilita HMR
