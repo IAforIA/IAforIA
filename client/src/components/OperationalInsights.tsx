@@ -63,7 +63,7 @@ export function OperationalInsights({
   // Analisa cada turno do dia
   const analyzeShift = (shift: Shift): ShiftAnalysis => {
     const shiftConfig = {
-      manha: { label: 'ManhÃ£', hours: '06:00-12:00', start: '06:00', end: '12:00' },
+      manha: { label: 'Manhã', hours: '06:00-12:00', start: '06:00', end: '12:00' },
       tarde: { label: 'Tarde', hours: '12:00-18:00', start: '12:00', end: '18:00' },
       noite: { label: 'Noite', hours: '18:00-00:00', start: '18:00', end: '00:00' },
     };
@@ -129,23 +129,23 @@ export function OperationalInsights({
       return <Badge className="bg-green-600">Cobertura OK</Badge>;
     }
     if (status === 'warning') {
-      return <Badge className="bg-yellow-600">AtenÃ§Ã£o</Badge>;
+      return <Badge className="bg-yellow-600">Atenção</Badge>;
     }
-    return <Badge variant="destructive">CrÃ­tico</Badge>;
+    return <Badge variant="destructive">Crítico</Badge>;
   };
 
-  const daysOfWeek = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'SÃ¡b'];
+  const daysOfWeek = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
   return (
     <div className="space-y-4">
-      {/* PrevisÃ£o Semanal primeiro para destacar clientes por dia */}
+      {/* Previsão Semanal primeiro para destacar clientes por dia */}
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
             <Users className="h-5 w-5" />
-            <CardTitle>PrevisÃ£o Semanal</CardTitle>
+            <CardTitle>Previsão Semanal</CardTitle>
           </div>
-          <CardDescription>Clientes operando por dia. Ãštil para planejar escalas antes do dia.</CardDescription>
+          <CardDescription>Clientes operando por dia. Útil para planejar escalas antes do dia.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-7 gap-2">
@@ -184,10 +184,10 @@ export function OperationalInsights({
         <CardHeader>
           <div className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5" />
-            <CardTitle>AnÃ¡lise Operacional - {daysOfWeek[currentDay]}</CardTitle>
+            <CardTitle>Análise Operacional - {daysOfWeek[currentDay]}</CardTitle>
           </div>
           <CardDescription>
-            VisÃ£o rÃ¡pida: clientes abertos hoje Ã— motoboys escalados Ã— recomendaÃ§Ã£o mÃ­nima.
+            Visão rápida: clientes abertos hoje — motoboys escalados — recomendação mínima.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -228,7 +228,7 @@ export function OperationalInsights({
         </CardContent>
       </Card>
 
-      {/* AnÃ¡lise por Turno */}
+      {/* Análise por Turno */}
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
@@ -237,7 +237,7 @@ export function OperationalInsights({
           </div>
           <CardDescription className="flex items-center gap-1 text-xs text-muted-foreground">
             <Info className="h-3.5 w-3.5" />
-            Verde = cobertura ok | Amarelo = atenÃ§Ã£o | Vermelho = faltando motoboy
+            Verde = cobertura ok | Amarelo = atenção | Vermelho = faltando motoboy
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -263,7 +263,7 @@ export function OperationalInsights({
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs text-muted-foreground">Motoboys DisponÃ­veis</div>
+                    <div className="text-xs text-muted-foreground">Motoboys Disponíveis</div>
                     <div className="text-2xl font-bold text-green-600">
                       {shift.motoboysAvailable}
                     </div>
