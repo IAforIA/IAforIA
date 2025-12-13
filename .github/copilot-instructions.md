@@ -3,6 +3,217 @@
 ## Project Overview
 B2B delivery logistics platform connecting businesses with delivery drivers (motoboys). Three role-based dashboards (Central, Client, Driver) with real-time order management, GPS tracking, and automated driver assignment via WebSocket communication.
 
+---
+
+## ⚠️ ARCHITECTURAL GOVERNANCE — READ FIRST
+
+This document is the **architectural constitution** of the project. Its purpose is to:
+- Prevent regression and breaking changes
+- Enforce domain boundary discipline
+- Maintain API contract stability
+- Ensure predictable system behavior under growth
+
+**Any code generation that violates these rules is considered a critical bug.**
+
+---
+
+## Domain & Business Logic Boundaries — CRITICAL
+
+### Where Business Logic MUST Live
+All business logic that impacts **order status**, **permissions**, **pricing**, **billing**, **SLA**, or **driver assignment** MUST be implemented in **domain services**.
+
+| Layer | Responsibility | Business Logic? |
+|-------|---------------|-----------------|
+| `server/routes/*.ts` | HTTP adapters, request/response | ❌ NO |
+| `server/storage.ts` | CRUD operations, data access | ❌ NO |
+| `server/services/*.ts` | Domain logic, decisions, workflows | ✅ YES |
+| `server/ai-engine.ts` | Suggestions, recommendations | ❌ NO (suggests only) |
+| `client/src/**` | UI rendering, user interaction | ❌ NO |
+
+### Prohibited Locations for Business Logic
+```typescript
+// ❌ PROIBIDO - Lógica de negócio em rotas
+router.post('/orders/:id/accept', async (req, res) => {
+  if (order.status === 'pending') { // ← Regra de negócio na rota!
+    order.status = 'in_progress';   // ← ERRADO
+  }
+});
+
+// ✅ CORRETO - Rota apenas delega para service
+router.post('/orders/:id/accept', async (req, res) => {
+  const result = await OrderService.acceptOrder(orderId, motoboyId);
+  res.json(result);
+});
+```
+
+### Domain Logic Examples
+The following are **domain logic** and MUST live in services:
+- Order state transitions (`pending` → `in_progress` → `delivered`)
+- Driver assignment rules and availability checks
+- Pricing calculations (base, distance, time modifiers)
+- Permission enforcement (who can cancel, reassign, etc.)
+- SLA validations and deadline checks
+- Billing/repasse calculations
+
+---
+
+## Frontend vs Backend Responsibilities — CRITICAL
+
+### The Golden Rule
+> **Backend is the SINGLE SOURCE OF TRUTH. Frontend only reflects decisions.**
+
+### Frontend Restrictions
+| Action | Frontend | Backend |
+|--------|----------|---------|
+| Validate business rules | ❌ | ✅ |
+| Decide state transitions | ❌ | ✅ |
+| Apply permissions | ❌ | ✅ |
+| Calculate prices | ❌ | ✅ |
+| Filter by role | ❌ | ✅ |
+| Display data | ✅ | - |
+| UX validations (format) | ✅ | - |
+| Optimistic UI updates | ✅ (revert on error) | - |
+
+### Prohibited Pattern
+```typescript
+// ❌ PROIBIDO - Validação de permissão no frontend
+if (user.role === 'central') {
+  setCanCancelOrder(true); // ← Frontend decidindo permissão!
+}
+
+// ✅ CORRETO - Backend retorna permissões
+const { canCancel } = await api.get('/orders/:id/permissions');
+```
+
+### Why This Matters
+- Frontend can be bypassed (devtools, API calls)
+- Business rules must be enforced server-side
+- Duplicated logic leads to inconsistencies
+- "Resolver no React porque é mais rápido" → **NUNCA**
+
+---
+
+## API Contracts & Backward Compatibility — CRITICAL
+
+### Contract Stability Rules
+| Action | Allowed? |
+|--------|----------|
+| Add new optional fields | ✅ |
+| Add new endpoints | ✅ |
+| Remove existing fields | ❌ NEVER |
+| Rename existing fields | ❌ NEVER |
+| Change field types | ❌ NEVER |
+| Change response shape | ❌ NEVER |
+
+### Breaking Changes = Critical Bugs
+Any change that breaks existing clients is a **P0 critical bug**. If a breaking change is absolutely necessary:
+1. Create versioned endpoint (`/api/v2/...`)
+2. Maintain old endpoint for deprecation period
+3. Document migration path
+
+### Contract Documentation
+All API contracts are documented in:
+- `docs/API-REFERENCE.md` — Endpoint specifications
+- `shared/contracts.ts` — TypeScript DTOs and Zod schemas
+
+**Before modifying any endpoint, consult these files.**
+
+---
+
+## Decision Authority Model — CRITICAL
+
+### Who Decides What
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    DECISION AUTHORITY                       │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│   Routes (server/routes/*.ts)                               │
+│   └─► Receive request, validate input, delegate            │
+│   └─► ❌ DO NOT DECIDE                                      │
+│                                                             │
+│   Storage (server/storage.ts)                               │
+│   └─► Execute CRUD, return data                             │
+│   └─► ❌ DO NOT DECIDE                                      │
+│                                                             │
+│   AI Engine (server/ai-engine.ts)                           │
+│   └─► Suggest assignments, prices, responses                │
+│   └─► ❌ DO NOT DECIDE (recommendations only)               │
+│                                                             │
+│   Services (server/services/*.ts)                           │
+│   └─► Apply business rules, enforce invariants              │
+│   └─► ✅ DECIDE (single authority)                          │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Current Domain Services
+| Service | Responsibility |
+|---------|---------------|
+| `OrderService` | Order lifecycle, state transitions |
+| `PricingService` | Dynamic pricing calculations |
+| `AssignmentService` | Driver assignment logic |
+| `GeocodingService` | Address → coordinates |
+
+> If a service doesn't exist for a domain, **create it** before implementing logic.
+
+---
+
+## Anti-Patterns — NEVER DO THIS
+
+### Prohibited Patterns
+
+| Anti-Pattern | Why It's Wrong |
+|--------------|----------------|
+| Business logic in routes | Routes are adapters, not decision makers |
+| Validation only in frontend | Backend must be the gatekeeper |
+| Refactoring for aesthetics | Only refactor with clear technical debt justification |
+| Breaking API contracts | Breaks all existing clients |
+| Duplicating business rules | Single source of truth or bugs guaranteed |
+| Creating undocumented states | If it's not in schema, it doesn't exist |
+| Inferring missing requirements | Ask, don't guess |
+| "Completing" unspecified features | Implement only what's explicitly requested |
+| Using `any` type | Always define explicit types |
+| Hardcoding role strings | Use type-safe role enums |
+
+### The Golden Rule for Uncertainty
+> **When in doubt, SUGGEST — do not implement.**
+
+If requirements are unclear:
+1. State your understanding
+2. List assumptions
+3. Ask for confirmation
+4. Only then implement
+
+---
+
+## AI Autonomy Levels
+
+### Level 1: Suggest Only (Requires Human Approval)
+- Domain logic changes
+- API contract modifications
+- Pricing/billing logic
+- Permission changes
+- Database schema changes
+- New business rules
+
+### Level 2: Implement with Validation (Can Proceed, Must Verify)
+- New features within existing patterns
+- New endpoints following existing conventions
+- UI components following design system
+- Test implementations
+
+### Level 3: Autonomous (Can Execute Freely)
+- Bug fixes with clear root cause
+- TypeScript typing improvements
+- Code organization (within 500-line limit)
+- Documentation updates
+- Linting/formatting fixes
+- Import organization
+
+---
+
 ## Code Organization Rules - CRITICAL
 
 ### TypeScript - NUNCA usar `any`
@@ -291,4 +502,55 @@ The following Replit-specific packages have been removed:
 - **Cross-platform scripts**: Uses `cross-env` for Windows/Linux/Mac compatibility
 - **Standard PostgreSQL**: Works with any PostgreSQL provider (Neon, Supabase, Railway, etc.)
 - **Port configuration**: Configurable via `PORT` env var (defaults to 5000)
+
+---
+
+## Order Lifecycle — CANONICAL REFERENCE
+
+### Valid Order States
+```
+pending → in_progress → delivered
+    ↓
+cancelled
+```
+
+### State Transition Rules
+| From | To | Trigger | Who Can Do |
+|------|-----|---------|------------|
+| `pending` | `in_progress` | Motoboy accepts | motoboy, central |
+| `pending` | `cancelled` | Central cancels | central |
+| `in_progress` | `delivered` | Motoboy confirms + LiveDoc | motoboy |
+| `in_progress` | `cancelled` | Central cancels | central |
+
+### Assignment Flow
+1. **Client creates order** → `status: pending`, `motoboyId: null`
+2. **Central assigns** → `status: pending`, `motoboyId: X`
+3. **Motoboy accepts** → `status: in_progress`, `motoboyId: X`
+4. **Motoboy declines** → `status: pending`, `motoboyId: null` (back to pool)
+5. **Motoboy delivers** → `status: delivered` + LiveDoc obrigatório
+
+### WebSocket Events
+| Event | Trigger | Payload |
+|-------|---------|---------|
+| `new_order` | Order created | Full order object |
+| `order_accepted` | Motoboy accepts | Order with in_progress status |
+| `order_declined` | Motoboy declines | Order back to pending |
+| `order_delivered` | Delivery confirmed | Order with proofUrl |
+| `order_cancelled` | Central cancels | Order with cancelled status |
+| `order_reassigned` | Central reassigns | Order with new motoboyId |
+
+---
+
+## Summary Checklist for AI Agent
+
+Before generating any code, verify:
+
+- [ ] Business logic is in a service, not route/storage/frontend
+- [ ] API contracts are preserved (no breaking changes)
+- [ ] Types are explicit (no `any`)
+- [ ] File stays under 500 lines
+- [ ] Decision authority is respected
+- [ ] State transitions follow documented flow
+- [ ] WebSocket events are broadcast for relevant changes
+- [ ] Frontend only reflects backend decisions
 
