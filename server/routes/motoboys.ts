@@ -57,7 +57,7 @@ export function buildMotoboysRouter() {
     try {
       const updated = await storage.updateMotoboy(req.user!.id, req.body);
       res.json(updated);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('💥 Erro ao motoboy atualizar cadastro:', error);
       res.status(500).json({ error: 'Erro ao atualizar cadastro do motoboy' });
     }
@@ -82,7 +82,7 @@ export function buildMotoboysRouter() {
     try {
       const motoboy = await storage.createMotoboy(req.body);
       res.status(201).json(motoboy);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('💥 Erro ao criar motoboy:', error);
       res.status(500).json({ error: 'Erro ao criar motoboy' });
     }
@@ -93,7 +93,7 @@ export function buildMotoboysRouter() {
       const { id } = req.params;
       const updated = await storage.updateMotoboy(id, req.body);
       res.json(updated);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('💥 Erro ao atualizar motoboy:', error);
       res.status(500).json({ error: 'Erro ao atualizar motoboy' });
     }
@@ -108,7 +108,7 @@ export function buildMotoboysRouter() {
       }
       const schedules = await storage.getMotoboySchedules(id);
       res.json(schedules);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('💥 Erro ao buscar schedules do motoboy:', error);
       res.status(500).json({ error: 'Erro ao buscar schedules do motoboy' });
     }
@@ -136,7 +136,7 @@ export function buildMotoboysRouter() {
       );
 
       res.json({ success: true, schedule: result });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('💥 Erro ao salvar schedule do motoboy:', error);
       res.status(500).json({ error: 'Erro ao salvar schedule do motoboy' });
     }

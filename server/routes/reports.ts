@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { authenticateToken, requireRole } from '../middleware/auth.ts';
 import * as ReportsLib from '../reports.ts';
 import { assertUserCanAccess } from '../utils/role-validator.ts';
@@ -40,7 +40,7 @@ export function buildReportsRouter() {
     }
   });
 
-  const handleMotoboyReport = async (req: any, res: any) => {
+  const handleMotoboyReport = async (req: Request, res: Response) => {
     try {
       const { motoboyId } = req.params;
       if (!motoboyId) return res.status(400).json({ success: false, error: 'motoboyId inválido' });

@@ -49,7 +49,7 @@ export function buildAuthRouter() {
       const profile = await storage.createClientWithUser(clientPayload, passwordHash);
       const token = jwt.sign({ id: profile.id, role: "client", name: profile.name }, JWT_SECRET, { expiresIn: "24h" });
       res.status(201).json({ access_token: token, profile });
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof ZodError) {
         return res.status(400).json({ error: error.flatten() });
       }
@@ -83,7 +83,7 @@ export function buildAuthRouter() {
         phone: profile.phone,
         email: profile.email,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof ZodError) {
         return res.status(400).json({ error: error.flatten() });
       }

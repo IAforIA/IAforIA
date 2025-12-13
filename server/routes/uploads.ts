@@ -30,7 +30,7 @@ export function buildUploadsRouter() {
       });
 
       res.json({ message: 'Upload realizado com sucesso', liveDoc, fileUrl });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('💥 Erro no upload:', error);
       res.status(500).json({ error: error.message || 'Erro ao fazer upload' });
     }
@@ -47,7 +47,7 @@ export function buildUploadsRouter() {
         documentFileUrl: fileUrl,
       });
       res.json({ message: 'Documento enviado com sucesso', fileUrl, client: updated });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('💥 Erro no upload de documento do cliente:', error);
       res.status(500).json({ error: error.message || 'Erro ao enviar documento' });
     }
@@ -71,7 +71,7 @@ export function buildUploadsRouter() {
 
       const updated = await storage.updateMotoboy(req.user!.id, updatePayload);
       res.json({ message: 'Documento enviado com sucesso', fileUrl, motoboy: updated });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('💥 Erro no upload de documento do motoboy:', error);
       res.status(500).json({ error: error.message || 'Erro ao enviar documento' });
     }

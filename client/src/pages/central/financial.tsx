@@ -3,7 +3,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Client, Motoboy } from "@shared/schema";
+import type { MotoboyFinancialSnapshot, ClientFinancialSnapshot } from "@shared/contracts";
 import type { NormalizedOrder } from "./types";
+
+interface FinancialSummary {
+  totalRevenue: number;
+  totalMotoboyPayouts: number;
+  totalProfit: number;
+  orderCount: number;
+  avgOrderValue: number;
+}
 
 type FinancialProps = {
   finStartDate: string;
@@ -15,13 +24,13 @@ type FinancialProps = {
   handleFinMotoboyFilterChange: (value: string) => void;
   handleFinClientFilterChange: (value: string) => void;
   filteredDeliveredOrders: NormalizedOrder[];
-  financialSummary: any;
-  motoboySnapshots: any[];
-  clientSnapshots: any[];
+  financialSummary: FinancialSummary;
+  motoboySnapshots: MotoboyFinancialSnapshot[];
+  clientSnapshots: ClientFinancialSnapshot[];
   deliveredTodayOrders: NormalizedOrder[];
-  deliveredTodaySummary: any;
+  deliveredTodaySummary: FinancialSummary;
   pendingOrders: NormalizedOrder[];
-  pendingSummary: any;
+  pendingSummary: FinancialSummary;
   clients: Client[];
   motoboys: Motoboy[];
 };
@@ -260,7 +269,7 @@ export function FinancialRoute({
                       size="sm"
                       onClick={() => {
                         const details = snapshot.orders
-                          .map((o: any, i: number) => `${i + 1}. ${o.deliveredAtDate?.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) ?? "--"} - ${o.clientName} → ${o.entregaBairro} - R$ ${o.motoboyValue.toFixed(2)}`)
+                          .map((o: NormalizedOrder, i: number) => `${i + 1}. ${o.deliveredAtDate?.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) ?? "--"} - ${o.clientName} → ${o.entregaBairro} - R$ ${o.motoboyValue.toFixed(2)}`)
                           .join("\n");
                         alert(`Detalhes - ${snapshot.motoboyName}\n\nTotal: R$ ${snapshot.totalRepasse.toFixed(2)}\n\n${details}`);
                       }}
@@ -307,7 +316,7 @@ export function FinancialRoute({
                       onClick={() => {
                         const details = snapshot.orders
                           .map(
-                            (o: any, i: number) =>
+                            (o: NormalizedOrder, i: number) =>
                               `${i + 1}. ${o.deliveredAtDate?.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) ?? "--"} - ${o.entregaBairro}, ${o.entregaRua} - Frete: R$ ${o.freteValue.toFixed(2)} + Produto: R$ ${o.produtoValue.toFixed(2)}`
                           )
                           .join("\n");

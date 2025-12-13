@@ -8,17 +8,26 @@ import { costTracker } from '../middleware/cost-tracker';
 import { responseCache } from '../middleware/response-cache';
 import { AIEngine } from '../ai-engine.ts';
 import logger from '../logger.js';
+import type { ChatMessage, Client, Motoboy } from '@shared/schema';
+import { getErrorMessage } from '@shared/contracts';
+
+// Budget history day entry type
+interface BudgetHistoryDay {
+  date: string;
+  totalCost: number;
+  requestCount: number;
+}
 
 export function buildChatRouter() {
   const router = Router();
 
   router.get('/', authenticateToken, async (req, res) => {
     try {
-      const userId = (req as any).user.id;
-      const userRole = (req as any).user.role;
+      const userId = req.user!.id;
+      const userRole = req.user!.role;
       const { threadId } = req.query;
       const allMessages = await storage.getChatMessages();
-      let filteredMessages: any[];
+      let filteredMessages: ChatMessage[];
       if (userRole === 'central') filteredMessages = allMessages;
       else if (userRole === 'motoboy') filteredMessages = allMessages.filter(msg => msg.senderId === userId || msg.receiverId === userId || (msg.toRole === 'motoboy' && !msg.receiverId));
       else if (userRole === 'client') filteredMessages = allMessages.filter(msg => msg.senderId === userId || msg.receiverId === userId);
@@ -39,14 +48,14 @@ export function buildChatRouter() {
 
   router.post('/', authenticateToken, async (req, res) => {
     try {
-      const userId = (req as any).user.id;
-      const userName = (req as any).user.name;
-      const userRole = (req as any).user.role;
+      const userId = req.user!.id;
+      const userName = req.user!.name;
+      const userRole = req.user!.role;
       const centralUserId = process.env.CENTRAL_USER_ID || 'central';
       const { message, category, orderId, threadId } = req.body;
       if (!message || message.trim().length === 0) return res.status(400).json({ error: 'Mensagem não pode estar vazia' });
       if (!['status_entrega', 'suporte', 'problema'].includes(category)) return res.status(400).json({ error: 'Categoria inválida' });
-      let toId: any = null;
+      let toId: string | null = null;
       let toRole = userRole === 'central' ? (req.body.toRole ?? 'client') : 'central';
       if (userRole === 'central' && (req.body.toId || req.body.receiverId)) toId = req.body.toId || req.body.receiverId;
       if (userRole !== 'central') toId = centralUserId;
@@ -66,7 +75,7 @@ export function buildChatRouter() {
         orderId: orderId || null,
         threadId: finalThreadId,
         message: message.trim(),
-      } as any;
+      };
 
       const createdMessage = await storage.createChatMessage(chatMessage);
       broadcast({ type: 'chat_message', payload: createdMessage });
@@ -74,7 +83,7 @@ export function buildChatRouter() {
       if (userRole !== 'central') {
         const allMessages = await storage.getChatMessages();
         const conversationHistory = allMessages.filter(m => m.threadId === finalThreadId || (m.orderId === orderId && orderId !== null));
-        const filterResult = await ChatbotFilter.analyzeMessage(message.trim(), userId, userRole as any, orderId, conversationHistory);
+        const filterResult = await ChatbotFilter.analyzeMessage(message.trim(), userId, userRole, orderId, conversationHistory);
         console.log(`🤖 Filtro: ${filterResult.reasoning} (${filterResult.confidence}% confiança)`);
         if (filterResult.shouldAutoReply && filterResult.autoReplyMessage) {
           const autoReply = {
@@ -90,7 +99,7 @@ export function buildChatRouter() {
             threadId: finalThreadId,
             message: filterResult.autoReplyMessage,
             isFromCentral: true,
-          } as any;
+          };
           const autoReplyMessage = await storage.createChatMessage(autoReply);
           broadcast({ type: 'chat_message', payload: autoReplyMessage });
           return res.json({ userMessage: createdMessage, autoReply: autoReplyMessage, filterInfo: { type: 'auto_reply', confidence: filterResult.confidence, category: filterResult.category } });
@@ -101,22 +110,22 @@ export function buildChatRouter() {
         }
       }
       res.json(createdMessage);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao enviar mensagem:', error);
-      res.status(400).json({ error: error.message || 'Erro ao enviar mensagem' });
+      res.status(400).json({ error: getErrorMessage(error) });
     }
   });
 
   router.get('/threads', authenticateToken, async (req, res) => {
     try {
-      const userId = (req as any).user.id;
-      const userRole = (req as any).user.role;
+      const userId = req.user!.id;
+      const userRole = req.user!.role;
       const allMessages = await storage.getChatMessages();
       let userMessages;
       if (userRole === 'central') userMessages = allMessages;
       else userMessages = allMessages.filter(msg => msg.senderId === userId || msg.receiverId === userId);
       const threadsMap = new Map();
-      userMessages.forEach((msg: any) => {
+      userMessages.forEach((msg: ChatMessage) => {
         if (!threadsMap.has(msg.threadId)) {
           threadsMap.set(msg.threadId, { threadId: msg.threadId, category: msg.category, orderId: msg.orderId, messages: [], lastMessage: null, unreadCount: 0 });
         }
@@ -142,9 +151,9 @@ export function buildChatRouter() {
       const aiSuggestion = await AIEngine.generateChatResponse(message.trim(), category, userId || 'central');
       recordAIUsage(userId || 'central');
       res.json({ suggestion: aiSuggestion });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ AI Suggestion Error:', error);
-      res.status(500).json({ error: 'Erro ao gerar sugestão de IA' });
+      res.status(500).json({ error: getErrorMessage(error) });
     }
   });
 
@@ -155,22 +164,22 @@ export function buildChatRouter() {
       await ChatbotFilter.logAILearning({ messageId, filterDecision: { shouldAutoReply: false, autoReplyMessage: null, shouldSuggestAI: true, category: category || 'geral', confidence: 0, requiresHuman: false, reasoning: 'Feedback humano' }, aiSuggestion, humanResponse, humanAction: action, timestamp: new Date(), category: category || 'geral' });
       console.log(`📚 Feedback registrado: ${action} (categoria: ${category})`);
       res.json({ success: true });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao registrar feedback:', error);
-      res.status(500).json({ error: 'Erro ao registrar feedback' });
+      res.status(500).json({ error: getErrorMessage(error) });
     }
   });
 
   router.get('/usage-stats', authenticateToken, async (req, res) => {
     try {
-      const userId = (req as any).user.id;
-      const userRole = (req as any).user.role;
+      const userId = req.user!.id;
+      const userRole = req.user!.role;
       const userStats = getUserUsageStats(userId);
       const globalStats = userRole === 'central' ? { budget: costTracker.getTodayStats(), cache: responseCache.getStats(), filter: ChatbotFilter.getFilterStats() } : null;
       res.json({ user: userStats, global: globalStats });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao buscar stats:', error);
-      res.status(500).json({ error: 'Erro ao buscar estatísticas' });
+      res.status(500).json({ error: getErrorMessage(error) });
     }
   });
 
@@ -178,10 +187,10 @@ export function buildChatRouter() {
     try {
       const history = costTracker.getBudgetHistory();
       const cacheStats = responseCache.getStats();
-      res.json({ history, cache: cacheStats, summary: { totalDays: history.length, totalSpent: history.reduce((sum: any, day: any) => sum + day.totalCost, 0), totalRequests: history.reduce((sum: any, day: any) => sum + day.requestCount, 0), cacheSavings: cacheStats.estimatedSavings } });
-    } catch (error: any) {
+      res.json({ history, cache: cacheStats, summary: { totalDays: history.length, totalSpent: history.reduce((sum: number, day: BudgetHistoryDay) => sum + day.totalCost, 0), totalRequests: history.reduce((sum: number, day: BudgetHistoryDay) => sum + day.requestCount, 0), cacheSavings: cacheStats.estimatedSavings } });
+    } catch (error: unknown) {
       console.error('Erro ao buscar histórico:', error);
-      res.status(500).json({ error: 'Erro ao buscar histórico de custos' });
+      res.status(500).json({ error: getErrorMessage(error) });
     }
   });
 
@@ -192,14 +201,14 @@ export function buildChatRouter() {
       const motoboys = await storage.getAllMotoboys();
       
       const recipients = [
-        ...clients.map((c: any) => ({
+        ...clients.map((c: Client) => ({
           id: c.userId || c.id,
           name: c.name || c.company || 'Cliente',
           role: 'client' as const,
           phone: c.phone,
           company: c.company
         })),
-        ...motoboys.map((m: any) => ({
+        ...motoboys.map((m: Motoboy) => ({
           id: m.userId || m.id,
           name: m.name,
           role: 'motoboy' as const,
@@ -209,9 +218,9 @@ export function buildChatRouter() {
       ];
       
       res.json(recipients);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao buscar destinatários:', error);
-      res.status(500).json({ error: 'Erro ao buscar destinatários' });
+      res.status(500).json({ error: getErrorMessage(error) });
     }
   });
 

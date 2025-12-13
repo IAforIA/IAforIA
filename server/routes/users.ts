@@ -11,7 +11,7 @@ export function buildUsersRouter() {
       const users = await storage.getAllUsers();
       const usersWithoutPasswords = users.map(({ password, ...user }) => user);
       res.json(usersWithoutPasswords);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao buscar usuarios:', error);
       res.status(500).json({ error: 'Erro ao buscar usuarios' });
     }
@@ -55,7 +55,7 @@ export function buildUsersRouter() {
       
       const { password: _, ...userWithoutPassword } = updated;
       res.json(userWithoutPassword);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao atualizar usuario:', error);
       res.status(500).json({ error: 'Erro ao atualizar usuario' });
     }
@@ -78,7 +78,7 @@ export function buildUsersRouter() {
       const updated = await storage.updateUser(id, { status });
       const { password, ...userWithoutPassword } = updated;
       res.json(userWithoutPassword);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao atualizar status do usuario:', error);
       res.status(500).json({ error: 'Erro ao atualizar status do usuario' });
     }
@@ -101,7 +101,7 @@ export function buildUsersRouter() {
       const updated = await storage.updateUser(id, { role });
       const { password, ...userWithoutPassword } = updated;
       res.json(userWithoutPassword);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao atualizar role do usuario:', error);
       res.status(500).json({ error: 'Erro ao atualizar role do usuario' });
     }

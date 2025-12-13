@@ -10,7 +10,7 @@ export function buildSchedulesRouter() {
     try {
       const schedules = await storage.getAllClientSchedules();
       res.json(schedules);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('💥 Erro ao buscar horários de clientes:', error);
       res.status(500).json({ error: 'Erro ao buscar horários de clientes' });
     }
@@ -21,7 +21,7 @@ export function buildSchedulesRouter() {
     try {
       const schedules = await storage.getAllMotoboySchedules();
       res.json(schedules);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('💥 Erro ao buscar horários de motoboys:', error);
       res.status(500).json({ error: 'Erro ao buscar horários de motoboys' });
     }

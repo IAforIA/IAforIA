@@ -18,7 +18,8 @@ import { resolveWebSocketUrl } from "@/lib/utils";
 import { useOrderFilters } from "@/hooks/use-order-filters";
 import { useFinancialReports } from "@/hooks/use-financial-reports";
 import { SettingsPage } from "@/components/SettingsPage";
-import type { CompanyReport } from "./central/types";
+import type { CompanyReport, ClientScheduleEntry, MotoboyScheduleEntry } from "@shared/contracts";
+import type { User } from "@shared/schema";
 
 const CentralHomeRoute = lazy(() => import("./central/home").then((m) => ({ default: m.CentralHomeRoute })));
 const LiveDocsSection = lazy(() => import("./central/live-docs").then((m) => ({ default: m.LiveDocsSection })));
@@ -69,7 +70,7 @@ export default function CentralDashboard() {
   });
 
   // QUERY: Busca TODOS os horários dos clientes de uma vez (sem fallback para evitar dados irreais)
-  const { data: allClientSchedules = [] } = useQuery<any[]>({
+  const { data: allClientSchedules = [] } = useQuery<ClientScheduleEntry[][]>({
     queryKey: ['/api/schedules/all-clients'],
     enabled: !!token,
     refetchInterval: 60000, // Atualiza a cada 1 minuto
@@ -83,14 +84,14 @@ export default function CentralDashboard() {
   }, [allClientSchedules]);
 
   // QUERY: Busca TODOS os horários dos motoboys de uma vez
-  const { data: allMotoboySchedules = [] } = useQuery<any[]>({
+  const { data: allMotoboySchedules = [] } = useQuery<MotoboyScheduleEntry[][]>({
     queryKey: ['/api/schedules/all-motoboys'],
     enabled: !!token,
     refetchInterval: 60000, // Atualiza a cada 1 minuto
   });
 
   // STEP 4: Query de usuários
-  const { data: usersData = [] } = useQuery<any[]>({
+  const { data: usersData = [] } = useQuery<User[]>({
     queryKey: ['/api/users'],
     enabled: !!token,
   });
@@ -218,9 +219,9 @@ export default function CentralDashboard() {
           }
           // Atualiza cache de localizações em tempo real
           if (data.type === 'location_update' && data.payload?.motoboyId) {
-            queryClient.setQueryData(['/api/motoboys/locations/latest'], (prev: any) => {
+            queryClient.setQueryData(['/api/motoboys/locations/latest'], (prev: { locations?: Array<{ motoboyId: string }> } | undefined) => {
               const prevLocations = prev?.locations || [];
-              const filtered = prevLocations.filter((loc: any) => loc.motoboyId !== data.payload.motoboyId);
+              const filtered = prevLocations.filter((loc) => loc.motoboyId !== data.payload.motoboyId);
               return { locations: [...filtered, data.payload] };
             });
           }

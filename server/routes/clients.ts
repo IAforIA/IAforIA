@@ -10,7 +10,7 @@ export function buildClientsRouter() {
     try {
       const clients = await storage.getAllClients();
       res.json(clients);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('💥 Erro ao buscar clientes:', error);
       res.status(500).json({ error: 'Erro ao buscar clientes' });
     }
@@ -25,7 +25,7 @@ export function buildClientsRouter() {
       const passwordHash = await bcrypt.hash(password, 10);
       const profile = await storage.createClientWithUser(payload, passwordHash);
       res.status(201).json(profile);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('💥 Erro ao criar cliente:', error);
       if (error.message === 'EMAIL_IN_USE') {
         return res.status(409).json({ error: 'Email já cadastrado' });
@@ -42,7 +42,7 @@ export function buildClientsRouter() {
       const { id } = req.params;
       const updated = await storage.updateClient(id, req.body);
       res.json(updated);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('💥 Erro ao atualizar cliente:', error);
       res.status(500).json({ error: 'Erro ao atualizar cliente' });
     }
@@ -57,7 +57,7 @@ export function buildClientsRouter() {
       }
       const schedules = await storage.getClientSchedule(id);
       res.json(schedules);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('💥 Erro ao buscar horários do cliente:', error);
       res.status(500).json({ error: 'Erro ao buscar horários do cliente' });
     }
@@ -69,7 +69,7 @@ export function buildClientsRouter() {
       const clientId = req.user!.id;
       const updated = await storage.updateClient(clientId, req.body);
       res.json(updated);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('💥 Erro ao o cliente atualizar seu cadastro:', error);
       res.status(500).json({ error: 'Erro ao atualizar cadastro do cliente' });
     }

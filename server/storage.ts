@@ -340,7 +340,7 @@ class DrizzleStorage /* implements IStorage */ {
    * USADO EM: POST /api/chat em routes.ts
    * RETORNA: Mensagem recém-criada com ID e timestamp gerados
    */
-  async createChatMessage(message: any) {
+  async createChatMessage(message: InsertChatMessage) {
     return createChatMessage(message);
   }
 

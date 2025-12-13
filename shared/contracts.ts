@@ -493,3 +493,171 @@ export interface WsEnvelope<TType extends string, TPayload> {
 // - Etapa 14: Integração GPS + geocoding + cálculo de rotas
 // - Etapa 15-20: Testes E2E, otimizações, rollout produção
 // ========================================
+
+// ========================================
+// TIPOS ADICIONADOS NA AUDITORIA MIT 2025-12-13
+// ========================================
+
+/**
+ * INTERFACE: ClientScheduleEntry
+ * PROPÓSITO: Entrada de horário de funcionamento por dia da semana
+ * USADO EM: central-dashboard.tsx, central/home.tsx, central/clients.tsx
+ */
+export interface ClientScheduleEntry {
+  id?: string;
+  clientId: string;
+  diaSemana: number; // 0-6 (domingo = 0)
+  horaAbertura: string; // "HH:MM"
+  horaFechamento: string; // "HH:MM"
+  ativo: boolean;
+}
+
+/**
+ * INTERFACE: MotoboyScheduleEntry
+ * PROPÓSITO: Disponibilidade do motoboy por dia/turno
+ * USADO EM: central-dashboard.tsx, ScheduleGrid.tsx
+ */
+export interface MotoboyScheduleEntry {
+  id?: string;
+  motoboyId: string;
+  diaSemana: number; // 0-6 (domingo = 0)
+  turnoManha: boolean;
+  turnoTarde: boolean;
+  turnoNoite: boolean;
+}
+
+/**
+ * INTERFACE: ApiError
+ * PROPÓSITO: Tipagem segura para erros em catch blocks
+ * PADRÃO: Substituir catch(error: any) por type guard
+ */
+export interface ApiError {
+  message: string;
+  code?: string;
+  status?: number;
+}
+
+/**
+ * FUNÇÃO: getErrorMessage
+ * PROPÓSITO: Extrai mensagem de erro de qualquer tipo (unknown)
+ * USADO EM: Todos os catch blocks do servidor
+ */
+export function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'string') return error;
+  if (error && typeof error === 'object' && 'message' in error) {
+    return String((error as { message: unknown }).message);
+  }
+  return 'Erro desconhecido';
+}
+
+/**
+ * INTERFACE: MotoboyReport
+ * PROPÓSITO: Relatório financeiro do motoboy
+ * USADO EM: driver-dashboard.tsx, central/financial.tsx
+ */
+export interface MotoboyReport {
+  stats: {
+    totalEntregas: number;
+    totalGanho: string;
+    mediaAvaliacao: number;
+    taxaAceitacao: number;
+  };
+  breakdown: {
+    hoje: { entregas: number; valor: string };
+    semana: { entregas: number; valor: string };
+    mes: { entregas: number; valor: string };
+  };
+  recentOrders: Array<{
+    id: string;
+    clientName: string;
+    valor: string;
+    status: string;
+    createdAt: string;
+  }>;
+}
+
+/**
+ * INTERFACE: ClientReport
+ * PROPÓSITO: Relatório financeiro do cliente
+ * USADO EM: client-dashboard.tsx, central/financial.tsx
+ */
+export interface ClientReport {
+  stats: {
+    totalPedidos: number;
+    totalGasto: string;
+    mediaValor: string;
+    pedidosHoje: number;
+  };
+  breakdown: {
+    hoje: { pedidos: number; valor: string };
+    semana: { pedidos: number; valor: string };
+    mes: { pedidos: number; valor: string };
+  };
+  recentOrders: Array<{
+    id: string;
+    motoboyName: string | null;
+    valor: string;
+    status: string;
+    createdAt: string;
+  }>;
+}
+
+/**
+ * INTERFACE: CompanyReport
+ * PROPÓSITO: Relatório geral da empresa
+ * USADO EM: central-dashboard.tsx, central/home.tsx
+ */
+export interface CompanyReport {
+  summary: {
+    totalOrders: number;
+    totalRevenue: string;
+    totalProfit: string;
+    activeClients: number;
+    activeMotoboys: number;
+  };
+  breakdown: {
+    hoje: { pedidos: number; receita: string };
+    semana: { pedidos: number; receita: string };
+    mes: { pedidos: number; receita: string };
+  };
+}
+
+/**
+ * INTERFACE: ChatMessagePayload
+ * PROPÓSITO: Payload para criação/recebimento de mensagens de chat
+ * USADO EM: server/routes/chat.ts, client/components/chat/*
+ */
+export interface ChatMessagePayload {
+  id?: string;
+  senderId: string;
+  senderName?: string;
+  senderRole?: string;
+  receiverId?: string | null;
+  message: string;
+  category?: string;
+  orderId?: string | null;
+  threadId?: string | null;
+  createdAt?: string;
+}
+
+/**
+ * INTERFACE: FinancialSnapshot
+ * PROPÓSITO: Snapshot financeiro para relatórios
+ * USADO EM: central/financial.tsx
+ */
+export interface MotoboyFinancialSnapshot {
+  id: string;
+  name: string;
+  totalEntregas: number;
+  totalRepasse: string;
+  mediaAvaliacao: number;
+}
+
+export interface ClientFinancialSnapshot {
+  id: string;
+  name: string;
+  totalPedidos: number;
+  totalGasto: string;
+  mensalidade: string;
+}

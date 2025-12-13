@@ -10,6 +10,7 @@ import { DriverAvailabilityBadge } from "@/components/DriverScheduleViewer";
 import { ChatWidget } from "@/components/ChatWidget";
 import { OperationalInsights } from "@/components/OperationalInsights";
 import type { Client, Motoboy } from "@shared/schema";
+import type { ClientScheduleEntry, MotoboyScheduleEntry } from "@shared/contracts";
 import type { NormalizedOrder, CompanyReport } from "./types";
 
 const formatTime = (date: Date | null | undefined) =>
@@ -22,8 +23,8 @@ type HomeProps = {
   motoboys: Motoboy[];
   motoboyLocations: Array<{ motoboyId: string; latitude: number; longitude: number; timestamp: string }>;
   normalizedOrders: NormalizedOrder[];
-  allClientSchedules: any[];
-  allMotoboySchedules: any[];
+  allClientSchedules: ClientScheduleEntry[];
+  allMotoboySchedules: MotoboyScheduleEntry[];
   totalOrders: number;
   inProgress: number;
   delivered: number;
@@ -57,8 +58,8 @@ export function CentralHomeRoute({
   const now = new Date();
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
-  const isClientOpenNow = (clientSchedules: any[]): boolean => {
-    const todaySchedule = clientSchedules.find((s: any) => Number((s as any).diaSemana) === today);
+  const isClientOpenNow = (clientSchedules: ClientScheduleEntry[]): boolean => {
+    const todaySchedule = clientSchedules.find((s) => Number(s.diaSemana) === today);
     if (!todaySchedule || todaySchedule.fechado || !todaySchedule.horaAbertura || !todaySchedule.horaFechamento) {
       return false;
     }
@@ -74,7 +75,7 @@ export function CentralHomeRoute({
   };
 
   const openClients = clients.filter((client) => {
-    const clientSchedules = allClientSchedules.filter((s: any) => String(s.clientId) === String(client.id));
+    const clientSchedules = allClientSchedules.filter((s) => String(s.clientId) === String(client.id));
     return isClientOpenNow(clientSchedules);
   });
 
@@ -120,9 +121,9 @@ export function CentralHomeRoute({
                 <p className="text-xs text-muted-foreground">Nenhum cliente aberto agora.</p>
               )}
               {openClients.map((client) => {
-                const clientSchedules = allClientSchedules.filter((s: any) => String(s.clientId) === String(client.id));
+                const clientSchedules = allClientSchedules.filter((s) => String(s.clientId) === String(client.id));
                 const scheduleForToday = clientSchedules.find(
-                  (s: any) => Number((s as any).diaSemana) === today
+                  (s) => Number(s.diaSemana) === today
                 );
                 const schedule = scheduleForToday || clientSchedules[0];
 
@@ -149,8 +150,8 @@ export function CentralHomeRoute({
             <h3 className="text-sm font-semibold mb-3">🏍️ Motoboys - Disponibilidade</h3>
             <div className="space-y-2 max-h-[200px] overflow-y-auto">
               {motoboys.slice(0, 6).map((motoboy) => {
-                const motoboySchedules = allMotoboySchedules.filter((s: any) => s.motoboyId === motoboy.id);
-                const scheduleToday = motoboySchedules.find((s: any) => Number((s as any).diaSemana) === today) || motoboySchedules[0];
+                const motoboySchedules = allMotoboySchedules.filter((s) => s.motoboyId === motoboy.id);
+                const scheduleToday = motoboySchedules.find((s) => Number(s.diaSemana) === today) || motoboySchedules[0];
                 const shifts = scheduleToday
                   ? [
                       scheduleToday.turnoManha ? "Manhã" : null,
