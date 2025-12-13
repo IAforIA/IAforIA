@@ -581,3 +581,187 @@ Upload de documento do motoboy (CNH/comprovante).
 | 409 | Conflict - Duplicado (email/documento) |
 | 429 | Too Many Requests - Rate limit |
 | 500 | Internal Error - Erro no servidor |
+
+---
+
+## 9. Analytics (/api/analytics/*)
+
+> **Adicionado na auditoria 2025-12-13**
+
+### GET /api/analytics/dashboard
+Dashboard analytics geral.
+
+**Auth:** central only
+
+**Response 200:** Analytics summary
+
+---
+
+### GET /api/analytics/revenue
+Análise de receita.
+
+**Auth:** central only
+
+**Response 200:** Revenue data
+
+---
+
+### GET /api/analytics/motoboy/:id
+Analytics específico de motoboy.
+
+**Auth:** central ou próprio motoboy
+
+**Response 200:** Motoboy analytics
+
+---
+
+### GET /api/analytics/client/:id
+Analytics específico de cliente.
+
+**Auth:** central ou próprio client
+
+**Response 200:** Client analytics
+
+---
+
+### GET /api/analytics/mrr
+MRR (Monthly Recurring Revenue) analytics.
+
+**Auth:** central only
+
+**Response 200:** MRR data
+
+---
+
+## 10. Schedules (/api/schedules/*)
+
+> **Adicionado na auditoria 2025-12-13**
+
+### GET /api/schedules/all-clients
+Lista horários de todos os clientes.
+
+**Auth:** central only
+
+**Response 200:** ClientSchedule[][]
+
+---
+
+### GET /api/schedules/all-motoboys
+Lista disponibilidade de todos os motoboys.
+
+**Auth:** central only
+
+**Response 200:** MotoboySchedule[][]
+
+---
+
+## 11. Health (/health, /ready)
+
+> **Não requerem autenticação**
+
+### GET /health
+Health check básico.
+
+**Response 200:** { status: "ok" }
+
+---
+
+### GET /ready
+Readiness check (verifica conexão com DB).
+
+**Response 200:** { status: "ok", database: "connected" }
+
+---
+
+## 12. Endpoints Adicionais de Chat
+
+> **Adicionado na auditoria 2025-12-13**
+
+### POST /api/chat/ai-feedback
+Envia feedback sobre sugestão de IA.
+
+**Auth:** central only
+
+**Response 200:** { success: true }
+
+---
+
+### GET /api/chat/usage-stats
+Estatísticas de uso do chat/IA.
+
+**Auth:** Qualquer role
+
+**Response 200:** Usage statistics
+
+---
+
+### GET /api/chat/budget-history
+Histórico de gastos com IA.
+
+**Auth:** central only
+
+**Response 200:** Budget history
+
+---
+
+### GET /api/chat/recipients
+Lista possíveis destinatários para mensagem.
+
+**Auth:** central only
+
+**Response 200:** { recipients: User[] }
+
+---
+
+## 13. Endpoints Adicionais de Motoboys
+
+> **Adicionado na auditoria 2025-12-13**
+
+### GET /api/users/online
+Lista motoboys online.
+
+**Auth:** central only
+
+**Response 200:** { onlineUsers: string[] }
+
+---
+
+### PATCH /api/motoboys/:id/online
+Alterna status online do motoboy.
+
+**Auth:** central only
+
+| Campo | Tipo | Obrigatório |
+|-------|------|-------------|
+| online | boolean |  |
+
+**Response 200:** { success: true, id, online }
+
+---
+
+### POST /api/motoboys
+Central cria novo motoboy.
+
+**Auth:** central only
+
+**Response 201:** Motoboy
+
+---
+
+## Resumo de Endpoints
+
+| Módulo | Quantidade |
+|--------|------------|
+| Auth | 4 |
+| Orders | 6 |
+| Motoboys | 10 |
+| Clients | 5 |
+| Users | 4 |
+| Chat | 7 |
+| Reports | 4 |
+| Upload | 3 |
+| Analytics | 5 |
+| Schedules | 2 |
+| Health | 2 |
+
+**Total: 55 endpoints**
