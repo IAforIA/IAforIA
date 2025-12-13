@@ -58,7 +58,7 @@ export function ChatPanelCentral({
   if (!conversation && !order) {
     return (
       <div className="flex flex-col items-center justify-center h-full bg-gray-50">
-        <div className="text-center text-gray-400">
+        <div className="text-center text-muted-foreground">
           <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gray-200 flex items-center justify-center">
             💬
           </div>
@@ -95,12 +95,12 @@ export function ChatPanelCentral({
 
       {/* ABAS (somente para pedidos) */}
       {!isGeneralConversation && order && (
-        <div className="flex bg-gray-100 border-b-2 border-gray-200">
+        <div className="flex bg-muted border-b-2 border-border">
           <button
             className={`flex-1 py-3 text-sm font-medium border-b-3 ${
               activeTab === 'motoboy'
-                ? 'text-purple-600 border-purple-600 bg-white'
-                : 'text-gray-500 border-transparent bg-transparent'
+                ? 'text-purple-600 border-purple-600 bg-background'
+                : 'text-muted-foreground border-transparent bg-transparent'
             }`}
             onClick={() => setActiveTab('motoboy')}
           >
@@ -109,8 +109,8 @@ export function ChatPanelCentral({
           <button
             className={`flex-1 py-3 text-sm font-medium border-b-3 ${
               activeTab === 'client'
-                ? 'text-purple-600 border-purple-600 bg-white'
-                : 'text-gray-500 border-transparent bg-transparent'
+                ? 'text-purple-600 border-purple-600 bg-background'
+                : 'text-muted-foreground border-transparent bg-transparent'
             }`}
             onClick={() => setActiveTab('client')}
           >
@@ -120,7 +120,7 @@ export function ChatPanelCentral({
       )}
 
       {/* MENSAGENS */}
-      <ScrollArea className="flex-1 p-5 bg-gray-50">
+      <ScrollArea className="flex-1 p-5 bg-muted/50">
         <div className="space-y-4">
           {messages.map((msg) => {
             const isSent = msg.senderId === user?.id;
@@ -135,7 +135,7 @@ export function ChatPanelCentral({
                     {isSent ? 'Você (Central)' : (conversation?.userName || 'Usuário')}
                   </div>
                   <div className={`rounded-2xl px-4 py-3 shadow-sm ${
-                    isSent ? 'bg-purple-600 text-white' : 'bg-white text-gray-900'
+                    isSent ? 'bg-purple-600 text-white' : 'bg-card text-card-foreground'
                   }`}>
                     {msg.audioUrl && (
                       <div className="flex items-center gap-3 mb-2">
@@ -156,7 +156,7 @@ export function ChatPanelCentral({
                     {msg.message && (
                       <div className="text-sm leading-relaxed">{msg.message}</div>
                     )}
-                    <div className={`text-xs mt-2 ${isSent ? 'text-white/70' : 'text-gray-500'}`}>
+                    <div className={`text-xs mt-2 ${isSent ? 'text-white/70' : 'text-muted-foreground'}`}>
                       {new Date(msg.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                     </div>
                   </div>

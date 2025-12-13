@@ -24,7 +24,7 @@ export default function StatusBadge({ status }: StatusBadgeProps) {
 
   if (!config) {
     return (
-      <Badge className="bg-gray-200 text-gray-800" data-testid={`badge-status-unknown`}>
+      <Badge className="bg-muted text-muted-foreground" data-testid={`badge-status-unknown`}>
         Desconhecido
       </Badge>
     );

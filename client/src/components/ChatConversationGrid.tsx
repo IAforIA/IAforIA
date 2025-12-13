@@ -133,7 +133,7 @@ export function ChatConversationGrid({
         {/* SEÇÃO: CONVERSAS GERAIS */}
         {(filter === 'all' || filter === 'general') && filteredConversations.length > 0 && (
           <div>
-            <div className="text-xs font-bold uppercase text-gray-500 mb-2 px-1">
+            <div className="text-xs font-bold uppercase text-muted-foreground mb-2 px-1">
               💬 Conversas Gerais
             </div>
             {filteredConversations.map(conversation => (
@@ -152,7 +152,7 @@ export function ChatConversationGrid({
                     Conversa Geral
                   </Badge>
                 </div>
-                <div className="text-xs text-gray-600 space-y-1">
+                <div className="text-xs text-muted-foreground space-y-1">
                   <div><strong>Assunto:</strong> {conversation.lastMessage.slice(0, 50)}...</div>
                   <div><strong>Tipo:</strong> {conversation.userRole === 'client' ? 'Cliente' : 'Motoboy'}</div>
                 </div>
@@ -174,7 +174,7 @@ export function ChatConversationGrid({
 
         {/* EMPTY STATE */}
         {filteredOrders.length === 0 && filteredConversations.length === 0 && (
-          <div className="text-center text-gray-400 py-8">
+          <div className="text-center text-muted-foreground py-8">
             <MessageCircle className="w-12 h-12 mx-auto mb-2 opacity-50" />
             <p>Nenhuma conversa encontrada</p>
           </div>

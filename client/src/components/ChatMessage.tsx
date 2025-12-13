@@ -53,7 +53,7 @@ export function ChatMessage({
       <div className="flex items-center gap-2 mb-1 px-1">
         <span className={cn(
           "text-xs px-2 py-0.5 rounded-full font-medium",
-          roleColors[getSenderRole(message as any) as keyof typeof roleColors] || "bg-gray-100 text-gray-800"
+          roleColors[getSenderRole(message as any) as keyof typeof roleColors] || "bg-muted text-foreground"
         )}>
           {roleLabels[(getSenderRole(message as any) ?? '') as keyof typeof roleLabels] || (getSenderRole(message as any) ?? '')}
         </span>

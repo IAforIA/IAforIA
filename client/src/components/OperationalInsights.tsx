@@ -1,11 +1,11 @@
-/**
+﻿/**
  * ARQUIVO: client/src/components/OperationalInsights.tsx
- * PROPÓSITO: Dashboard operacional para gestão de motoboys
+ * PROPÃ“SITO: Dashboard operacional para gestÃ£o de motoboys
  * 
- * ANÁLISES:
- * - Demanda por período (horários de pico)
+ * ANÃLISES:
+ * - Demanda por perÃ­odo (horÃ¡rios de pico)
  * - Clientes ativos por turno
- * - Recomendação de motoboys necessários
+ * - RecomendaÃ§Ã£o de motoboys necessÃ¡rios
  * - Cobertura atual vs demanda esperada
  */
 
@@ -63,7 +63,7 @@ export function OperationalInsights({
   // Analisa cada turno do dia
   const analyzeShift = (shift: Shift): ShiftAnalysis => {
     const shiftConfig = {
-      manha: { label: 'Manhã', hours: '06:00-12:00', start: '06:00', end: '12:00' },
+      manha: { label: 'ManhÃ£', hours: '06:00-12:00', start: '06:00', end: '12:00' },
       tarde: { label: 'Tarde', hours: '12:00-18:00', start: '12:00', end: '18:00' },
       noite: { label: 'Noite', hours: '18:00-00:00', start: '18:00', end: '00:00' },
     };
@@ -75,14 +75,14 @@ export function OperationalInsights({
       if (schedule.diaSemana !== currentDay || schedule.fechado) return false;
       if (!schedule.horaAbertura || !schedule.horaFechamento) return false;
       
-      // Cliente opera neste turno se há sobreposição de horários
+      // Cliente opera neste turno se hÃ¡ sobreposiÃ§Ã£o de horÃ¡rios
       return (
         schedule.horaAbertura < config.end && 
         schedule.horaFechamento > config.start
       );
     }).length;
 
-    // Conta motoboys disponíveis neste turno
+    // Conta motoboys disponÃ­veis neste turno
     const motoboysAvailable = motoboySchedules.filter(schedule => {
       if (schedule.diaSemana !== currentDay) return false;
       
@@ -92,8 +92,8 @@ export function OperationalInsights({
       return false;
     }).length;
 
-    // REGRA DE NEGÓCIO: 1 motoboy para cada 3-4 clientes ativos
-    // Considera também um mínimo de 2 motoboys se houver clientes
+    // REGRA DE NEGÃ“CIO: 1 motoboy para cada 3-4 clientes ativos
+    // Considera tambÃ©m um mÃ­nimo de 2 motoboys se houver clientes
     const recommended = clientsActive > 0 
       ? Math.max(2, Math.ceil(clientsActive / 3.5))
       : 0;
@@ -129,23 +129,23 @@ export function OperationalInsights({
       return <Badge className="bg-green-600">Cobertura OK</Badge>;
     }
     if (status === 'warning') {
-      return <Badge className="bg-yellow-600">Atenção</Badge>;
+      return <Badge className="bg-yellow-600">AtenÃ§Ã£o</Badge>;
     }
-    return <Badge variant="destructive">Crítico</Badge>;
+    return <Badge variant="destructive">CrÃ­tico</Badge>;
   };
 
-  const daysOfWeek = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+  const daysOfWeek = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'SÃ¡b'];
 
   return (
     <div className="space-y-4">
-      {/* Previsão Semanal primeiro para destacar clientes por dia */}
+      {/* PrevisÃ£o Semanal primeiro para destacar clientes por dia */}
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
             <Users className="h-5 w-5" />
-            <CardTitle>Previsão Semanal</CardTitle>
+            <CardTitle>PrevisÃ£o Semanal</CardTitle>
           </div>
-          <CardDescription>Clientes operando por dia. Útil para planejar escalas antes do dia.</CardDescription>
+          <CardDescription>Clientes operando por dia. Ãštil para planejar escalas antes do dia.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-7 gap-2">
@@ -169,7 +169,7 @@ export function OperationalInsights({
                   <div className="text-2xl font-bold">
                     {clientsThisDay}
                   </div>
-                  <div className="text-[10px] text-gray-500 mt-1">
+                  <div className="text-[10px] text-muted-foreground mt-1">
                     clientes
                   </div>
                 </div>
@@ -184,10 +184,10 @@ export function OperationalInsights({
         <CardHeader>
           <div className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5" />
-            <CardTitle>Análise Operacional - {daysOfWeek[currentDay]}</CardTitle>
+            <CardTitle>AnÃ¡lise Operacional - {daysOfWeek[currentDay]}</CardTitle>
           </div>
           <CardDescription>
-            Visão rápida: clientes abertos hoje × motoboys escalados × recomendação mínima.
+            VisÃ£o rÃ¡pida: clientes abertos hoje Ã— motoboys escalados Ã— recomendaÃ§Ã£o mÃ­nima.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -196,7 +196,7 @@ export function OperationalInsights({
               <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">
                 {totalClientsToday}
               </div>
-              <div className="text-xs text-gray-600 dark:text-gray-400">
+              <div className="text-xs text-muted-foreground">
                 Clientes Ativos Hoje
               </div>
             </div>
@@ -204,7 +204,7 @@ export function OperationalInsights({
               <div className="text-2xl font-bold text-green-700 dark:text-green-300">
                 {motoboysScheduledToday}
               </div>
-              <div className="text-xs text-gray-600 dark:text-gray-400">
+              <div className="text-xs text-muted-foreground">
                 Motoboys com escala hoje
               </div>
             </div>
@@ -212,7 +212,7 @@ export function OperationalInsights({
               <div className="text-2xl font-bold text-purple-700 dark:text-purple-300">
                 {Math.ceil(totalClientsToday / 3.5)}
               </div>
-              <div className="text-xs text-gray-600 dark:text-gray-400">
+              <div className="text-xs text-muted-foreground">
                 Recomendado (1:3.5)
               </div>
             </div>
@@ -220,7 +220,7 @@ export function OperationalInsights({
               <div className="text-2xl font-bold text-amber-700 dark:text-amber-300">
                 {motoboysOnline}
               </div>
-              <div className="text-xs text-gray-600 dark:text-gray-400">
+              <div className="text-xs text-muted-foreground">
                 Motoboys online agora
               </div>
             </div>
@@ -228,7 +228,7 @@ export function OperationalInsights({
         </CardContent>
       </Card>
 
-      {/* Análise por Turno */}
+      {/* AnÃ¡lise por Turno */}
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
@@ -237,7 +237,7 @@ export function OperationalInsights({
           </div>
           <CardDescription className="flex items-center gap-1 text-xs text-muted-foreground">
             <Info className="h-3.5 w-3.5" />
-            Verde = cobertura ok | Amarelo = atenção | Vermelho = faltando motoboy
+            Verde = cobertura ok | Amarelo = atenÃ§Ã£o | Vermelho = faltando motoboy
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -250,26 +250,26 @@ export function OperationalInsights({
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-3">
                     <div className="font-semibold text-lg">{shift.label}</div>
-                    <div className="text-sm text-gray-500">{shift.hours}</div>
+                    <div className="text-sm text-muted-foreground">{shift.hours}</div>
                   </div>
                   {getStatusBadge(shift.status)}
                 </div>
 
                 <div className="grid grid-cols-3 gap-4 mt-3">
                   <div>
-                    <div className="text-xs text-gray-500">Clientes Ativos</div>
+                    <div className="text-xs text-muted-foreground">Clientes Ativos</div>
                     <div className="text-2xl font-bold text-blue-600">
                       {shift.clientsActive}
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs text-gray-500">Motoboys Disponíveis</div>
+                    <div className="text-xs text-muted-foreground">Motoboys DisponÃ­veis</div>
                     <div className="text-2xl font-bold text-green-600">
                       {shift.motoboysAvailable}
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs text-gray-500">Recomendado</div>
+                    <div className="text-xs text-muted-foreground">Recomendado</div>
                     <div className="text-2xl font-bold text-purple-600">
                       {shift.recommended}
                     </div>

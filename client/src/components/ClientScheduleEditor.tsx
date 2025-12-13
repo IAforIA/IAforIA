@@ -249,61 +249,67 @@ export function ClientScheduleEditor({ clientId }: ClientScheduleEditorProps) {
               <div
                 key={schedule.diaSemana}
                 className={`
-                  flex items-center gap-4 p-4 rounded-lg border-2
-                  ${isToday ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : 'border-gray-200 dark:border-gray-700'}
+                  flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-4 rounded-lg border-2
+                  ${isToday ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : 'border-border'}
                 `}
               >
-                {/* Day name */}
-                <div className="w-24 font-semibold">
-                  {dayLabel}
-                  {isToday && (
-                    <Badge variant="default" className="ml-2 text-xs">
-                      HOJE
-                    </Badge>
-                  )}
+                {/* Day name + Closed checkbox - always in row */}
+                <div className="flex items-center justify-between sm:justify-start gap-4 min-w-fit">
+                  <div className="font-semibold flex items-center gap-2">
+                    {dayLabel}
+                    {isToday && (
+                      <Badge variant="default" className="text-xs">
+                        HOJE
+                      </Badge>
+                    )}
+                  </div>
+
+                  {/* Closed checkbox */}
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id={`closed-${schedule.diaSemana}`}
+                      checked={schedule.isClosed}
+                      onCheckedChange={(checked) => 
+                        handleToggleClosed(schedule.diaSemana, checked as boolean)
+                      }
+                    />
+                    <label
+                      htmlFor={`closed-${schedule.diaSemana}`}
+                      className="text-sm font-medium cursor-pointer"
+                    >
+                      Fechado
+                    </label>
+                  </div>
                 </div>
 
-                {/* Closed checkbox */}
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id={`closed-${schedule.diaSemana}`}
-                    checked={schedule.isClosed}
-                    onCheckedChange={(checked) => 
-                      handleToggleClosed(schedule.diaSemana, checked as boolean)
-                    }
-                  />
-                  <label
-                    htmlFor={`closed-${schedule.diaSemana}`}
-                    className="text-sm font-medium cursor-pointer"
-                  >
-                    Fechado
-                  </label>
-                </div>
-
-                {/* Time inputs (only if not closed) */}
+                {/* Time inputs + Save button - wraps on mobile */}
                 {!schedule.isClosed && (
-                  <>
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                     <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <Clock className="h-4 w-4 text-muted-foreground hidden sm:block" />
+                      <span className="text-sm text-muted-foreground sm:hidden">Abre:</span>
                       <Input
                         type="time"
                         value={schedule.horaInicio}
                         onChange={(e) => 
                           handleTimeChange(schedule.diaSemana, 'horaInicio', e.target.value)
                         }
-                        className="w-32"
+                        className="w-28 sm:w-32"
                       />
-                      <span className="text-muted-foreground">às</span>
+                    </div>
+                    <span className="text-muted-foreground">às</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground sm:hidden">Fecha:</span>
                       <Input
                         type="time"
                         value={schedule.horaFim}
                         onChange={(e) => 
                           handleTimeChange(schedule.diaSemana, 'horaFim', e.target.value)
                         }
-                        className="w-32"
+                        className="w-28 sm:w-32"
                       />
                     </div>
-                  </>
+                  </div>
                 )}
 
                 {/* Save button */}
@@ -311,7 +317,7 @@ export function ClientScheduleEditor({ clientId }: ClientScheduleEditorProps) {
                   size="sm"
                   onClick={() => handleSave(schedule.diaSemana)}
                   disabled={saveMutation.isPending}
-                  className="ml-auto"
+                  className="w-full sm:w-auto sm:ml-auto"
                 >
                   <Save className="h-4 w-4 mr-1" />
                   Salvar
