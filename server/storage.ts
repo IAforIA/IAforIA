@@ -50,6 +50,7 @@ import { createChatMessage, getChatMessages } from './storage/chat.js';
 import {
   getAllClients,
   getAllClientSchedules,
+  getClientById,
   getClientSchedule,
   updateClient,
 } from './storage/clients.js';
@@ -399,6 +400,15 @@ class DrizzleStorage /* implements IStorage */ {
    */
   async getAllClients() {
     return getAllClients();
+  }
+
+  /**
+   * MÉTODO: getClientById(clientId)
+   * PROPÓSITO: Busca um cliente específico pelo ID
+   * USADO EM: POST /api/clients/:id/geocode
+   */
+  async getClientById(clientId: string) {
+    return getClientById(clientId);
   }
 
   /**

@@ -196,16 +196,46 @@ export function buildOrdersRouter() {
       if (!motoboy) {
         return res.status(404).json({ error: "Motoboy não encontrado" });
       }
+      // Status 'pending' + motoboyId = pedido atribuído aguardando aceite do motoboy
+      // O motoboy precisa aceitar para ir para 'in_progress'
       await db.update(orders)
-        .set({ motoboyId, motoboyName: motoboy.name, status: "accepted", acceptedAt: new Date() })
+        .set({ motoboyId, motoboyName: motoboy.name, status: "pending", acceptedAt: null })
         .where(eq(orders.id, req.params.id));
       const updatedOrder = await storage.getOrder(req.params.id);
-      console.log(`🔄 Pedido ${req.params.id} reatribuído para ${motoboy.name} por ${req.user!.name}`);
+      console.log(`🔄 Pedido ${req.params.id} atribuído para ${motoboy.name} (aguardando aceite) por ${req.user!.name}`);
       broadcast({ type: "order_reassigned", payload: updatedOrder });
       res.json(updatedOrder);
     } catch (error) {
       console.error("💥 Erro ao reatribuir pedido:", error);
       res.status(500).json({ error: "Erro ao reatribuir pedido" });
+    }
+  });
+
+  // Motoboy recusa pedido atribuído a ele
+  router.post("/orders/:id/decline", authenticateToken, requireRole("motoboy"), async (req, res) => {
+    try {
+      const order = await storage.getOrder(req.params.id);
+      if (!order) {
+        return res.status(404).json({ error: "Pedido não encontrado" });
+      }
+      // Só pode recusar se o pedido está atribuído a ele e ainda pendente
+      if (order.motoboyId !== req.user!.id) {
+        return res.status(403).json({ error: "Este pedido não está atribuído a você" });
+      }
+      if (order.status !== "pending") {
+        return res.status(400).json({ error: "Só é possível recusar pedidos pendentes" });
+      }
+      // Limpa motoboyId para que a central possa escolher outro
+      await db.update(orders)
+        .set({ motoboyId: null, motoboyName: null })
+        .where(eq(orders.id, req.params.id));
+      const updatedOrder = await storage.getOrder(req.params.id);
+      console.log(`❌ Pedido ${req.params.id} recusado por ${req.user!.name}`);
+      broadcast({ type: "order_declined", payload: updatedOrder });
+      res.json(updatedOrder);
+    } catch (error) {
+      console.error("💥 Erro ao recusar pedido:", error);
+      res.status(500).json({ error: "Erro ao recusar pedido" });
     }
   });
 

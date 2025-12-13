@@ -51,7 +51,7 @@ Pedido aceito por motoboy.
   "type": "order_accepted",
   "payload": {
     "id": "uuid",
-    "status": "accepted",
+    "status": "in_progress",
     "motoboyId": "uuid",
     "motoboyName": "Carlos Silva",
     "acceptedAt": "2025-12-13T10:05:00Z"
@@ -60,6 +60,27 @@ Pedido aceito por motoboy.
 ```
 
 **Quem recebe:** Central, Cliente (dono do pedido)
+
+---
+
+### `order_declined`
+Motoboy recusou pedido atribuído pela central.
+
+**Trigger:** `POST /api/orders/:id/decline`
+
+```json
+{
+  "type": "order_declined",
+  "payload": {
+    "id": "uuid",
+    "status": "pending",
+    "motoboyId": null,
+    "motoboyName": null
+  }
+}
+```
+
+**Quem recebe:** Central (para escolher outro motoboy)
 
 ---
 

@@ -49,7 +49,11 @@ export default function DriverDashboard() {
     enabled: !!token && user?.role === "motoboy",
   });
 
-  const availableOrders = orders.filter((o) => o.status === "pending");
+  // Pedidos disponíveis para qualquer motoboy (sem atribuição)
+  const availableOrders = orders.filter((o) => o.status === "pending" && !o.motoboyId);
+  // Pedidos atribuídos a MIM aguardando aceite (reatribuição pela central)
+  const assignedToMe = orders.filter((o) => o.status === "pending" && o.motoboyId === user?.id);
+  // Pedidos que eu já aceitei e estão em andamento
   const myOrders = orders.filter((o) => o.motoboyId === user?.id && o.status === "in_progress");
   const deliveredToday = orders.filter(
     (o) =>
@@ -124,6 +128,25 @@ export default function DriverDashboard() {
     },
   });
 
+  // Mutation para recusar pedido atribuído pela central
+  const declineOrderMutation = useMutation({
+    mutationFn: async (orderId: string) => {
+      const res = await apiRequest("POST", `/api/orders/${orderId}/decline`, {});
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      toast({ title: "Pedido recusado", description: "A central será notificada para escolher outro entregador." });
+    },
+    onError: () => {
+      toast({
+        variant: "destructive",
+        title: "Erro ao recusar",
+        description: "Não foi possível recusar o pedido. Tente novamente.",
+      });
+    },
+  });
+
   const deliverOrderMutation = useMutation({
     mutationFn: async ({ orderId, proofUrl }: { orderId: string; proofUrl?: string }) => {
       const res = await apiRequest("POST", `/api/orders/${orderId}/deliver`, { proofUrl });
@@ -174,14 +197,17 @@ export default function DriverDashboard() {
                   <Route path="/">
                     <DashboardContent
                       availableOrders={availableOrders}
+                      assignedToMe={assignedToMe}
                       myOrders={myOrders}
                       deliveredToday={deliveredToday}
                       totalEarnings={totalEarnings}
                       motoboyReport={motoboyReport}
                       token={token}
                       onAccept={(id) => acceptOrderMutation.mutate(id)}
+                      onDecline={(id) => declineOrderMutation.mutate(id)}
                       onDeliver={(data) => deliverOrderMutation.mutate(data)}
                       isAccepting={acceptOrderMutation.isPending}
+                      isDeclining={declineOrderMutation.isPending}
                       isDelivering={deliverOrderMutation.isPending}
                     />
                   </Route>

@@ -1,21 +1,25 @@
 import StatCard from "@/components/StatCard";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Package, TruckIcon, CheckCircle, DollarSign } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Package, TruckIcon, CheckCircle, DollarSign, AlertCircle, Check, X } from "lucide-react";
 import { AvailableDeliveries } from "./available-deliveries";
 import { MyDeliveries } from "./my-deliveries";
 import type { DashboardContentProps } from "./types";
 
 export function DashboardContent({
   availableOrders,
+  assignedToMe,
   myOrders,
   deliveredToday,
   totalEarnings,
   motoboyReport,
   token,
   onAccept,
+  onDecline,
   onDeliver,
   isAccepting,
+  isDeclining,
   isDelivering,
 }: DashboardContentProps) {
   return (
@@ -23,9 +27,67 @@ export function DashboardContent({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard title="Entregas Hoje" value={deliveredToday.length} icon={Package} />
         <StatCard title="Em Andamento" value={myOrders.length} icon={TruckIcon} />
-        <StatCard title="Concluídas" value={deliveredToday.length} icon={CheckCircle} />
+        <StatCard title="Aguardando Aceite" value={assignedToMe.length} icon={AlertCircle} />
         <StatCard title="Ganhos Hoje" value={`R$ ${totalEarnings.toFixed(2)}`} icon={DollarSign} />
       </div>
+
+      {/* Pedidos atribuídos pela central - requer aceite/recusa */}
+      {assignedToMe.length > 0 && (
+        <Card className="p-6 bg-gradient-to-br from-amber-50 to-orange-100 dark:from-amber-950 dark:to-orange-900 border-amber-400 dark:border-amber-600 border-2">
+          <div className="flex items-center gap-2 mb-4">
+            <AlertCircle className="h-5 w-5 text-amber-600" />
+            <h3 className="text-lg font-semibold">⚠️ Pedidos Atribuídos a Você</h3>
+            <Badge variant="destructive" className="ml-auto">{assignedToMe.length} pendente(s)</Badge>
+          </div>
+          <p className="text-sm text-muted-foreground mb-4">
+            A central atribuiu estes pedidos para você. Aceite para iniciar a entrega ou recuse para que outro motoboy seja escolhido.
+          </p>
+          <div className="space-y-3">
+            {assignedToMe.map((order) => (
+              <Card key={order.id} className="p-4 bg-card">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Badge variant="outline" className="text-xs">{order.clientName}</Badge>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(order.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                    <p className="font-medium text-sm">{order.entregaBairro}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {order.entregaRua}, {order.entregaNumero}
+                    </p>
+                    <p className="text-xs mt-1">
+                      <span className="font-semibold text-green-600">Sua taxa: R$ {order.taxaMotoboy || '0.00'}</span>
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-red-300 text-red-600 hover:bg-red-50"
+                      onClick={() => onDecline(order.id)}
+                      disabled={isDeclining}
+                    >
+                      <X className="h-4 w-4 mr-1" />
+                      Recusar
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700"
+                      onClick={() => onAccept(order.id)}
+                      disabled={isAccepting}
+                    >
+                      <Check className="h-4 w-4 mr-1" />
+                      Aceitar
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {motoboyReport && (
         <Card className="p-6 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900 border-purple-200 dark:border-purple-800">

@@ -24,14 +24,17 @@ export interface MotoboyReport {
 
 export interface DashboardContentProps {
   availableOrders: Order[];
+  assignedToMe: Order[];  // Pedidos atribuídos pela central aguardando aceite
   myOrders: Order[];
   deliveredToday: Order[];
   totalEarnings: number;
   motoboyReport?: MotoboyReport;
   token: string | null;
   onAccept: (orderId: string) => void;
+  onDecline: (orderId: string) => void;  // Recusar pedido atribuído
   onDeliver: (data: { orderId: string; proofUrl?: string }) => void;
   isAccepting: boolean;
+  isDeclining: boolean;
   isDelivering: boolean;
 }
 

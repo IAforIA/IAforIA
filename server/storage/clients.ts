@@ -6,6 +6,11 @@ export async function getAllClients() {
   return await db.select().from(clients).orderBy(desc(clients.createdAt));
 }
 
+export async function getClientById(clientId: string): Promise<Client | undefined> {
+  const result = await db.select().from(clients).where(eq(clients.id, clientId)).limit(1);
+  return result[0];
+}
+
 export async function updateClient(clientId: string, data: Partial<Client>) {
   const result = await db.update(clients).set(data).where(eq(clients.id, clientId)).returning();
   return result[0];

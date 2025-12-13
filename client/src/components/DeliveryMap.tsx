@@ -112,14 +112,37 @@ export function DeliveryMap({ clients, motoboys, motoboyLocations }: DeliveryMap
 
       // Adiciona marcadores de clientes
       clients.forEach(client => {
-        const location = CLIENT_LOCATIONS[client.name];
+        // Prioridade: 1) geoLat/geoLng do banco, 2) fallback hardcoded por nome
+        let location: { lat: number; lng: number } | null = null;
+        
+        // Tenta usar coordenadas do banco de dados (geoLat, geoLng)
+        if (client.geoLat && client.geoLng) {
+          const lat = typeof client.geoLat === 'string' ? parseFloat(client.geoLat) : client.geoLat;
+          const lng = typeof client.geoLng === 'string' ? parseFloat(client.geoLng) : client.geoLng;
+          if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
+            location = { lat, lng };
+          }
+        }
+        
+        // Fallback: busca no mapeamento hardcoded por nome
+        if (!location) {
+          const upperName = client.name.toUpperCase();
+          // Busca exata ou parcial no dicionário
+          location = CLIENT_LOCATIONS[upperName] || 
+                     CLIENT_LOCATIONS[client.name] ||
+                     Object.entries(CLIENT_LOCATIONS).find(([key]) => 
+                       upperName.includes(key) || key.includes(upperName)
+                     )?.[1] || null;
+        }
+        
         if (location && mapRef.current) {
           const marker = L.marker([location.lat, location.lng], { icon: clientIcon })
             .addTo(mapRef.current)
             .bindPopup(`
               <div style="font-family: system-ui; padding: 4px;">
                 <strong style="color: #10b981;">${client.name}</strong><br/>
-                <small style="color: #6b7280;">📍 ${client.bairro || 'Guriri'}</small>
+                <small style="color: #6b7280;">📍 ${client.bairro || 'Guriri'}</small><br/>
+                ${client.rua ? `<small>${client.rua}, ${client.numero || 's/n'}</small>` : ''}
               </div>
             `);
           markersRef.current.push(marker);
